@@ -23,6 +23,6 @@ It is described in the following site.
 http://www.ne.jp/asahi/umi/noboru/#How_to_use_OpenCV_from_ImageJ_eng  
 http://www.ne.jp/asahi/umi/noboru/#How_to_use_OpenCV_from_ImageJ_part_2_eng
 
-Please contact us here.
+Please contact me here.
 
 https://twitter.com/WAKU_TAKE_A?lang=en
