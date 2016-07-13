@@ -41,21 +41,21 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     // const var.
     private static final int FLAGS = DOES_ALL;
     private static final String STR_NONE = "none";
-	private static final String[] TYPE_STR = { STR_NONE, "and", "or", "xor" };
+    private static final String[] TYPE_STR = { STR_NONE, "and", "or", "xor" };
     
     // static var.
-	private static int type_ind = 0;    
+    private static int type_ind = 0;    
 
     // var.
-	private RoiManager roiManager = null;
+    private RoiManager roiManager = null;
     private final Macro_Runner mr = new Macro_Runner();
-	
-	@Override
-	public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
-	{        
+    
+    @Override
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
+    {        
         GenericDialog gd = new GenericDialog(cmd + "...");
 
-		gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
+        gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
 
         gd.showDialog();
 
@@ -65,21 +65,21 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         }
         else
         {
-			type_ind = (int)gd.getNextChoiceIndex();
+            type_ind = (int)gd.getNextChoiceIndex();
 
             return FLAGS;
         }
-	}
+    }
 
-	@Override
-	public void setNPasses(int nPasses)
-	{
-		// do nothing
-	}
+    @Override
+    public void setNPasses(int nPasses)
+    {
+        // do nothing
+    }
 
-	@Override
-	public int setup(String arg, ImagePlus imp)
-	{
+    @Override
+    public int setup(String arg, ImagePlus imp)
+    {
         if (imp == null)
         {
             IJ.noImage();
@@ -87,54 +87,54 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         }
         else
         {
-			Frame frame = WindowManager.getFrame("ROI Manager");        
+            Frame frame = WindowManager.getFrame("ROI Manager");        
 
-			if (frame==null)
-			{
-				return DONE;
-			}
+            if (frame==null)
+            {
+                return DONE;
+            }
 
-			frame = WindowManager.getFrame("ROI Manager");
-			roiManager = (RoiManager)frame;
+            frame = WindowManager.getFrame("ROI Manager");
+            roiManager = (RoiManager)frame;
 
-			int num_roi = roiManager.getCount();
+            int num_roi = roiManager.getCount();
 
-			if(num_roi == 0)
-			{
-				return DONE;		
-			}
+            if(num_roi == 0)
+            {
+                return DONE;        
+            }
             
             roiManager.runCommand("show none");
-		
+        
             return DOES_ALL;
         }
-	}
+    }
 
-	@Override
-	public void run(ImageProcessor ip)
-	{
-		int num_roi = roiManager.getCount();
-		
-		if(num_roi == 0)
-		{
-			// do nothing
-		}
-		else if(num_roi == 1)
-		{
-			roiManager.select(0);
-			// do nothing after selecting
-		}
-		else
-		{
-			roiManager.deselect();
-			
-			int[] indx_all = roiManager.getIndexes();
-			roiManager.setSelectedIndexes(indx_all);
-			
-			if(!TYPE_STR[type_ind].equals(STR_NONE))
-			{
-				roiManager.runCommand(TYPE_STR[type_ind]);
-			}
-		}
-	}
+    @Override
+    public void run(ImageProcessor ip)
+    {
+        int num_roi = roiManager.getCount();
+        
+        if(num_roi == 0)
+        {
+            // do nothing
+        }
+        else if(num_roi == 1)
+        {
+            roiManager.select(0);
+            // do nothing after selecting
+        }
+        else
+        {
+            roiManager.deselect();
+            
+            int[] indx_all = roiManager.getIndexes();
+            roiManager.setSelectedIndexes(indx_all);
+            
+            if(!TYPE_STR[type_ind].equals(STR_NONE))
+            {
+                roiManager.runCommand(TYPE_STR[type_ind]);
+            }
+        }
+    }
 }

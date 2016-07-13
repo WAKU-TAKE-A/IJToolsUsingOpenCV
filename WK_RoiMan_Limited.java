@@ -53,15 +53,15 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
     // var.
     private ImagePlus impSrc = null;    
-	private RoiManager roiManager = null;
+    private RoiManager roiManager = null;
     private int num_roi = 0;
-    private ResultsTable rt = null;	
-	private final Macro_Runner mr = new Macro_Runner();
+    private ResultsTable rt = null;    
+    private final Macro_Runner mr = new Macro_Runner();
 
     @Override
     public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr)
     {
-		String[] feats = rt.getHeadings();
+        String[] feats = rt.getHeadings();
 
         GenericDialog gd = new GenericDialog(cmd + "...");
 
@@ -103,8 +103,8 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             IJ.error("Library is not loaded.");
             return DONE;
         }
-		
-		if (imp == null)
+        
+        if (imp == null)
         {
             IJ.noImage();
             return DONE;
@@ -113,25 +113,25 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         {
             // get the image
             impSrc = imp;
-			
+            
             // get the RoiManager
-			Frame frame = WindowManager.getFrame("ROI Manager");        
+            Frame frame = WindowManager.getFrame("ROI Manager");        
 
-			if (frame==null)
-			{
-				IJ.run("ROI Manager...");
-			}
+            if (frame==null)
+            {
+                IJ.run("ROI Manager...");
+            }
 
-			frame = WindowManager.getFrame("ROI Manager");
-			roiManager = (RoiManager)frame;
+            frame = WindowManager.getFrame("ROI Manager");
+            roiManager = (RoiManager)frame;
 
-			num_roi = roiManager.getCount();
+            num_roi = roiManager.getCount();
 
-			if(num_roi == 0)
-			{
-				IJ.error("ERR : ROI is vacant.");
-				return DONE;		
-			}
+            if(num_roi == 0)
+            {
+                IJ.error("ERR : ROI is vacant.");
+                return DONE;        
+            }
            
             roiManager.runCommand("show none");
             
@@ -146,7 +146,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             rt.reset();
 
             // Mesure
-			rt.show("Results");
+            rt.show("Results");
             roiManager.deselect();
             mr.runMacro("roiManager(\"Measure\");", "");
             
@@ -158,28 +158,28 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     public void run(ImageProcessor ip)
     {      
         // limit  
-        mr.runMacro("setBatchMode(true);", "");	
-		
+        mr.runMacro("setBatchMode(true);", "");    
+        
         int col = rt.getColumnIndex(type);
         double val;
         boolean chk_min;
         boolean chk_max;
 
-		for(int i = num_roi - 1; 0 <= i; i--)
-		{             
-			val = (double)rt.getValueAsDouble(col, i);
-			chk_min = enMin ? min <= val : true;
-			chk_max = enMax ? val <= max : true; 
+        for(int i = num_roi - 1; 0 <= i; i--)
+        {             
+            val = (double)rt.getValueAsDouble(col, i);
+            chk_min = enMin ? min <= val : true;
+            chk_max = enMax ? val <= max : true; 
 
-			if(!chk_min || !chk_max)
-			{
-				roiManager.select(i);
-				roiManager.runCommand("delete");               
+            if(!chk_min || !chk_max)
+            {
+                roiManager.select(i);
+                roiManager.runCommand("delete");               
                 rt.deleteRow(i);
-			}
-		}
-		
-		mr.runMacro("setBatchMode(false);", "");
+            }
+        }
+        
+        mr.runMacro("setBatchMode(false);", "");
         rt.show("Results");
     }
 }
