@@ -102,8 +102,8 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
             IJ.error("Library is not loaded.");
             return DONE;
         }
-		
-		if (imp == null)
+        
+        if (imp == null)
         {
             IJ.noImage();
             return DONE;
