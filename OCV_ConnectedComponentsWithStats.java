@@ -1,10 +1,12 @@
 import ij.*;
 import ij.gui.GenericDialog;
+import ij.measure.ResultsTable;
 import ij.plugin.Macro_Runner;
 import ij.plugin.filter.*;
 import ij.plugin.frame.RoiManager;
 import ij.process.*;
 import java.awt.Frame;
+import java.awt.Rectangle;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -34,11 +36,11 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * connectedComponents (OpenCV)
+ * connectedComponentsWithStats (OpenCV)
  * @author WAKU_TAKE_A
  * @version 0.9.0.0
  */
-public class OCV_ConnectedComponents implements ExtendedPlugInFilter
+public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 {
     // const var.
     private static final int FLAGS = DOES_8G;    
@@ -48,7 +50,7 @@ public class OCV_ConnectedComponents implements ExtendedPlugInFilter
     private static final String[] TYPE_STR = { "4-connected", "8-connected" };
     
     // static var.
-    private static int type_ind = 1;
+	private static int type_ind = 1;
     private static boolean enOutImg;
 
     // var.
@@ -108,9 +110,9 @@ public class OCV_ConnectedComponents implements ExtendedPlugInFilter
     public void run(ImageProcessor ip)
     {
         // src
-        byte[] src_arr = (byte[])ip.getPixels();
         int imw = ip.getWidth();
         int imh = ip.getHeight();
+        byte[] src_arr = (byte[])ip.getPixels();
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
         
         // dst
@@ -118,18 +120,18 @@ public class OCV_ConnectedComponents implements ExtendedPlugInFilter
         ImagePlus impDst = new ImagePlus (titleDst, new ShortProcessor(imw, imh));
         short[] dst_arr = (short[]) impDst.getChannelProcessor().getPixels();
         Mat dst_mat = new Mat(imh, imw, CvType.CV_16U);
+        Mat stats_mat = new Mat();
+        Mat cens_mat = new Mat();        
         
         // run
-        src_mat.put(0, 0, src_arr);
-        
-        int output_con = Imgproc.connectedComponents(src_mat, dst_mat, TYPE_INT[type_ind], CvType.CV_16U);
-        
+        src_mat.put(0, 0, src_arr);        
+        int output_con = Imgproc.connectedComponentsWithStats(src_mat, dst_mat, stats_mat, cens_mat, TYPE_INT[type_ind], CvType.CV_16U);        
         dst_mat.get(0, 0, dst_arr);
         
         // show data
-        if(0 < output_con - 1)
+        if(1 < output_con)
         {
-            showData(dst_arr, imw, imh, output_con - 1);
+            showData(dst_arr, imw, imh, output_con, stats_mat, cens_mat);
         }    
         
         // finish
@@ -143,8 +145,46 @@ public class OCV_ConnectedComponents implements ExtendedPlugInFilter
         }
     }
     
-    private void showData(short[] dst_arr, int imw, int imh, int num_lab)
+    private void showData(short[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat)
     {
+        int num_lab = output_con - 1;
+        
+        // get stats
+        Rectangle[] rects = new Rectangle[output_con];
+        int[] areas = new int[output_con];
+        double[] cens = new double[output_con * 2];
+
+        cens_mat.get(0, 0, cens);
+        
+        for(int i = 0; i < output_con; i++)
+        {
+            rects[i] = new Rectangle((int)(stats_mat.get(i, 0)[0]), (int)(stats_mat.get(i, 1)[0]), (int)(stats_mat.get(i, 2)[0]), (int)(stats_mat.get(i, 3)[0]));
+            areas[i] = (int)(stats_mat.get(i, 4)[0]);
+        }
+        
+        // Results Table
+        ResultsTable rt = ResultsTable.getResultsTable();
+
+        if(rt == null || rt.getCounter() == 0)
+        {
+            rt = new ResultsTable();
+        }
+        
+        rt.reset();
+        
+        for(int i = 1; i < output_con; i++)
+        {
+            rt.incrementCounter();
+            rt.addValue("Area", areas[i]);
+            rt.addValue("BX", rects[i].x);
+            rt.addValue("BY", rects[i].y);
+            rt.addValue("Width", rects[i].width);
+            rt.addValue("Height", rects[i].height);
+        }
+        
+        rt.show("Results");
+        
+        // ROI Manager
         Frame frame = WindowManager.getFrame("ROI Manager");
         RoiManager roiManager;
         Macro_Runner mr = new Macro_Runner();

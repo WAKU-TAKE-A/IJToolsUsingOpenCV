@@ -10,6 +10,8 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 
+import ij.plugin.filter.Analyzer;
+
 /*
  * The MIT License
  *
@@ -57,6 +59,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     private int num_roi = 0;
     private ResultsTable rt = null;    
     private final Macro_Runner mr = new Macro_Runner();
+    private boolean useExistRes;
 
     @Override
     public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr)
@@ -70,6 +73,15 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         gd.addNumericField("min_limit", min, 4);
         gd.addCheckbox("enable_max_limit", enMax);
         gd.addNumericField("max_limit", max, 4);
+        
+        if(useExistRes)
+        {
+            gd.addMessage("The existing ResultsTable is used");
+        }
+        else
+        {
+            gd.addMessage("The new ResultsTable is used");
+        }
 
         gd.showDialog();
 
@@ -97,7 +109,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
     @Override
     public int setup(String string, ImagePlus imp)
-    {
+    {       
         if(!OCV__LoadLibrary.isLoad)
         {
             IJ.error("Library is not loaded.");
@@ -142,13 +154,28 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             {
                 rt = new ResultsTable();
             }
-
-            rt.reset();
+            else
+            {
+                if(rt.getCounter() != roiManager.getCount())
+                {
+                    rt.reset();
+                }
+            }
+            
+            rt.show("Results");
 
             // Mesure
-            rt.show("Results");
             roiManager.deselect();
-            mr.runMacro("roiManager(\"Measure\");", "");
+            
+            if(rt.getCounter() == 0)
+            {
+                mr.runMacro("roiManager(\"Measure\");", "");
+                useExistRes = false;
+            }
+            else
+            {
+                useExistRes = true;
+            }
             
             return FLAGS;
         }
