@@ -35,23 +35,22 @@ import java.awt.Rectangle;
  */
 public class WK_ChangePixelValue implements ExtendedPlugInFilter
 {
-    // static var.
+    // const var.
     private final int FLAGS = DOES_8G | DOES_16 | CONVERT_TO_FLOAT;
-
     private static final int USHORT_MAX = 65535;
     private static final int UBYTE_MAX = 255;
-
     private static final String INNER = "inner";
     private static final String OUTER = "outer";
     private static final String[] BYNARY_TYPE = { INNER, OUTER };
 
-    // var.
+    // static var.
     private static int lower = 0;
     private static int upper = 0;
     private static String type = INNER;
     private static int valTrue = 255;
     private static int valFalse = 0;
 
+    // var.
     private String nameCmd = null;
     private int valMax = 0;
 

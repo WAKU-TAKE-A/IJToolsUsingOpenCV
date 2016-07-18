@@ -48,7 +48,6 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
 
     // var.
     private RoiManager roiManager = null;
-    private final Macro_Runner mr = new Macro_Runner();
     
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)

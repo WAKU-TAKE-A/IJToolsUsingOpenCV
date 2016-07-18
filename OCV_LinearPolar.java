@@ -44,14 +44,7 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
 {
     // const var.
     private final int FLAGS = DOES_8G | KEEP_PREVIEW;    
-    private static final int INTER_NEAREST = 0;
-    private static final int INTER_LINEAR = 1;
-    private static final int INTER_CUBIC = 2;
-    private static final int INTER_AREA = 3;
-    private static final int INTER_LANCZOS4 = 4;
-    private static final int WARP_FILL_OUTLIERS = 8;
-    private static final int WARP_INVERSE_MAP = 16;    
-    private static final int[] TYPE_INT = { INTER_NEAREST, INTER_LINEAR, INTER_CUBIC, INTER_AREA, INTER_LANCZOS4, WARP_FILL_OUTLIERS, WARP_FILL_OUTLIERS, WARP_INVERSE_MAP };
+    private static final int[] TYPE_INT = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
     private static final String[] TYPE_STR = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "WARP_FILL_OUTLIERS", "WARP_INVERSE_MAP" };
     
     // static var.
@@ -59,7 +52,7 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
     private static int cx;
     private static int cy;
     private static int rmax = 1;
-    private static int type_ind = INTER_NEAREST;  
+    private static int type_ind = 0;  
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)

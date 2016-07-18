@@ -42,14 +42,12 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
 {
     // const var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW;
-
-    // static var.
     private static final int[] INT_ADAPTIVEMETHOD = { Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C };
     private static final String[] STR_ADAPTIVEMETHOD = { "ADAPTIVE_THRESH_MEAN_C", "ADAPTIVE_THRESH_GAUSSIAN_C" };
     private static final int[] INT_THRESHOLDTYPE = { Imgproc.THRESH_BINARY, Imgproc.THRESH_BINARY_INV };
     private static final String[] STR_THRESHOLDTYPE = { "THRESH_BINARY", "THRESH_BINARY_INV" };
 
-    // var.
+    // staic var.
     private static double maxValue  = 255.0;
     private static int indMethod = 0;
     private static int indType  = 0;

@@ -50,7 +50,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
     private static final String[] TYPE_STR = { "4-connected", "8-connected" };
     
     // static var.
-	private static int type_ind = 1;
+    private static int type_ind = 1;
     private static boolean enOutImg;
 
     // var.
