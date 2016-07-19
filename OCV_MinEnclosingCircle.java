@@ -37,7 +37,7 @@ import java.util.ArrayList;
  */
 
 /**
- * minEnclosingCircle (OpenCV)
+ * minEnclosingCircle (OpenCV3.1)
  * @author WAKU_TAKE_A
  * @version 0.9.1.0
  */

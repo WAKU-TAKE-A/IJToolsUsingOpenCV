@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * connectedComponentsWithStats (OpenCV)
+ * connectedComponentsWithStats (OpenCV3.1)
  * @author WAKU_TAKE_A
  * @version 0.9.0.0
  */

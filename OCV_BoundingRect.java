@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * boundingRect (OpenCV)
+ * boundingRect (OpenCV3.1)
  * @author WAKU_TAKE_A
  * @version 0.9.1.0
  */

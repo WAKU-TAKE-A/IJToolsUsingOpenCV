@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * minAreaRect (OpenCV)
+ * minAreaRect (OpenCV3.1)
  * @author WAKU_TAKE_A
  * @version 0.9.1.0
  */
