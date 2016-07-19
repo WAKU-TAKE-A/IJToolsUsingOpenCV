@@ -50,10 +50,10 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
      * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg
      * BORDER_CONSTANT:      iiiiii|abcdefgh|iiiiiii  with some specified 'i'
-     */   
+     */
     private static final int[] INT_BORDERTYPE = { 1, 2, 4, 3, 0 };
     private static final String[] STR_BORDERTYPE = { "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT_101", "BORDER_WRAP", "BORDER_CONSTANT" };
-    
+
     // staic var.
     private static int diameter = 5; // Diameter of each pixel neighborhood that is used during filtering.
     private static double sigmaColor  = 15; // Filter sigma in the color space.
@@ -62,7 +62,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {       
+    {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
 
         gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
@@ -122,17 +122,16 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
             int numpix = imw * imh;
             byte[] dst_bytes = (byte[])ip.getPixels();
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            
-            // src          
+
+            // src
             byte[] src_arr = new byte[numpix];
             System.arraycopy(dst_bytes, 0, src_arr, 0, numpix);
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            
+
+            // run
             src_mat.put(0, 0, src_arr);
-            
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
-            
-            dst_mat.get(0, 0, dst_bytes);   
+            dst_mat.get(0, 0, dst_bytes);
         }
         else if(ip.getBitDepth() == 24)
         {
@@ -142,17 +141,16 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
             int numpix = imw * imh;
             int[] dst_ints = (int[])ip.getPixels();
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8SC3);
-            
-            // src      
+
+            // src
             int[] src_arr = new int[numpix];
             System.arraycopy(dst_ints, 0, src_arr, 0, numpix);
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            
+
+            // run
             OCV__LoadLibrary.intarray2mat(src_arr, src_mat, imw, imh);
-            
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
-            
-            OCV__LoadLibrary.mat2intarray(src_mat, dst_ints, imw, imh);
+            OCV__LoadLibrary.mat2intarray(dst_mat, dst_ints, imw, imh);
         }
         else
         {
