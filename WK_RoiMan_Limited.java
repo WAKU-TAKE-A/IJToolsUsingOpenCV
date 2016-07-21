@@ -10,8 +10,6 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 
-import ij.plugin.filter.Analyzer;
-
 /*
  * The MIT License
  *
@@ -54,7 +52,6 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     private static double max;
 
     // var.
-    private ImagePlus impSrc = null;    
     private RoiManager roiManager = null;
     private int num_roi = 0;
     private ResultsTable rt = null;    
@@ -122,10 +119,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             return DONE;
         }
         else
-        {
-            // get the image
-            impSrc = imp;
-            
+        { 
             // get the RoiManager
             Frame frame = WindowManager.getFrame("ROI Manager");        
 

@@ -1,7 +1,9 @@
 import ij.*;
+import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.process.*;
 import ij.plugin.filter.*;
+import java.awt.AWTEvent;
 import java.awt.Rectangle;
 
 /*
@@ -31,12 +33,12 @@ import java.awt.Rectangle;
 /**
  * Change the pixel values
  * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.1.0
  */
-public class WK_ChangePixelValue implements ExtendedPlugInFilter
+public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 {
     // const var.
-    private final int FLAGS = DOES_8G | DOES_16 | CONVERT_TO_FLOAT;
+    private final int FLAGS = DOES_8G | DOES_16 | CONVERT_TO_FLOAT | KEEP_PREVIEW;
     private static final int USHORT_MAX = 65535;
     private static final int UBYTE_MAX = 255;
     private static final String INNER = "inner";
@@ -51,27 +53,24 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter
     private static int valFalse = 0;
 
     // var.
-    private String nameCmd = null;
     private int valMax = 0;
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#showDialog(ij.ImagePlus, java.lang.String, ij.plugin.filter.PlugInFilterRunner)
-     */
     @Override
-    public int showDialog(ImagePlus ip, String string, PlugInFilterRunner pifr)
+    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr)
     {
-        nameCmd = string.trim();
         lower = 0 < ip.getProcessor().getMinThreshold() ? (int)(ip.getProcessor().getMinThreshold()) : lower;
         upper = 0 < ip.getProcessor().getMaxThreshold() ? (int)(ip.getProcessor().getMaxThreshold()) : upper;
         type = type == null ? INNER : type;
 
-        GenericDialog gd = new GenericDialog(nameCmd);
+        GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addNumericField("lower", lower, 0);
         gd.addNumericField("upper", upper, 0);
         gd.addChoice("range_of_true", BYNARY_TYPE, type);
         gd.addNumericField("value_of_true", valTrue, 0);
         gd.addNumericField("value_of_false", valFalse, 0);
+        gd.addPreviewCheckbox(pifr);
+        gd.addDialogListener(this);
 
         gd.showDialog();
 
@@ -81,41 +80,16 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter
         }
         else
         {
-            lower = (int)gd.getNextNumber();
-            upper = (int)gd.getNextNumber();
-
-            if(upper < lower)
-            {
-                IJ.error("ERR : upper < lower");
-                return DONE;
-            }
-
-            lower = checkValue(lower, 0, valMax);
-            upper = checkValue(upper, 0, valMax);
-
-            type = (String)BYNARY_TYPE[(int)gd.getNextChoiceIndex()];
-
-            valTrue = (int)gd.getNextNumber();
-            valFalse = (int)gd.getNextNumber();
-            valTrue = checkValue(valTrue, 0, valMax);
-            valFalse = checkValue(valFalse, 0, valMax);
-
-            return IJ.setupDialog(ip, FLAGS); // Displays a "Process all images?" dialog.
+            return IJ.setupDialog(ip, FLAGS);
         }
     }
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
-     */
     @Override
     public void setNPasses(int i)
     {
         // do nothing
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
-     */
     @Override
     public int setup(String string, ImagePlus ip)
     {
@@ -141,9 +115,6 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter
         }
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#run(ij.process.ImageProcessor)
-     */
     @Override
     public void run(ImageProcessor ip)
     {
@@ -174,6 +145,31 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter
         }
     }
 
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        lower = (int)gd.getNextNumber();
+        upper = (int)gd.getNextNumber();
+
+        if(upper < lower)
+        {
+            IJ.error("upper < lower");
+            return false;
+        }
+
+        lower = checkValue(lower, 0, valMax);
+        upper = checkValue(upper, 0, valMax);
+
+        type = (String)BYNARY_TYPE[(int)gd.getNextChoiceIndex()];
+
+        valTrue = (int)gd.getNextNumber();
+        valFalse = (int)gd.getNextNumber();
+        valTrue = checkValue(valTrue, 0, valMax);
+        valFalse = checkValue(valFalse, 0, valMax);
+        
+        return true;
+    }
+    
     private int checkValue(int src, int min, int max)
     {
         int dst = 0;

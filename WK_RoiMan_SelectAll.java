@@ -1,7 +1,6 @@
 import ij.*;
 import ij.IJ;
 import ij.gui.GenericDialog;
-import ij.plugin.Macro_Runner;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
