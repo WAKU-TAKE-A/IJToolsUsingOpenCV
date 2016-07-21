@@ -67,10 +67,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
 
-        gd.addNumericField("offset_x_of_roi", rect.x, 0);
-        gd.addNumericField("offset_y_of_roi", rect.y, 0);
-        gd.addNumericField("width_of_roi", rect.width, 0);
-        gd.addNumericField("height_of_roi", rect.height, 0);
         gd.addNumericField("min_radius", rmin, 0);
         gd.addNumericField("max_radius", rmax, 0);
         gd.addChoice("mode", STR_MODE, STR_MODE[indMode]);
@@ -110,7 +106,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         {
             impSrc = imp;
 
-            if((rect == null || (rect.x == 0 && rect.y == 0 && rect.width == 0 && rect.height == 0)) && imp.getRoi() != null)
+            if(imp.getRoi() != null)
             {
                 rect = imp.getRoi().getBounds();
             }
@@ -160,11 +156,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {
-        int x = (int)gd.getNextNumber();
-        int y = (int)gd.getNextNumber();
-        int w = (int)gd.getNextNumber();
-        int h = (int)gd.getNextNumber();
-        rect.setBounds(x, y, w, h);
         rmin = (int)gd.getNextNumber();
         rmax = (int)gd.getNextNumber();
         indMode = gd.getNextChoiceIndex();
@@ -173,9 +164,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         enDispTbl = gd.getNextBoolean();
         enOutputImg = gd.getNextBoolean();
 
-        if (x < 0 || y < 0 || w < 0 || h < 0 ||
-            rmin < 0 || rmax < 0 || rmax < rmin ||
-            minVotes < 0)
+        if (rmin < 0 || rmax < 0 || rmax < rmin || minVotes < 0)
         {
             return false;
         }
