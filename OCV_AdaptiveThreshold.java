@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
-    // const var.
+    // constant var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW;
     private static final int[] INT_ADAPTIVEMETHOD = { Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C };
     private static final String[] STR_ADAPTIVEMETHOD = { "ADAPTIVE_THRESH_MEAN_C", "ADAPTIVE_THRESH_GAUSSIAN_C" };

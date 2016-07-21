@@ -38,27 +38,18 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
     public static boolean isLoad = false;
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
-     */
     @Override
     public void setNPasses(int arg0)
     {
         // do nothing
     }
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#showDialog(ij.ImagePlus, java.lang.String, ij.plugin.filter.PlugInFilterRunner)
-     */
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
         return IJ.setupDialog(imp, NO_IMAGE_REQUIRED);
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#run(ij.process.ImageProcessor)
-     */
     @Override
     public void run(ImageProcessor arg0)
     {
@@ -81,9 +72,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         }
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
-     */
     @Override
     public int setup(String arg0, ImagePlus imp)
     {

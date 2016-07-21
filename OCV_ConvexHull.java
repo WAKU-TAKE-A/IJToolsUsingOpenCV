@@ -61,9 +61,6 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         // do nothing
     }
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#showDialog(ij.ImagePlus, java.lang.String, ij.plugin.filter.PlugInFilterRunner)
-     */
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
@@ -87,9 +84,6 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         }
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#run(ij.process.ImageProcessor)
-     */
     @Override
     public void run(ImageProcessor ip)
     {
@@ -122,9 +116,6 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         showData(pts, hull);
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
-     */
     @Override
     public int setup(String arg0, ImagePlus imp)
     {

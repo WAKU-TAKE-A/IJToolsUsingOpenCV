@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
-    // const var.
+    // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW;
     /*
      Various border types, image boundaries are denoted with '|'

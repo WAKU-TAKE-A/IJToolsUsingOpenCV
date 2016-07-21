@@ -53,18 +53,12 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
     private String name_cmd = null;
     private int nPass;
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
-     */
     @Override
     public void setNPasses(int arg0)
     {
         nPass = arg0;
     }
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#showDialog(ij.ImagePlus, java.lang.String, ij.plugin.filter.PlugInFilterRunner)
-     */
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
@@ -88,9 +82,6 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         }
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#run(ij.process.ImageProcessor)
-     */
     @Override
     public void run(ImageProcessor ip)
     {
@@ -122,9 +113,6 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         showData(rect);
     }
 
-    /*
-     * @see ij.plugin.filter.PlugInFilter#setup(java.lang.String, ij.ImagePlus)
-     */
     @Override
     public int setup(String arg0, ImagePlus imp)
     {

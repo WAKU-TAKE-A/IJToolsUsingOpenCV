@@ -41,7 +41,7 @@ import java.awt.Rectangle;
  */
 public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 {
-    // const var.
+    // constant var.
     private static final int FLAGS = DOES_8G;
     private static final int ERR_OK = 0;
     private static final int ERR_ARG = -2;

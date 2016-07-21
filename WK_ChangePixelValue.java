@@ -36,7 +36,7 @@ import java.awt.Rectangle;
  */
 public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 {
-    // const var.
+    // constant var.
     private final int FLAGS = DOES_8G | DOES_16 | CONVERT_TO_FLOAT | KEEP_PREVIEW;
     private static final int USHORT_MAX = 65535;
     private static final int UBYTE_MAX = 255;
