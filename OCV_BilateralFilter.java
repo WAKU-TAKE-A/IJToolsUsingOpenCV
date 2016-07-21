@@ -12,7 +12,7 @@ import org.opencv.imgproc.Imgproc;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * bilateralFilter (OpenCV3.1)
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

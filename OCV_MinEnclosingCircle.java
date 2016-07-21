@@ -15,7 +15,7 @@ import java.util.ArrayList;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,8 +38,7 @@ import java.util.ArrayList;
 
 /**
  * minEnclosingCircle (OpenCV3.1)
- * @author WAKU_TAKE_A
- * @version 0.9.1.0
+ * @version 0.9.2.0
  */
 public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
 {
@@ -82,7 +81,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         {
             enSetRoi = (boolean)gd.getNextBoolean();
             enRefTbl = (boolean)gd.getNextBoolean();
-            
+
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
     }
@@ -150,7 +149,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
     private void showData(double center_x, double center_y, double radius)
     {
         double diameter = (double)(radius * 2);
-        
+
         ResultsTable rt = ResultsTable.getResultsTable();
 
         if(rt == null || rt.getCounter() == 0)
@@ -163,7 +162,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
             OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
             impSrc.setRoi(roi);
         }
-        
+
         if(enRefTbl && 1 == nPass)
         {
             rt.reset();

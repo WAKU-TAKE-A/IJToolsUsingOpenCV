@@ -12,7 +12,7 @@ import org.opencv.imgproc.Imgproc;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,8 +35,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * adaptiveThreshold (OpenCV3.1)
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -120,7 +119,7 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         byte[] src_arr = new byte[numpix];
         System.arraycopy(dst_ar, 0, src_arr, 0, numpix);
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        
+
         // run
         src_mat.put(0, 0, src_arr);
         Imgproc.adaptiveThreshold(src_mat, dst_mt, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, subC);

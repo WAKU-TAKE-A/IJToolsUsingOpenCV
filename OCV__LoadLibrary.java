@@ -9,7 +9,7 @@ import org.opencv.core.Mat;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,8 +32,7 @@ import org.opencv.core.Mat;
 
 /**
  * load library
- * @author WAKU_TAKE_A
- * @version 0.9.1.0
+ * @version 0.9.2.0
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
@@ -90,7 +89,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     {
         return NO_IMAGE_REQUIRED;
     }
-    
+
     /**
      * a CV_8UC3 data of OpenCV -> a color data of ImageJ.
      * @param src_cv_8uc3 a CV_8UC3 data of OpenCV
@@ -104,7 +103,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         {
             IJ.error("Wrong image size");
         }
-        
+
         for(int y = 0; y < imh; y++)
         {
             for(int x = 0; x < imw; x++)
@@ -119,7 +118,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             }
         }
     }
-    
+
     /**
      * a color data of ImageJ -> a CV_8UC3 data of OpenCV
      * @param src_ar a color data of ImageJ (int[])
@@ -128,12 +127,12 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * @param imh height of image
      */
     public static void intarray2mat(int[] src_ar, Mat dst_cv_8uc3, int imw, int imh)
-    {       
+    {
         if((dst_cv_8uc3.width() != imw) || (dst_cv_8uc3.height() != imh) || src_ar.length != imw * imh)
         {
             IJ.error("Wrong image size");
         }
-        
+
         for(int y = 0; y < imh; y++)
         {
             for(int x = 0; x < imw; x++)

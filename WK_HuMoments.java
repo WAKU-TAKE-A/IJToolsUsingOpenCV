@@ -9,7 +9,7 @@ import java.awt.Rectangle;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,21 +32,20 @@ import java.awt.Rectangle;
 
 /**
  * calculate HuMoments within the ROI.
- * 
+ *
  * I referred to the followings.
  * https://en.wikipedia.org/wiki/Image_moment#Rotation_invariant_moments
  * \opencv-3.1.0\sources\modules\imgproc\src\moments.cpp
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
-public class WK_HuMoments implements ExtendedPlugInFilter 
-{   
+public class WK_HuMoments implements ExtendedPlugInFilter
+{
     // const var.
     private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT;
-    
+
     // static var.
     private static double[] res_ini = new double[7];
-    
+
     // var.
     private Rectangle rect = null;
 
@@ -55,8 +54,8 @@ public class WK_HuMoments implements ExtendedPlugInFilter
     {
         // do nothing
         return FLAGS;
-    }    
-    
+    }
+
     @Override
     public void setNPasses(int arg0)
     {
@@ -72,7 +71,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
             return DONE;
         }
         else
-        {            
+        {
             if(imp.getRoi() != null)
             {
                 rect = imp.getRoi().getBounds();
@@ -81,11 +80,11 @@ public class WK_HuMoments implements ExtendedPlugInFilter
             {
                 rect = new Rectangle(0, 0, imp.getWidth(), imp.getHeight());
             }
-            
+
             return FLAGS;
         }
     }
-    
+
     @Override
     public void run(ImageProcessor ip)
     {
@@ -93,10 +92,10 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         int img_width = ip.getWidth();
         int roi_w = rect.width;
         int roi_h = rect.height;
-        
+
         float[] fltArr_roi = new float[roi_w * roi_h];
         int ind = 0;
-        
+
         for(int y = rect.y ; y < rect.y + roi_h; y++)
         {
             for(int x = rect.x; x < rect.x + roi_w; x++)
@@ -105,16 +104,16 @@ public class WK_HuMoments implements ExtendedPlugInFilter
                 ind++;
             }
         }
-        
+
         moments mom = new moments();
         double[] hu = new double[9];
 
         calc_moments(fltArr_roi, mom, roi_w, roi_h);
         calc_humoments(mom, hu);
-        
+
         // hu_dbl[7] is calculated in showData().
         hu[8] = 0.5 * Math.atan(2.0 * mom.nu11/ (mom.nu20 - mom.nu02)) * 180 / Math.PI;
-        
+
         showData(hu);
     }
 
@@ -151,8 +150,8 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         public double nu21;
         public double nu12;
         public double nu03;
-    }    
-   
+    }
+
     private void calc_moments(float[] src, moments dst, int w, int h)
     {
         double M00 = 0,  M10 = 0, M01 = 0, M20 = 0, M11 = 0, M02 = 0, M30 = 0, M21 = 0, M12 = 0, M03 = 0;
@@ -162,7 +161,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         double yy = 0;
         double xxx = 0;
         double yyy = 0;
-        
+
         for(int y = 0; y < h; y++)
         {
             for(int x = 0; x < w; x++)
@@ -184,7 +183,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
                 M03 += val * 1 * yyy;
             }
         }
-        
+
         dst.M00 = M00;
         dst.M10 = M10;
         dst.M01 = M01;
@@ -195,10 +194,10 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         dst.M21 = M21;
         dst.M12 = M12;
         dst.M03 = M03;
-        
+
         double av_x = M10 / M00;
-        double av_y = M01 / M00;        
-       
+        double av_y = M01 / M00;
+
         mu00 = M00;
         mu20 = M20 - av_x * M10;
         mu11 = M11 - av_x * M01; // M11 - av_y * M10
@@ -206,8 +205,8 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         mu30 = M30 - 3 * av_x * M20 + 2 * av_x * av_x * M10;
         mu21 = M21 - 2 * av_x * M11 - av_y * M20 + 2 * av_x * av_x * M01;
         mu12 = M12 - 2 * av_y * M11 - av_x * M02 + 2 * av_y * av_y * M10;
-        mu03 = M03 - 3 * av_y * M02 + 2 * av_y * av_y * M01;        
-        
+        mu03 = M03 - 3 * av_y * M02 + 2 * av_y * av_y * M01;
+
         dst.mu00 = mu00;
         dst.mu20 = mu20;
         dst.mu11 = mu11;
@@ -215,8 +214,8 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         dst.mu30 = mu30;
         dst.mu21 = mu21;
         dst.mu12 = mu12;
-        dst.mu03 = mu03;       
-        
+        dst.mu03 = mu03;
+
         dst.nu20 = mu20 / Math.pow(mu00, ((2 + 0) / 2 + 1));
         dst.nu11 = mu11 / Math.pow(mu00, ((1 + 1) / 2 + 1));
         dst.nu02 = mu02 / Math.pow(mu00, ((0 + 2) / 2 + 1));
@@ -225,14 +224,14 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         dst.nu12 = mu12 / Math.pow(mu00, ((1 + 2) / 2 + 1));
         dst.nu03 = mu03 / Math.pow(mu00, ((0 + 3) / 2 + 1));
     }
-    
+
     private void calc_humoments(moments mom, double[] hu)
     {
         if(hu.length < 7)
         {
             return;
         }
-        
+
         double t0 = mom.nu30 + mom.nu12;
         double t1 = mom.nu21 + mom.nu03;
 
@@ -257,11 +256,11 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         hu[4] = q0 * t0 + q1 * t1;
         hu[6] = q1 * t0 - q0 * t1;
     }
-    
+
     private void showData(double[] results)
     {
         ResultsTable rt = ResultsTable.getResultsTable();
-        
+
         if (rt == null || rt.getCounter() == 0)
         {
             rt = new ResultsTable();
@@ -279,12 +278,12 @@ public class WK_HuMoments implements ExtendedPlugInFilter
             for(int i = 0; i < 7; i++)
             {
                 double res = Math.copySign(Math.log(Math.abs(results[i])), results[i]);
-                double ini = Math.copySign(Math.log(Math.abs(res_ini[i])), res_ini[i]);               
-                
-                results[7] += Math.abs(1 / res - 1 / ini);                
-            }            
+                double ini = Math.copySign(Math.log(Math.abs(res_ini[i])), res_ini[i]);
+
+                results[7] += Math.abs(1 / res - 1 / ini);
+            }
         }
-        
+
         rt.incrementCounter();
         rt.addValue("Hu0", String.format("%8e", results[0]));
         rt.addValue("Hu1", String.format("%8e", results[1]));
@@ -297,7 +296,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         rt.addValue("Rotation", String.format("%8f", results[8]));
         rt.addValue("Width", rect.width);
         rt.addValue("Height", rect.height);
-        
+
         rt.show("Results");
     }
 }

@@ -9,7 +9,7 @@ import java.awt.Frame;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,8 +32,7 @@ import java.awt.Frame;
 
 /**
  * select all ROI
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter
 {
@@ -41,16 +40,16 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     private static final int FLAGS = DOES_ALL;
     private static final String STR_NONE = "none";
     private static final String[] TYPE_STR = { STR_NONE, "and", "or", "xor" };
-    
+
     // static var.
-    private static int type_ind = 0;    
+    private static int type_ind = 0;
 
     // var.
     private RoiManager roiManager = null;
-    
+
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
-    {        
+    {
         GenericDialog gd = new GenericDialog(cmd + "...");
 
         gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
@@ -85,7 +84,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         }
         else
         {
-            Frame frame = WindowManager.getFrame("ROI Manager");        
+            Frame frame = WindowManager.getFrame("ROI Manager");
 
             if (frame==null)
             {
@@ -99,11 +98,11 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
 
             if(num_roi == 0)
             {
-                return DONE;        
+                return DONE;
             }
-            
+
             roiManager.runCommand("show none");
-        
+
             return DOES_ALL;
         }
     }
@@ -112,7 +111,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     public void run(ImageProcessor ip)
     {
         int num_roi = roiManager.getCount();
-        
+
         if(num_roi == 0)
         {
             // do nothing
@@ -125,10 +124,10 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         else
         {
             roiManager.deselect();
-            
+
             int[] indx_all = roiManager.getIndexes();
             roiManager.setSelectedIndexes(indx_all);
-            
+
             if(!TYPE_STR[type_ind].equals(STR_NONE))
             {
                 roiManager.runCommand(TYPE_STR[type_ind]);

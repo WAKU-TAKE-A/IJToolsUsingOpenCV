@@ -13,7 +13,7 @@ import java.awt.Frame;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,14 +36,13 @@ import java.awt.Frame;
 
 /**
  * limit ROI
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 {
     // const var.
     private static final int FLAGS = DOES_ALL;
-    
+
     // static var.
     private static String type = "Area";
     private static boolean enMin;
@@ -54,7 +53,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     // var.
     private RoiManager roiManager = null;
     private int num_roi = 0;
-    private ResultsTable rt = null;    
+    private ResultsTable rt = null;
     private final Macro_Runner mr = new Macro_Runner();
     private boolean useExistRes;
 
@@ -70,7 +69,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         gd.addNumericField("min_limit", min, 4);
         gd.addCheckbox("enable_max_limit", enMax);
         gd.addNumericField("max_limit", max, 4);
-        
+
         if(useExistRes)
         {
             gd.addMessage("The existing ResultsTable is used");
@@ -106,22 +105,22 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
     @Override
     public int setup(String string, ImagePlus imp)
-    {       
+    {
         if(!OCV__LoadLibrary.isLoad)
         {
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
+
         if (imp == null)
         {
             IJ.noImage();
             return DONE;
         }
         else
-        { 
+        {
             // get the RoiManager
-            Frame frame = WindowManager.getFrame("ROI Manager");        
+            Frame frame = WindowManager.getFrame("ROI Manager");
 
             if (frame==null)
             {
@@ -136,11 +135,11 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             if(num_roi == 0)
             {
                 IJ.error("ERR : ROI is vacant.");
-                return DONE;        
+                return DONE;
             }
-           
+
             roiManager.runCommand("show none");
-            
+
             // get the ResultsTable
             rt = ResultsTable.getResultsTable();
 
@@ -155,12 +154,12 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
                     rt.reset();
                 }
             }
-            
+
             rt.show("Results");
 
             // Mesure
             roiManager.deselect();
-            
+
             if(rt.getCounter() == 0)
             {
                 mr.runMacro("roiManager(\"Measure\");", "");
@@ -170,36 +169,36 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             {
                 useExistRes = true;
             }
-            
+
             return FLAGS;
         }
     }
 
     @Override
     public void run(ImageProcessor ip)
-    {      
-        // limit  
-        mr.runMacro("setBatchMode(true);", "");    
-        
+    {
+        // limit
+        mr.runMacro("setBatchMode(true);", "");
+
         int col = rt.getColumnIndex(type);
         double val;
         boolean chk_min;
         boolean chk_max;
 
         for(int i = num_roi - 1; 0 <= i; i--)
-        {             
+        {
             val = (double)rt.getValueAsDouble(col, i);
             chk_min = enMin ? min <= val : true;
-            chk_max = enMax ? val <= max : true; 
+            chk_max = enMax ? val <= max : true;
 
             if(!chk_min || !chk_max)
             {
                 roiManager.select(i);
-                roiManager.runCommand("delete");               
+                roiManager.runCommand("delete");
                 rt.deleteRow(i);
             }
         }
-        
+
         mr.runMacro("setBatchMode(false);", "");
         rt.show("Results");
     }

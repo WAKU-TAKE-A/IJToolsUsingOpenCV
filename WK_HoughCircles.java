@@ -14,7 +14,7 @@ import java.awt.Rectangle;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,7 @@ import java.awt.Rectangle;
 
 /**
  * Circle hough transform
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 {
@@ -301,7 +300,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
         return err;
     }
-    
+
     private void showHoughImg(ImagePlus imp, Rectangle rect, int rmin, int rmax, String title)
     {
         imp.setDisplayRange(Short.MIN_VALUE, Short.MAX_VALUE);
@@ -318,16 +317,16 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
         ImagePlus stk_imp = new ImagePlus(title, ims);
         stk_imp.show();
-        
+
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("run(\"Enhance Contrast\", \"saturated=0.35\");", "");
     }
 
     private void showData(short[] arr_hough_img)
     {
-        RoiManager roiManager = null;  
+        RoiManager roiManager = null;
         ResultsTable rt = null;
-      
+
         // get ROI Manager
         if(enAddRoi)
         {
@@ -357,7 +356,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
             rt.reset();
         }
-        
+
         // show
         int w = rect.width;
         int h = rect.height;
@@ -398,5 +397,4 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
             rt.show("Results");
         }
     }
-
 }

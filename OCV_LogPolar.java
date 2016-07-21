@@ -14,7 +14,7 @@ import org.opencv.imgproc.Imgproc;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,16 +37,15 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * logPolar (OpenCV3.1)
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
 {
     // const var.
-    private final int FLAGS = DOES_8G | KEEP_PREVIEW;    
+    private final int FLAGS = DOES_8G | KEEP_PREVIEW;
     private static final int[] TYPE_INT = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
     private static final String[] TYPE_STR = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "WARP_FILL_OUTLIERS", "WARP_INVERSE_MAP" };
-    
+
     // static var.
     private static Rectangle rect;
     private static int cx;
@@ -58,9 +57,9 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         rect = imp.getRoi().getBounds();
-        
+
         GenericDialog gd = new GenericDialog(command.trim() + "...");
-        
+
         gd.addMessage("Roi Width:" +  rect.getWidth() + " Height:" + rect.getHeight());
         gd.addNumericField("centerx", rect.getX() + rect.getWidth() / 2, 0);
         gd.addNumericField("centery", rect.getY() + rect.getHeight() /2, 0);
@@ -80,13 +79,13 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
     public void setNPasses(int arg0)
     {
         // do nothing
     }
-    
+
     @Override
     public int setup(String arg0, ImagePlus imp)
     {
@@ -95,7 +94,7 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
+
         if (imp == null)
         {
             IJ.noImage();
@@ -131,13 +130,13 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
         byte[] src_ar = new byte[numpix];
         System.arraycopy(dst_ar, 0, src_ar, 0, numpix);
         Mat src_mt = new Mat(imh, imw, CvType.CV_8UC1);
-        
+
         // dst_ar
         byte[] zeros = new byte[numpix];
         Arrays.fill(zeros, (byte)0);
-        System.arraycopy(zeros, 0, dst_ar, 0, numpix);        
+        System.arraycopy(zeros, 0, dst_ar, 0, numpix);
         Mat dst_mt = new Mat(imh, imw, CvType.CV_8UC1);
-        
+
         // run
         src_mt.put(0, 0, src_ar);
         Imgproc.logPolar(src_mt, dst_mt, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
@@ -151,7 +150,7 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
         cy = (int)gd.getNextNumber();
         rmax = (int)gd.getNextNumber();
         type_ind = (int)gd.getNextChoiceIndex();
-        
+
         if(0 <= cx && 0 <= cy && 0 < rmax)
         {
             return true;

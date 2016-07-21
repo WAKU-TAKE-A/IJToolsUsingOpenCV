@@ -18,7 +18,7 @@ import org.opencv.imgproc.Imgproc;
 /*
  * The MIT License
  *
- * Copyright 2016 WAKU_TAKE_A.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,8 +41,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * matchTemplate (OpenCV3.1)
- * @author WAKU_TAKE_A
- * @version 0.9.0.0
+ * @version 0.9.2.0
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
 {
@@ -50,7 +49,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private final int FLAGS = DOES_8G;
     private String[] TYPE_STR = new String[] { "TM_SQDIFF", "TM_SQDIFF_NORMED", "TM_CCORR", "TM_CCORR_NORMED", "TM_CCOEFF", "TM_CCOEFF_NORMED"};
     private int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF, Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF, Imgproc.TM_CCOEFF_NORMED };
-    
+
     // static var.
     private static int ind_src;
     private static int ind_tmp;
@@ -58,17 +57,17 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private static float thr_res = (float)0.5;
     private static boolean enResult = true;
     private static boolean enSetRoi = true;
-    
+
     // var.
     private String title_src = null;
     private ImagePlus imp_src = null;
     private ImagePlus imp_tmp = null;
     private int[] lst_wid;
     private String[] titles;
-        
+
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {        
+    {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addChoice("src", titles, titles[0]);
@@ -92,23 +91,23 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             thr_res = (float)gd.getNextNumber();
             enResult = (boolean)gd.getNextBoolean();
             enSetRoi = (boolean)gd.getNextBoolean();
-            
+
             if(ind_src == ind_tmp)
             {
                 IJ.error("ERR : cannot be the same as.");
                 return DONE;
             }
-            
+
             imp_src = WindowManager.getImage(lst_wid[ind_src]);
-            imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);                        
+            imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
             title_src = imp_src.getShortTitle();
-            
+
             if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8)
             {
                 IJ.error("ERR : only 8bit.");
-                return DONE;                
+                return DONE;
             }
-            
+
             return FLAGS;
         }
     }
@@ -127,7 +126,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
+
         if (imp == null)
         {
             IJ.noImage();
@@ -136,13 +135,13 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         else
         {
             lst_wid = WindowManager.getIDList();
-            
+
             if (lst_wid==null || lst_wid.length < 2)
             {
                 IJ.error("ERR : require at least two open images.");
                 return DONE;
             }
-            
+
             titles = new String[lst_wid.length];
 
             for (int i=0; i < lst_wid.length; i++)
@@ -164,14 +163,14 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         int imh_src = imp_src.getHeight();
         Mat mat_src = new Mat(imh_src, imw_src, CvType.CV_8UC1);
         mat_src.put(0, 0, src_arr);
-        
+
         // tmp
         byte[] tmp_arr = (byte[])imp_tmp.getChannelProcessor().getPixels();
         int imw_tmp = imp_tmp.getWidth();
         int imh_tmp = imp_tmp.getHeight();
         Mat mat_tmp = new Mat(imh_tmp, imw_tmp, CvType.CV_8UC1);
-        mat_tmp.put(0, 0, tmp_arr);        
-        
+        mat_tmp.put(0, 0, tmp_arr);
+
         // dst
         String title_dst = WindowManager.getUniqueName(title_src + "_MatchTemplate");
         int imw_dst = imw_src - imw_tmp + 1;
@@ -179,19 +178,19 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         ImagePlus imp_dst = new ImagePlus (title_dst, new FloatProcessor(imw_dst, imh_dst));
         float[] dst_arr = (float[]) imp_dst.getChannelProcessor().getPixels();
         Mat mat_dst = new Mat();
-        
-        // run       
-        Imgproc.matchTemplate(mat_src, mat_tmp, mat_dst, TYPE_VAL[ind_type]);    
+
+        // run
+        Imgproc.matchTemplate(mat_src, mat_tmp, mat_dst, TYPE_VAL[ind_type]);
         mat_dst.get(0, 0, dst_arr);
         imp_dst.show();
-        
+
         // show data
         if(enResult)
         {
             showData(dst_arr, imw_dst, imh_dst, imw_tmp, imh_tmp);
         }
     }
-    
+
     private void showData(float[] dst_arr, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)
     {
         // table
@@ -203,15 +202,15 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         float match;
         int num = 0;
         int idx_last = 0;
-        
+
         ResultsTable rt = ResultsTable.getResultsTable();
         rt.reset();
-        
+
         if(rt == null || rt.getCounter() == 0)
         {
             rt = new ResultsTable();
         }
-        
+
         for(int y = 0; y < imh_dst; y++)
         {
             for(int x = 0; x < imw_dst; x++)
@@ -224,13 +223,13 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
                     h = imh_tmp;
                     match = dst_arr[x + y * imw_dst];
                     num++;
-                    
+
                     if(enSetRoi)
                     {
                         Roi roi = new Roi(bx, by, w, h);
                         imp_src.setRoi(roi);
                     }
-                    
+
                     rt.incrementCounter();
                     rt.addValue("BX", bx);
                     rt.addValue("BY", by);
@@ -241,27 +240,27 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
                 }
             }
         }
-        
+
         // ROI Manager
         Frame frame = WindowManager.getFrame("ROI Manager");
         RoiManager roiManager;
         Roi roi;
         Macro_Runner mr = new Macro_Runner();
-        
+
         if(enSetRoi)
         {
             if (frame==null)
             {
                 IJ.run("ROI Manager...");
             }
-            
+
             frame = WindowManager.getFrame("ROI Manager");
             roiManager = (RoiManager)frame;
-            
+
             roiManager.reset();
             roiManager.runCommand("Show None");
             mr.runMacro("setBatchMode(true);", "");
-            
+
             int col_x = rt.getColumnIndex("BX");
             int col_y = rt.getColumnIndex("BY");
             int col_w = rt.getColumnIndex("Width");
@@ -282,9 +281,9 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
                 roiManager.select(idx_last);
                 roiManager.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
             }
-            
+
             mr.runMacro("setBatchMode(false);", "");
             roiManager.runCommand("Show All");
         }
-    }    
+    }
 }
