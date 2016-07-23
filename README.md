@@ -20,8 +20,8 @@ The OpenCV of the Windows version has been wrapper for Java. Using that, I creat
 
 It is described in the following site.
 
-* [How to use OpenCV from ImageJ](HowToCmpile01)
-* [How to use OpenCV from ImageJ Part2](HowToCmpile02)
+* [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01)
+* [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02)
 
 Please contact me here.
 * https://twitter.com/WAKU_TAKE_A?lang=en
