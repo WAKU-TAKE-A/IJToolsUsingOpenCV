@@ -382,7 +382,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                     {
                         double[] res_ar = res.get(i_res);
                         
-                        if(res_ar[IR] == r && res_ar[IVOTE] == vt && res_ar[IXMIN] <= x && x <= res_ar[IXMAX] && res_ar[IYMIN] <= y && y <= res_ar[IYMAX])
+                        if(res_ar[IR] == r && res_ar[IXMIN] <= x && x <= res_ar[IXMAX] && res_ar[IYMIN] <= y && y <= res_ar[IYMAX])
                         {
                             res_ar[IXSUM] += (double)x;
                             res_ar[IYSUM] += (double)y;
@@ -393,6 +393,11 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                             res_ar[IXMAX] = xave + rngSame;
                             res_ar[IYMIN] = yave - rngSame;
                             res_ar[IYMAX] = yave + rngSame;
+                            
+                            if(res_ar[IVOTE] < vt)
+                            {
+                                res_ar[IVOTE] = vt;
+                            }
                             
                             chkMatch = true;
                             break;
@@ -427,8 +432,8 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                 rt.addValue("CenterX", xave);
                 rt.addValue("CenterY", yave);
                 rt.addValue("R", r);
-                rt.addValue("Votes", vt);
-                rt.addValue("Num", n);
+                rt.addValue("MaxVotes", vt);
+                rt.addValue("NumOfSame", n);
             }
 
             if(enAddRoi && (null != roiManager))
