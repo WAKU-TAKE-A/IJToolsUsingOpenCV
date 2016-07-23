@@ -49,6 +49,15 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     private static final int ERR_MEM_ALLOC = 3;
     private static final int[] INT_MODE = { 90, 120, 180, 240, 360, 720, 1440, -1 };
     private static final String[] STR_MODE = { "90", "120", "180", "240", "360", "720", "1440", "RMAX*8" };
+    private static final int IR = 0;
+    private static final int IVOTE = 1;
+    private static final int IXMIN = 2;
+    private static final int IXMAX = 3;
+    private static final int IYMIN = 4;
+    private static final int IYMAX = 5;
+    private static final int IXSUM = 6;
+    private static final int IYSUM = 7;
+    private static final int IN = 8;
 
     // static var.
     private static Rectangle rect = null;
@@ -63,7 +72,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
     // var.
     private ImagePlus impSrc = null;
-    private ArrayList<double[]> res = new ArrayList<>(); // [0]:r, [1]:vote, [2]:xmin, [3]:xmax, [4]:ymin, [5]:ymax, [6]:xsum, [7]:ysum, [8]:n
+    private ArrayList<double[]> res = new ArrayList<>();
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
@@ -162,6 +171,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         rmax = (int)gd.getNextNumber();
         indMode = gd.getNextChoiceIndex();
         minVotes = (int)gd.getNextNumber();
+        rngSame = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
         enDispTbl = gd.getNextBoolean();
         enOutputImg = gd.getNextBoolean();
@@ -362,10 +372,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                 int y = i / w % h;
                 int r = i / w / h + rmin;
                 int vt = (int)arr_hough_img[i];
-
-                int cx = x + rect.x;
-                int cy = y + rect.y;
-                int dia = 2 * r;
                 
                 num_res = res.size();
                 boolean chkMatch = false;
@@ -374,17 +380,19 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                 {
                     for(int i_res = 0; i_res < num_res; i_res++)
                     {
-                        if(res.get(i_res)[0] == r && res.get(i_res)[1] == vt && res.get(i_res)[2] <= x && x <= res.get(i_res)[3] && res.get(i_res)[4] <= y && y <= res.get(i_res)[5])
+                        double[] res_ar = res.get(i_res);
+                        
+                        if(res_ar[IR] == r && res_ar[IVOTE] == vt && res_ar[IXMIN] <= x && x <= res_ar[IXMAX] && res_ar[IYMIN] <= y && y <= res_ar[IYMAX])
                         {
-                            res.get(i_res)[6] += (double)x;
-                            res.get(i_res)[7] += (double)y;
-                            res.get(i_res)[8] += 1;
-                            double xave = res.get(i_res)[6] / res.get(i_res)[8];
-                            double yave = res.get(i_res)[7] / res.get(i_res)[8];
-                            res.get(i_res)[2] = xave - rngSame;
-                            res.get(i_res)[3] = xave + rngSame;
-                            res.get(i_res)[4] = xave - rngSame;
-                            res.get(i_res)[5] = xave + rngSame;
+                            res_ar[IXSUM] += (double)x;
+                            res_ar[IYSUM] += (double)y;
+                            res_ar[IN] += 1;
+                            double xave = res_ar[IXSUM] / res_ar[IN];
+                            double yave = res_ar[IYSUM] / res_ar[IN];
+                            res_ar[IXMIN] = xave - rngSame;
+                            res_ar[IXMAX] = xave + rngSame;
+                            res_ar[IYMIN] = yave - rngSame;
+                            res_ar[IYMAX] = yave + rngSame;
                             
                             chkMatch = true;
                             break;
@@ -404,12 +412,14 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         
         for(int i = 0; i < num_res; i++)
         {
-            double xave = res.get(i)[6] / res.get(i)[8];
-            double yave = res.get(i)[7] / res.get(i)[8];
-            double r = res.get(i)[0];
+            double[] res_ar = res.get(i);
+            
+            double xave = res_ar[IXSUM] / res_ar[IN];
+            double yave = res_ar[IYSUM] / res_ar[IN];
+            double r = res_ar[IR];
             double dia = 2 * r;
-            int vt = (int)res.get(i)[1];
-            int n = (int)res.get(i)[8];
+            int vt = (int)res_ar[IVOTE];
+            int n = (int)res_ar[IN];
             
             if(enDispTbl && (rt != null))
             {          
