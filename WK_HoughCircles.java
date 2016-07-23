@@ -10,6 +10,7 @@ import ij.process.*;
 import java.awt.AWTEvent;
 import java.awt.Frame;
 import java.awt.Rectangle;
+import java.util.ArrayList;
 
 /*
  * The MIT License
@@ -54,13 +55,15 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     private static int rmin = 0;
     private static int rmax = 0;
     private static int indMode = 4;
-    private static int minVotes = 0;
+    private static int minVotes = 1;
+    private static double rngSame = 1;
     private static boolean enAddRoi = true;
     private static boolean enDispTbl = true;
     private static boolean enOutputImg = true;
 
     // var.
     private ImagePlus impSrc = null;
+    private ArrayList<double[]> res = new ArrayList<>(); // [0]:r, [1]:vote, [2]:xmin, [3]:xmax, [4]:ymin, [5]:ymax, [6]:xsum, [7]:ysum, [8]:n
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
@@ -71,6 +74,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("max_radius", rmax, 0);
         gd.addChoice("mode", STR_MODE, STR_MODE[indMode]);
         gd.addNumericField("min_votes", minVotes, 0);
+        gd.addNumericField("range_to_judge_same", rngSame, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
         gd.addCheckbox("enable_display_table", enDispTbl);
         gd.addCheckbox("enable_output_hough_image", enOutputImg);
@@ -127,7 +131,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         // src
         byte[] src = (byte[]) ip.getPixels();
         int imw = ip.getWidth();
-        int imh = ip.getHeight();
 
         // dst
         ImagePlus impDst = new ImagePlus ("tmp", new ShortProcessor(rect.width, rect.height * (rmax - rmin + 1)));
@@ -135,7 +138,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
         // run
         int mode = indMode == (STR_MODE.length - 1) ? rmax * 8 : INT_MODE[indMode];
-
         int err = houghCircles(src, dst, imw, rect.x, rect.y, rect.width, rect.height, rmin, rmax, mode);
 
         // fin
@@ -164,7 +166,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         enDispTbl = gd.getNextBoolean();
         enOutputImg = gd.getNextBoolean();
 
-        if (rmin < 0 || rmax < 0 || rmax < rmin || minVotes < 0)
+        if (rmin < 0 || rmax < 0 || rmax < rmin || minVotes < 0 || rngSame < 0)
         {
             return false;
         }
@@ -346,10 +348,11 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
             rt.reset();
         }
 
-        // show
+        // judge to be the same
         int w = rect.width;
         int h = rect.height;
         int numAll = arr_hough_img.length;
+        int num_res = 0;
 
         for(int i = 0; i < numAll; i++)
         {
@@ -363,21 +366,65 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                 int cx = x + rect.x;
                 int cy = y + rect.y;
                 int dia = 2 * r;
+                
+                num_res = res.size();
+                boolean chkMatch = false;
 
-                if(enDispTbl && (rt != null))
+                if(num_res != 0)
                 {
-                    rt.incrementCounter();
-                    rt.addValue("CenterX", cx);
-                    rt.addValue("CenterY", cy);
-                    rt.addValue("R", r);
-                    rt.addValue("Votes", vt);
+                    for(int i_res = 0; i_res < num_res; i_res++)
+                    {
+                        if(res.get(i_res)[0] == r && res.get(i_res)[1] == vt && res.get(i_res)[2] <= x && x <= res.get(i_res)[3] && res.get(i_res)[4] <= y && y <= res.get(i_res)[5])
+                        {
+                            res.get(i_res)[6] += (double)x;
+                            res.get(i_res)[7] += (double)y;
+                            res.get(i_res)[8] += 1;
+                            double xave = res.get(i_res)[6] / res.get(i_res)[8];
+                            double yave = res.get(i_res)[7] / res.get(i_res)[8];
+                            res.get(i_res)[2] = xave - rngSame;
+                            res.get(i_res)[3] = xave + rngSame;
+                            res.get(i_res)[4] = xave - rngSame;
+                            res.get(i_res)[5] = xave + rngSame;
+                            
+                            chkMatch = true;
+                            break;
+                        }                    
+                    }
                 }
+                
+                if(!chkMatch)
+                {
+                    res.add(new double[]{ (double)r, (double)vt, (double)(x - rngSame), (double)(x + rngSame), (double)(y - rngSame), (double)(y + rngSame), x, y, 1});
+                }
+            }
+        }
+        
+        // show
+        num_res = res.size();
+        
+        for(int i = 0; i < num_res; i++)
+        {
+            double xave = res.get(i)[6] / res.get(i)[8];
+            double yave = res.get(i)[7] / res.get(i)[8];
+            double r = res.get(i)[0];
+            double dia = 2 * r;
+            int vt = (int)res.get(i)[1];
+            int n = (int)res.get(i)[8];
+            
+            if(enDispTbl && (rt != null))
+            {          
+                rt.incrementCounter();
+                rt.addValue("CenterX", xave);
+                rt.addValue("CenterY", yave);
+                rt.addValue("R", r);
+                rt.addValue("Votes", vt);
+                rt.addValue("Num", n);
+            }
 
-                if(enAddRoi && (null != roiManager))
-                {
-                    OvalRoi roi = new OvalRoi((cx - r), (cy - r), dia, dia);
-                    roiManager.addRoi(roi);
-                }
+            if(enAddRoi && (null != roiManager))
+            {
+                OvalRoi roi = new OvalRoi((xave - r), (yave - r), dia, dia);
+                roiManager.addRoi(roi);
             }
         }
 
