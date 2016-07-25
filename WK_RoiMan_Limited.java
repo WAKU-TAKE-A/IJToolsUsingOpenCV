@@ -106,12 +106,6 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     @Override
     public int setup(String string, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
-        {
-            IJ.error("Library is not loaded.");
-            return DONE;
-        }
-
         if (imp == null)
         {
             IJ.noImage();
