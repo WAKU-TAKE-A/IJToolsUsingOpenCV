@@ -22,10 +22,10 @@ Please contact me here.
 Windows版OpenCVにはJava用のラッパーが用意されています。これを使って、OpenCVの関数を利用するプラグインを作りました。
 
 コンパイルは、ImageJの「Compile and Run」でも出来ますが、便利とは言えません。NetBeansをおすすめします。  
-以下のページ（外部リンク）で、NetBeansの設定を動画で説明します。思ったより簡単で自分でも驚きました。
+以下のページで、NetBeansの設定を動画で説明します。思ったより簡単で自分でも驚きました。
 
-* [How to use OpenCV from ImageJ](http://www.ne.jp/asahi/umi/noboru/#How_to_use_OpenCV_from_ImageJ)
-* [How to use OpenCV from ImageJ Part2](http://www.ne.jp/asahi/umi/noboru/#How_to_use_OpenCV_from_ImageJ_Part2)
+* [How to use OpenCV from ImageJ](https://waku-take-a.github.io/#How_to_use_OpenCV_from_ImageJ)
+* [How to use OpenCV from ImageJ Part2](https://waku-take-a.github.io/#How_to_use_OpenCV_from_ImageJ_Part2)
 
 使い方が分かりにくいプラグインもあります。説明は、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
 
