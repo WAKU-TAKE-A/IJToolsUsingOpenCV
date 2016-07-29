@@ -1,0 +1,227 @@
+import ij.IJ;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
+import ij.gui.Roi;
+import ij.measure.ResultsTable;
+import ij.plugin.Macro_Runner;
+import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
+import ij.process.ImageProcessor;
+import ij.process.FloatProcessor;
+import java.awt.AWTEvent;
+import java.awt.Frame;
+import java.awt.Rectangle;
+import org.opencv.core.CvType;
+import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Rect;
+
+/*
+ * The MIT License
+ *
+ * Copyright 2016 Takehito Nishida.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+
+/**
+ * grabCut (OpenCV3.1)
+ * @version 0.9.2.0
+ */
+public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+{
+    // constant var.
+    private final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW;
+    private String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK", "GC_EVAL" };
+    private int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK, Imgproc.GC_EVAL };
+
+    // static var.
+    private static int ind_src;
+    private static int ind_msk;
+    private static int ind_type = 0;
+    private static int iter = 3;
+    private static boolean enFgd = true;
+    private static boolean enPrFgd = true;       
+        
+    // var.
+    private ImagePlus imp_src = null;
+    private ImagePlus imp_msk = null;
+    private Rect rect = null;
+    private int[] lst_wnd;
+    private String[] titles_wnd;    
+
+    @Override
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
+    {
+        GenericDialog gd = new GenericDialog(command.trim() + "...");
+
+        gd.addChoice("src", titles_wnd, titles_wnd[0]);
+        gd.addChoice("mask", titles_wnd, titles_wnd[1]);
+        gd.addChoice("mode", TYPE_STR, TYPE_STR[ind_type]);
+        gd.addNumericField("iter_count", iter, 3);
+        gd.addCheckbox("enable_FGD", enFgd);
+        gd.addCheckbox("enable_PR_FGD", enPrFgd);
+        gd.addPreviewCheckbox(pfr);
+        gd.addDialogListener(this);
+        
+        gd.showDialog();
+
+        if (gd.wasCanceled())
+        {
+            return DONE;
+        }
+        else
+        {
+            return FLAGS;
+        }
+    }
+
+    @Override
+    public void setNPasses(int nPasses)
+    {
+        // do nothing
+    }
+
+    @Override
+    public int setup(String arg, ImagePlus imp)
+    {
+        if(!OCV__LoadLibrary.isLoad)
+        {
+            IJ.error("Library is not loaded.");
+            return DONE;
+        }
+
+        if (imp == null)
+        {
+            IJ.noImage();
+            return DONE;
+        }
+        else
+        {
+            // get windows
+            lst_wnd = WindowManager.getIDList();
+
+            if (lst_wnd==null || lst_wnd.length < 2)
+            {
+                IJ.error("Require at least two open images.");
+                return DONE;
+            }
+
+            titles_wnd = new String[lst_wnd.length];
+
+            for (int i=0; i < lst_wnd.length; i++)
+            {
+                ImagePlus imp2 = WindowManager.getImage(lst_wnd[i]);
+                titles_wnd[i] = imp2 != null ? imp2.getTitle() : "";
+            }
+            
+            // get ROI
+            Rectangle rect_java;
+
+            if(imp.getRoi() != null)
+            {
+                rect_java = imp.getRoi().getBounds();
+            }
+            else
+            {
+                rect_java = new Rectangle(1, 1, imp.getWidth() - 2, imp.getHeight() - 2);
+            }
+            
+            rect = new Rect(rect_java.x , rect_java.y, rect_java.width, rect_java.height);
+
+            return FLAGS;
+        }
+    }
+
+    @Override
+    public void run(ImageProcessor ip)
+    {
+        // src (RGB)
+        int[] src_arr = (int[])imp_src.getChannelProcessor().getPixels();
+        int imw_src = imp_src.getWidth();
+        int imh_src = imp_src.getHeight();
+        Mat mat_src = new Mat(imh_src, imw_src, CvType.CV_8UC3);
+        OCV__LoadLibrary.intarray2mat(src_arr, mat_src, imw_src, imh_src); // deep copy
+
+        // tmp (Gray)
+        byte[] msk_arr = (byte[])imp_msk.getChannelProcessor().getPixels();
+        int imw_msk = imp_msk.getWidth();
+        int imh_msk = imp_msk.getHeight();        
+
+        // output
+        Mat mat_msk = new Mat(imh_msk, imw_msk, CvType.CV_8UC1);
+        Mat bgdModel = new Mat();
+        Mat fgdModel = new Mat();
+        
+        // run
+        mat_msk.put(0, 0, msk_arr);
+        Imgproc.grabCut(mat_src, mat_msk, rect, bgdModel, fgdModel, iter, TYPE_VAL[ind_type]);
+        mat_msk.get(0, 0, msk_arr);        
+        
+        if(enFgd || enPrFgd)
+        {
+            int numpix = imw_msk * imh_msk;
+            
+            for(int i = 0; i < numpix; i++)
+            {
+                if(msk_arr[i] == 1 || msk_arr[i] == 3)
+                {
+                    msk_arr[i] = (byte)255;
+                }
+            }
+        }
+        
+        imp_msk.repaintWindow();        
+    }
+
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        ind_src = (int)gd.getNextChoiceIndex();
+        ind_msk = (int)gd.getNextChoiceIndex();
+        ind_type = (int)gd.getNextChoiceIndex();
+        enFgd = (boolean)gd.getNextBoolean();
+        enPrFgd = (boolean)gd.getNextBoolean();      
+        
+        if(ind_src == ind_msk)
+        {
+            IJ.error("Cannot be the same as.");
+            return false;
+        }
+
+        imp_src = WindowManager.getImage(lst_wnd[ind_src]);
+        imp_msk = WindowManager.getImage(lst_wnd[ind_msk]);
+
+        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8)
+        {
+            IJ.error("Src is only RGB color. Mask is only 8bit.");
+            return false;
+        }
+        
+        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getWidth() != imp_msk.getHeight())
+        {
+            IJ.error("Size of src is not same as size of mask.");
+            return false;
+        }
+        
+        return true;
+    }
+}

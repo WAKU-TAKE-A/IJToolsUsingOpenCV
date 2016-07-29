@@ -5,6 +5,7 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -50,7 +51,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
      * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg
      * BORDER_CONSTANT:      iiiiii|abcdefgh|iiiiiii  with some specified 'i'
      */
-    private static final int[] INT_BORDERTYPE = { 1, 2, 4, 3, 0 };
+    private static final int[] INT_BORDERTYPE = { Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT_101, Core.BORDER_WRAP, Core.BORDER_CONSTANT };
     private static final String[] STR_BORDERTYPE = { "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT_101", "BORDER_WRAP", "BORDER_CONSTANT" };
 
     // staic var.
@@ -63,7 +64,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-
+        
         gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
         gd.addNumericField("diameter", diameter, 0);
         gd.addNumericField("sigma_color", sigmaColor, 3);
@@ -139,7 +140,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
             int imh = ip.getHeight();
             int numpix = imw * imh;
             int[] dst_ints = (int[])ip.getPixels();
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8SC3);
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
 
             // src
             int[] src_arr = new int[numpix];
