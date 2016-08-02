@@ -1,8 +1,8 @@
 # IJToolsUsingOpenCV
-[日本語のメッセージ - >](#メッセージ)  
-[English messages - >](#Message) 
+[日本語のメッセージ - >](#ja)  
+[English messages - >](#eng)  
 
-##メッセージ
+## <a name="ja">メッセージ
 
 Windows版OpenCVにはJava用のラッパーが用意されています。これを使って、OpenCVの関数を利用するプラグインを作りました。
 
@@ -18,7 +18,7 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 * https://twitter.com/WAKU_TAKE_A?lang=ja
 * 電子メール
 
-##Message
+## <a name="eng">Message
 
 The OpenCV of the Windows version has been wrapper for Java. Using that, I created plugin.
 
