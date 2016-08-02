@@ -9,10 +9,10 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 コンパイルは、ImageJの「Compile and Run」でも出来ますが、便利とは言えません。NetBeansをおすすめします。  
 以下のページで、NetBeansの設定を動画で説明します。思ったより簡単で自分でも驚きました。
 
-* [How to use OpenCV from ImageJ](https://waku-take-a.github.io/#How_to_use_OpenCV_from_ImageJ)
-* [How to use OpenCV from ImageJ Part2](https://waku-take-a.github.io/#How_to_use_OpenCV_from_ImageJ_Part2)
+* [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01_ja)
+* [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02_ja)
 
-使い方が分かりにくいプラグインもあります。説明は、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
+プラグインの説明などは、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
 
 疑問・不具合などありましたら、以下に連絡をお願いします。
 * https://twitter.com/WAKU_TAKE_A?lang=ja
@@ -24,8 +24,8 @@ The OpenCV of the Windows version has been wrapper for Java. Using that, I creat
 
 It is described in the following site. I think very easy way.
 
-* [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01)
-* [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02)
+* [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01_en)
+* [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02_en)
 
 [Here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki) is brief descriptions of my plugins.
 
