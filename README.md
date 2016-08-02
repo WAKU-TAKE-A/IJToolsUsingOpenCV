@@ -1,6 +1,6 @@
 # IJToolsUsingOpenCV
-[日本語のメッセージ - >](#メッセージ)
-[English messages - >](#Message)  
+[日本語のメッセージ - >](#メッセージ)  
+[English messages - >](#Message) 
 
 ## メッセージ
 
