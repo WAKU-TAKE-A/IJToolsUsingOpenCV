@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * boundingRect (OpenCV3.1)
- * @version 0.9.2.0
+ * @version 0.9.3.0
  */
 public class OCV_BoundingRect implements ExtendedPlugInFilter
 {

@@ -32,7 +32,7 @@ import org.opencv.core.Mat;
 
 /**
  * load library
- * @version 0.9.2.0
+ * @version 0.9.3.0
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {

@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * bilateralFilter (OpenCV3.1)
- * @version 0.9.2.0
+ * @version 0.9.3.0
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -116,22 +116,19 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     {
         if(ip.getBitDepth() == 8)
         {
-            // dst
+            // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
-            int numpix = imw * imh;
-            byte[] dst_bytes = (byte[])ip.getPixels();
+            byte[] srcdst_bytes = (byte[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
-            // src
-            byte[] src_arr = new byte[numpix];
-            System.arraycopy(dst_bytes, 0, src_arr, 0, numpix);
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
+            
             // run
-            src_mat.put(0, 0, src_arr);
+            src_mat.put(0, 0, srcdst_bytes);
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, dst_bytes);
+            dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 24)
         {

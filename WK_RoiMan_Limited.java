@@ -36,7 +36,7 @@ import java.awt.Frame;
 
 /**
  * limit ROI
- * @version 0.9.2.0
+ * @version 0.9.3.0
  */
 public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 {

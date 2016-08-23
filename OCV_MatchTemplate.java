@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * matchTemplate (OpenCV3.1)
- * @version 0.9.2.0
+ * @version 0.9.3.0
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
 {

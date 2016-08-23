@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * adaptiveThreshold (OpenCV3.1)
- * @version 0.9.2.0
+ * @version 0.9.3.0
  */
 public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -109,21 +109,18 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
-        int numpix = imw * imh;
 
-        // dst
-        byte[] dst_ar = (byte[])ip.getPixels();
+        // srcdst
+        byte[] srcdst_ar = (byte[])ip.getPixels();        
+
+        // mat
+        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
         Mat dst_mt = new Mat(imh, imw, CvType.CV_8UC1);
 
-        // src
-        byte[] src_arr = new byte[numpix];
-        System.arraycopy(dst_ar, 0, src_arr, 0, numpix);
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
         // run
-        src_mat.put(0, 0, src_arr);
+        src_mat.put(0, 0, srcdst_ar);
         Imgproc.adaptiveThreshold(src_mat, dst_mt, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, subC);
-        dst_mt.get(0, 0, dst_ar);
+        dst_mt.get(0, 0, srcdst_ar);
     }
 
     @Override
