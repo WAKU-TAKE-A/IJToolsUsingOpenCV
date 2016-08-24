@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * matchTemplate (OpenCV3.1)
- * @version 0.9.3.0
+ * @version 0.9.4.0
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
 {
@@ -193,7 +193,6 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private void showData(float[] dst_arr, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)
     {
         // table
-        int numpix = imw_dst * imh_dst;
         int bx;
         int by;
         int w;

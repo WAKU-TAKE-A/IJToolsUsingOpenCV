@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * bilateralFilter (OpenCV3.1)
- * @version 0.9.3.0
+ * @version 0.9.4.0
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -135,19 +135,16 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
             // dst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
-            int numpix = imw * imh;
-            int[] dst_ints = (int[])ip.getPixels();
+            int[] srcdst_ints = (int[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-
-            // src
-            int[] src_arr = new int[numpix];
-            System.arraycopy(dst_ints, 0, src_arr, 0, numpix);
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-
+         
             // run
-            OCV__LoadLibrary.intarray2mat(src_arr, src_mat, imw, imh);
+            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
-            OCV__LoadLibrary.mat2intarray(dst_mat, dst_ints, imw, imh);
+            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
         }
         else
         {

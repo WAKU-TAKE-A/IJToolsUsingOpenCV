@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * convexHull (OpenCV3.1)
- * @version 0.9.3.0
+ * @version 0.9.4.0
  */
 public class OCV_ConvexHull implements ExtendedPlugInFilter
 {
@@ -132,7 +132,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         }
         else
         {
-            this.impSrc = imp;
+            impSrc = imp;
             return DOES_8G;
         }
     }

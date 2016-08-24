@@ -38,7 +38,7 @@ import java.util.ArrayList;
 
 /**
  * Circle hough transform
- * @version 0.9.3.0
+ * @version 0.9.4.0
  */
 public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 {
@@ -161,7 +161,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
             showHoughImg(impDst, rect, rmin, rmax, impSrc.getShortTitle() + "_HoughImage");
         }
 
-        this.showData(dst);
+        showData(dst);
     }
 
     @Override

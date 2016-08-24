@@ -37,7 +37,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * logPolar (OpenCV3.1)
- * @version 0.9.3.0
+ * @version 0.9.4.0
  */
 public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
 {
@@ -123,7 +123,6 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
         // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
-        int numpix = imw * imh;
         byte[] srcdst_ar = (byte[])ip.getPixels();
         
         // mat
