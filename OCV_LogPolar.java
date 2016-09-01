@@ -126,13 +126,13 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
         byte[] srcdst_ar = (byte[])ip.getPixels();
         
         // mat
-        Mat src_mt = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mt = new Mat(imh, imw, CvType.CV_8UC1);      
+        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);      
 
         // run
-        src_mt.put(0, 0, srcdst_ar);
-        Imgproc.logPolar(src_mt, dst_mt, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
-         dst_mt.get(0, 0, srcdst_ar);
+        src_mat.put(0, 0, srcdst_ar);
+        Imgproc.logPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
+         dst_mat.get(0, 0, srcdst_ar);
     }
 
     @Override

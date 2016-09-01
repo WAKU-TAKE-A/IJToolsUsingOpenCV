@@ -115,12 +115,12 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
 
         // mat
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mt = new Mat(imh, imw, CvType.CV_8UC1);
+        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
 
         // run
         src_mat.put(0, 0, srcdst_ar);
-        Imgproc.adaptiveThreshold(src_mat, dst_mt, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, subC);
-        dst_mt.get(0, 0, srcdst_ar);
+        Imgproc.adaptiveThreshold(src_mat, dst_mat, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, subC);
+        dst_mat.get(0, 0, srcdst_ar);
     }
 
     @Override

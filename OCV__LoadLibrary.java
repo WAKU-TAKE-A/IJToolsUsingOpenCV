@@ -126,9 +126,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             for(int x = 0; x < imw; x++)
             {
                 int ind = x + imw * y;
-                byte b = (byte)(src_ar[ind] & 0x0000ff);
-                byte g = (byte)((src_ar[ind] >> 8) & 0x0000ff);
-                byte r = (byte)((src_ar[ind] >> 16) & 0x0000ff);
+                byte b = (byte)(src_ar[ind] & 0xff);
+                byte g = (byte)((src_ar[ind] >> 8) & 0xff);
+                byte r = (byte)((src_ar[ind] >> 16) & 0xff);
                 dst_cv_8uc3.put(y, x, new byte[] { b, g, r });
             }
         }
