@@ -20,7 +20,7 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 
 ## <a name="eng">Message
 
-The OpenCV of the Windows version has been wrapper for Java. Using that, I created plugin.
+The OpenCV of the windows version has been wrapper for Java. Using that, I created plugin.
 
 It is described in the following site. I think very easy way.
 
