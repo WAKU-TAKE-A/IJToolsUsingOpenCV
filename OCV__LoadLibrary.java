@@ -47,7 +47,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        return IJ.setupDialog(imp, NO_IMAGE_REQUIRED);
+        return NO_IMAGE_REQUIRED;
     }
 
     @Override
