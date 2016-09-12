@@ -37,7 +37,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * linearPolar (OpenCV3.1)
- * @version 0.9.5.0
+ * @version 0.9.6.0
  */
 public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
 {

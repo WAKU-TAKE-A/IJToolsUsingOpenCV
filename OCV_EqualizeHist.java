@@ -32,7 +32,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * equalizeHist (OpenCV3.1)
- * @version 0.9.5.0
+ * @version 0.9.6.0
  */
 public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter
 {

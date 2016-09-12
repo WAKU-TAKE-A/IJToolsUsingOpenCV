@@ -38,7 +38,7 @@ import java.awt.Frame;
 
 /**
  * houghLines (OpenCV3.1)
- * @version 0.9.5.0
+ * @version 0.9.6.0
  */
 public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
 {

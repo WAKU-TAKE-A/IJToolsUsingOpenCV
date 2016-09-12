@@ -35,17 +35,19 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * Cany (OpenCV3.1)
- * @version 0.9.5.0
+ * @version 0.9.6.0
  */
 public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW;
+    private final String[] SIZE_STR = new String[] { "1", "3", "5", "7"};
+    private final int[] SIZE_VAL = new int[] { 1, 3, 5, 7 }; 
 
     // staic var.
     private static double thr1  = 0; // first threshold for the hysteresis procedure.
     private static double thr2  = 0; // second threshold for the hysteresis procedure.
-    private static int aperture = 3; // aperture size for the Sobel operator. 
+    private static int ind_size = 1; // aperture size for the Sobel operator. 
     private static boolean l2grad = false; // L2gradient;
 
     @Override
@@ -55,7 +57,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         
         gd.addNumericField("threshold1", thr1, 4);
         gd.addNumericField("threshold2", thr2, 4);
-        gd.addNumericField("apertureSize", aperture, 0);
+        gd.addChoice("apertureSize", SIZE_STR, SIZE_STR[ind_size]);
         gd.addCheckbox("L2gradient", l2grad);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -112,7 +114,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         // run
         src_mat.put(0, 0, srcdst_bytes);
-        Imgproc.Canny(src_mat, dst_mat, thr1, thr2, aperture, l2grad);
+        Imgproc.Canny(src_mat, dst_mat, thr1, thr2, SIZE_VAL[ind_size], l2grad);
         dst_mat.get(0, 0, srcdst_bytes);
     }
 
@@ -122,10 +124,10 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         thr1 = (double)gd.getNextNumber();
         thr2 = (double)gd.getNextNumber();
-        aperture = (int)gd.getNextNumber();
+        ind_size = (int)gd.getNextChoiceIndex();
         l2grad = (boolean)gd.getNextBoolean();
 
-        if(0 <= thr1 && 0 <= thr2 && 0 < aperture)
+        if(0 <= thr1 && 0 <= thr2)
         {
             return true;
         }

@@ -36,7 +36,7 @@ import java.awt.Rectangle;
  * I referred to the followings.
  * https://en.wikipedia.org/wiki/Image_moment#Rotation_invariant_moments
  * \opencv-3.1.0\sources\modules\imgproc\src\moments.cpp
- * @version 0.9.5.0
+ * @version 0.9.6.0
  */
 public class WK_HuMoments implements ExtendedPlugInFilter
 {
