@@ -7,15 +7,15 @@
 Windows版OpenCVにはJava用のラッパーが用意されています。これを使って、OpenCVの関数を利用するプラグインを作りました。
 
 コンパイルは、ImageJの「Compile and Run」でも出来ますが、便利とは言えません。NetBeansをおすすめします。  
-以下のページで、NetBeansの設定を動画で説明します。思ったより簡単で自分でも驚きました。
+以下のページで、NetBeansの設定を説明します。思ったより簡単で自分でも驚きました。
 
 * [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01_ja)
 * [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02_ja)
 
-プラグインの説明などは、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
+プラグインの説明なども、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
 
 疑問・不具合などありましたら、以下に連絡をお願いします。
-* https://twitter.com/WAKU_TAKE_A?lang=ja
+* [ツイッター](https://twitter.com/WAKU_TAKE_A?lang=ja)
 * 電子メール
 
 ## <a name="eng">Message
@@ -30,5 +30,6 @@ It is described in the following site. I think very easy way.
 [Here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/Home_en) is brief descriptions of my plugins.
 
 Please contact me here.
-* https://twitter.com/WAKU_TAKE_A?lang=en
+
+* [Twitter](https://twitter.com/WAKU_TAKE_A?lang=en)
 * E-mail
