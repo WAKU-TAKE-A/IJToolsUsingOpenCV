@@ -1,6 +1,7 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
+import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
@@ -9,6 +10,7 @@ import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import ij.process.FloatProcessor;
+import java.awt.AWTEvent;
 import java.awt.Frame;
 import java.util.ArrayList;
 import org.opencv.core.CvType;
@@ -43,7 +45,7 @@ import org.opencv.imgproc.Imgproc;
  * matchTemplate (OpenCV3.1)
  * @version 0.9.6.0
  */
-public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
+public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private final int FLAGS = DOES_8G;
@@ -57,7 +59,6 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private static float thr_res = (float)0.5;
     private static float rngSame = 0;
     private static boolean enResult = true;
-    private static boolean enSetRoi = true;
 
     // var.
     private String title_src = null;
@@ -78,7 +79,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         gd.addNumericField("threshold_of_results", thr_res, 4);
         gd.addNumericField("range_to_judge_same", rngSame, 4);
         gd.addCheckbox("enable_results_table", enResult);
-        gd.addCheckbox("__enable_set_roi", enSetRoi);
+        gd.addDialogListener(this);
 
         gd.showDialog();
 
@@ -88,30 +89,6 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         }
         else
         {
-            ind_src = (int)gd.getNextChoiceIndex();
-            ind_tmp = (int)gd.getNextChoiceIndex();
-            ind_type = (int)gd.getNextChoiceIndex();
-            thr_res = (float)gd.getNextNumber();
-            rngSame = (float)gd.getNextNumber();
-            enResult = (boolean)gd.getNextBoolean();
-            enSetRoi = (boolean)gd.getNextBoolean();
-
-            if(ind_src == ind_tmp)
-            {
-                IJ.error("ERR : cannot be the same as.");
-                return DONE;
-            }
-
-            imp_src = WindowManager.getImage(lst_wid[ind_src]);
-            imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
-            title_src = imp_src.getShortTitle();
-
-            if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8)
-            {
-                IJ.error("ERR : only 8bit.");
-                return DONE;
-            }
-
             return FLAGS;
         }
     }
@@ -195,6 +172,40 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         }
     }
 
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        ind_src = (int)gd.getNextChoiceIndex();
+        ind_tmp = (int)gd.getNextChoiceIndex();
+        ind_type = (int)gd.getNextChoiceIndex();
+        thr_res = (float)gd.getNextNumber();
+        rngSame = (float)gd.getNextNumber();
+        enResult = (boolean)gd.getNextBoolean();
+       
+        if(rngSame < 0)
+        {
+            return false;
+        }
+        
+        if(ind_src == ind_tmp)
+        {
+            IJ.error("ERR : cannot be the same as.");
+            return false;
+        }
+
+        imp_src = WindowManager.getImage(lst_wid[ind_src]);
+        imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
+        title_src = imp_src.getShortTitle();
+
+        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8)
+        {
+            IJ.error("ERR : only 8bit.");
+            return false;
+        }
+        
+        return true;
+    }
+    
     private void showData(float[] dst_arr, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)
     {
         // table
@@ -206,12 +217,32 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             rt = new ResultsTable();
         }
         
+        // ROI Manager
+        Frame frame = WindowManager.getFrame("ROI Manager");
+        RoiManager roiManager;
+        Macro_Runner mr = new Macro_Runner();
+        
+        if (frame==null)
+        {
+            IJ.run("ROI Manager...");
+        }
+
+        frame = WindowManager.getFrame("ROI Manager");
+        roiManager = (RoiManager)frame;
+
+        roiManager.reset();
+        roiManager.runCommand("Show None");
+        mr.runMacro("setBatchMode(true);", "");
+        
+        // show
         float bx;
         float by;
         float w;
         float h;
         float match;
         int num_match;
+        Roi roi;
+        int idx_last = 0;
 
         for(int y = 0; y < imh_dst; y++)
         {
@@ -234,11 +265,15 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             h = res.get(i)[3];
             match = res.get(i)[4];
             
-            if(enSetRoi)
-            {
-                Roi roi = new Roi(bx, by, w, h);
-                imp_src.setRoi(roi);
-            }
+            // set roi
+            roi = new Roi(bx, by, w, h);
+            imp_src.setRoi(roi);
+            
+            // RoiManager
+            roiManager.addRoi(roi);
+            idx_last = roiManager.getCount() - 1;
+            roiManager.select(idx_last);
+            roiManager.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
             
             rt.incrementCounter();
             rt.addValue("BX", bx);
@@ -248,46 +283,8 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             rt.addValue("Match", match);
             rt.show("Results");            
         }
-
-        // ROI Manager
-        Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager;
-        Roi roi;
-        Macro_Runner mr = new Macro_Runner();
-
-        if(enSetRoi)
-        {
-            if (frame==null)
-            {
-                IJ.run("ROI Manager...");
-            }
-
-            frame = WindowManager.getFrame("ROI Manager");
-            roiManager = (RoiManager)frame;
-
-            roiManager.reset();
-            roiManager.runCommand("Show None");
-            mr.runMacro("setBatchMode(true);", "");
-            
-            int idx_last = 0;
-
-            for(int i = 0; i < num_match; i++)
-            {
-                bx = res.get(i)[0];
-                by = res.get(i)[1];
-                w = res.get(i)[2];
-                h = res.get(i)[3];
-                match = res.get(i)[4];
-
-                roi = new Roi(bx, by, w, h);
-                roiManager.addRoi(roi);
-                idx_last = roiManager.getCount() - 1;
-                roiManager.select(idx_last);
-                roiManager.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
-            }
-
-            mr.runMacro("setBatchMode(false);", "");
-            roiManager.runCommand("Show All");
-        }
+        
+        mr.runMacro("setBatchMode(false);", "");
+        roiManager.runCommand("Show All");
     }
 }
