@@ -10,6 +10,7 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import ij.process.FloatProcessor;
 import java.awt.Frame;
+import java.util.ArrayList;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -54,6 +55,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private static int ind_tmp;
     private static int ind_type = 3;
     private static float thr_res = (float)0.5;
+    private static float rngSame = 0;
     private static boolean enResult = true;
     private static boolean enSetRoi = true;
 
@@ -63,6 +65,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private ImagePlus imp_tmp = null;
     private int[] lst_wid;
     private String[] titles;
+    private ArrayList<float[]> res = new ArrayList<>();
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
@@ -72,7 +75,8 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         gd.addChoice("src", titles, titles[0]);
         gd.addChoice("template", titles, titles[1]);
         gd.addChoice("method", TYPE_STR, TYPE_STR[ind_type]);
-        gd.addNumericField("threshold_of_results", thr_res, 3);
+        gd.addNumericField("threshold_of_results", thr_res, 4);
+        gd.addNumericField("range_to_judge_same", rngSame, 4);
         gd.addCheckbox("enable_results_table", enResult);
         gd.addCheckbox("__enable_set_roi", enSetRoi);
 
@@ -88,6 +92,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             ind_tmp = (int)gd.getNextChoiceIndex();
             ind_type = (int)gd.getNextChoiceIndex();
             thr_res = (float)gd.getNextNumber();
+            rngSame = (float)gd.getNextNumber();
             enResult = (boolean)gd.getNextBoolean();
             enSetRoi = (boolean)gd.getNextBoolean();
 
@@ -193,14 +198,6 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
     private void showData(float[] dst_arr, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)
     {
         // table
-        int bx;
-        int by;
-        int w;
-        int h;
-        float match;
-        int num = 0;
-        int idx_last = 0;
-
         ResultsTable rt = ResultsTable.getResultsTable();
         rt.reset();
 
@@ -208,6 +205,13 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
         {
             rt = new ResultsTable();
         }
+        
+        float bx;
+        float by;
+        float w;
+        float h;
+        float match;
+        int num_match;
 
         for(int y = 0; y < imh_dst; y++)
         {
@@ -215,28 +219,34 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             {
                 if(thr_res <= dst_arr[x + y * imw_dst])
                 {
-                    bx = x;
-                    by = y;
-                    w = imw_tmp;
-                    h = imh_tmp;
-                    match = dst_arr[x + y * imw_dst];
-                    num++;
-
-                    if(enSetRoi)
-                    {
-                        Roi roi = new Roi(bx, by, w, h);
-                        imp_src.setRoi(roi);
-                    }
-
-                    rt.incrementCounter();
-                    rt.addValue("BX", bx);
-                    rt.addValue("BY", by);
-                    rt.addValue("Width", w);
-                    rt.addValue("Height", h);
-                    rt.addValue("Match", match);
-                    rt.show("Results");
+                    res.add(new float[] { (float)x, (float)y, (float)imw_tmp, (float)imh_tmp, dst_arr[x + y * imw_dst], 1});
                 }
             }
+        }
+        
+        num_match = res.size();
+        
+        for(int i = 0; i < num_match; i++)
+        {
+            bx = res.get(i)[0];
+            by = res.get(i)[1];
+            w = res.get(i)[2];
+            h = res.get(i)[3];
+            match = res.get(i)[4];
+            
+            if(enSetRoi)
+            {
+                Roi roi = new Roi(bx, by, w, h);
+                imp_src.setRoi(roi);
+            }
+            
+            rt.incrementCounter();
+            rt.addValue("BX", bx);
+            rt.addValue("BY", by);
+            rt.addValue("Width", w);
+            rt.addValue("Height", h);
+            rt.addValue("Match", match);
+            rt.show("Results");            
         }
 
         // ROI Manager
@@ -258,20 +268,16 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter
             roiManager.reset();
             roiManager.runCommand("Show None");
             mr.runMacro("setBatchMode(true);", "");
+            
+            int idx_last = 0;
 
-            int col_x = rt.getColumnIndex("BX");
-            int col_y = rt.getColumnIndex("BY");
-            int col_w = rt.getColumnIndex("Width");
-            int col_h = rt.getColumnIndex("Height");
-            int col_match = rt.getColumnIndex("Match");
-
-            for(int i = 0; i < num; i++)
+            for(int i = 0; i < num_match; i++)
             {
-                bx = (int)(rt.getValueAsDouble(col_x, i));
-                by = (int)(rt.getValueAsDouble(col_y, i));
-                w = (int)(rt.getValueAsDouble(col_w, i));
-                h = (int)(rt.getValueAsDouble(col_h, i));
-                match = (float)(rt.getValueAsDouble(col_match, i));
+                bx = res.get(i)[0];
+                by = res.get(i)[1];
+                w = res.get(i)[2];
+                h = res.get(i)[3];
+                match = res.get(i)[4];
 
                 roi = new Roi(bx, by, w, h);
                 roiManager.addRoi(roi);

@@ -58,11 +58,11 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
 
-        gd.addNumericField("max_value", maxValue, 3);
+        gd.addNumericField("max_value", maxValue, 4);
         gd.addChoice("adaptive_method", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indMethod]);
         gd.addChoice("threshold_type", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
         gd.addNumericField("block_size", blockSize, 0);
-        gd.addNumericField("number_to_be_subtracted", subC, 3);
+        gd.addNumericField("number_to_be_subtracted", subC, 4);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
