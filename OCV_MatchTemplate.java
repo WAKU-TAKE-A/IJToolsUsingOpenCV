@@ -11,8 +11,6 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import ij.process.FloatProcessor;
 import java.awt.AWTEvent;
-import java.awt.Frame;
-import java.awt.Point;
 import java.util.ArrayList;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -50,8 +48,8 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
 {
     // constant var.
     private final int FLAGS = DOES_8G;
-    private String[] TYPE_STR = new String[] { "TM_SQDIFF", "TM_SQDIFF_NORMED", "TM_CCORR", "TM_CCORR_NORMED", "TM_CCOEFF", "TM_CCOEFF_NORMED"};
-    private int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF, Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF, Imgproc.TM_CCOEFF_NORMED };
+    private final String[] TYPE_STR = new String[] { "TM_SQDIFF", "TM_SQDIFF_NORMED", "TM_CCORR", "TM_CCORR_NORMED", "TM_CCOEFF", "TM_CCOEFF_NORMED"};
+    private final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF, Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF, Imgproc.TM_CCOEFF_NORMED };
 
     // static var.
     private static int ind_src;
@@ -164,6 +162,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         Imgproc.matchTemplate(mat_src, mat_tmp, mat_dst, TYPE_VAL[ind_type]);
         mat_dst.get(0, 0, arr_dst);
         imp_dst.show();
+        IJ.run(imp_dst, "Enhance Contrast", "saturated=0.35");
 
         // show data
         if(enResult)
@@ -221,33 +220,16 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     
     private void showData(float[] arr_dst, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)
     {
-        // prepare the table
-        ResultsTable rt = ResultsTable.getResultsTable();
-        rt.reset();
-
-        if(rt == null || rt.getCounter() == 0)
-        {
-            rt = new ResultsTable();
-        }
+        // prepare the ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
         
         // prepare the ROI Manager
-        Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager;
-        Macro_Runner mr = new Macro_Runner();
-        
-        if (frame==null)
-        {
-            IJ.run("ROI Manager...");
-        }
-
-        frame = WindowManager.getFrame("ROI Manager");
-        roiManager = (RoiManager)frame;
-        roiManager.reset();
-        roiManager.runCommand("Show None");        
+        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         
         // show
+        Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
-        ArrayList<float[]> res = new ArrayList<>();
+        ArrayList<float[]> res = new ArrayList();
         
         for(int y = 0; y < imh_dst; y++)
         {
@@ -273,10 +255,10 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             imp_src.setRoi(roi);
             
             // RoiManager
-            roiManager.addRoi(roi);
-            int idx_last = roiManager.getCount() - 1;
-            roiManager.select(idx_last);
-            roiManager.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
+            roiMan.addRoi(roi);
+            int idx_last = roiMan.getCount() - 1;
+            roiMan.select(idx_last);
+            roiMan.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
             
             rt.incrementCounter();
             rt.addValue("BX", bx);
@@ -288,7 +270,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         }
         
         mr.runMacro("setBatchMode(false);", "");
-        roiManager.runCommand("Show All");
+        roiMan.runCommand("Show All");
     }
     
     private void showData_enSearchMaxPoint(ImagePlus imp_dst, float thr, int imw_tmp, int imh_tmp)
@@ -308,7 +290,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         int col_y = rt.getColumnIndex("BY");
         int col_w = rt.getColumnIndex("Width");
         int col_h = rt.getColumnIndex("Height");
-        ArrayList<float[]> arr_point_max = new ArrayList<float[]>();
+        ArrayList<float[]> arr_point_max = new ArrayList();
         
         for(int i = 0; i < rt.size(); i++)
         {
@@ -345,21 +327,10 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         rt.reset();
         
         // prepare ROI Manager
-        Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager;
-        Macro_Runner mr = new Macro_Runner();
-        
-        if (frame==null)
-        {
-            IJ.run("ROI Manager...");
-        }
-
-        frame = WindowManager.getFrame("ROI Manager");
-        roiManager = (RoiManager)frame;        
-        roiManager.reset();
-        roiManager.runCommand("Show None");
+        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         
         // show
+        Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
         int num_match = arr_point_max.size();
         
@@ -374,10 +345,10 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             imp_src.setRoi(roi);
             
             // RoiManager
-            roiManager.addRoi(roi);
-            int idx_last = roiManager.getCount() - 1;
-            roiManager.select(idx_last);
-            roiManager.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
+            roiMan.addRoi(roi);
+            int idx_last = roiMan.getCount() - 1;
+            roiMan.select(idx_last);
+            roiMan.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
             
             rt.incrementCounter();
             rt.addValue("BX", bx);
@@ -389,7 +360,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         }
         
         mr.runMacro("setBatchMode(false);", "");
-        roiManager.runCommand("Show All");    
+        roiMan.runCommand("Show All");    
     }
     
     private void binary_float(float[] srcdst, float thr)

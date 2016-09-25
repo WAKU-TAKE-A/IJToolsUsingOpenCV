@@ -235,19 +235,9 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
     {
         MatOfDMatch output = new MatOfDMatch();
         int num = dmatch.rows();
-        float distance;
-        int queryidx;
-        int trainidx;
         float[] ele_dmatch = new float[4];
         
-        // table
-        ResultsTable rt = ResultsTable.getResultsTable();
-        rt.reset();
-
-        if(rt == null || rt.getCounter() == 0)
-        {
-            rt = new ResultsTable();
-        } 
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
         
         for(int i = 0; i < num; i++)
         {
@@ -257,9 +247,9 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
             {
                 output.push_back(dmatch.row(i));
 
-                queryidx = (int)ele_dmatch[0];
-                trainidx = (int)ele_dmatch[1];
-                distance = ele_dmatch[3];
+                int queryidx = (int)ele_dmatch[0];
+                int trainidx = (int)ele_dmatch[1];
+                float distance = ele_dmatch[3];
                 
                 double x_query = key_query.get(queryidx, 0)[0];
                 double y_query = key_query.get(queryidx, 0)[1];

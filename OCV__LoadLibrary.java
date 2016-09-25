@@ -1,8 +1,12 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.WindowManager;
+import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import java.awt.Frame;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
 
@@ -132,5 +136,59 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
                 dst_cv_8uc3.put(y, x, new byte[] { b, g, r });
             }
         }
+    }
+    
+    /**
+     * get the ResultsTable or create a new ResultsTable
+     * @param enReset reset or not
+     * @return ResultsTable
+     */
+    public static ResultsTable GetResultsTable(boolean enReset)
+    {
+        ResultsTable rt = ResultsTable.getResultsTable();        
+
+        if(rt == null || rt.getCounter() == 0)
+        {
+            rt = new ResultsTable();
+        }
+        
+        if(enReset)
+        {
+            rt.reset();
+        }
+        
+        return rt;
+    }
+    
+    /**
+     * get the RoiManager or create a new RoiManager
+     * @param enReset reset or not
+     * @param enShowNone show none or not
+     * @return RoiManager
+     */
+    public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone)
+    {
+        Frame frame = WindowManager.getFrame("ROI Manager");
+        RoiManager roiManager;        
+        
+        if (frame==null)
+        {
+            IJ.run("ROI Manager...");
+        }
+
+        frame = WindowManager.getFrame("ROI Manager");
+        roiManager = (RoiManager)frame;
+        
+        if(enReset)
+        {
+            roiManager.reset();
+        }
+        
+        if(enShowNone)
+        {
+            roiManager.runCommand("Show None");
+        }
+        
+        return roiManager;
     }
 }

@@ -67,12 +67,11 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     private static int minVotes = 1;
     private static double rngSame = 1;
     private static boolean enAddRoi = true;
-    private static boolean enDispTbl = true;
     private static boolean enOutputImg = true;
 
     // var.
     private ImagePlus impSrc = null;
-    private ArrayList<double[]> res = new ArrayList<>();
+    private ArrayList<double[]> res = new ArrayList();
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
@@ -85,7 +84,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("min_votes", minVotes, 0);
         gd.addNumericField("range_to_judge_same", rngSame, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
-        gd.addCheckbox("enable_display_table", enDispTbl);
         gd.addCheckbox("enable_output_hough_image", enOutputImg);
         gd.addDialogListener(this);
 
@@ -173,7 +171,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         minVotes = (int)gd.getNextNumber();
         rngSame = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
-        enDispTbl = gd.getNextBoolean();
         enOutputImg = gd.getNextBoolean();
 
         if (rmin < 0 || rmax < 0 || rmax < rmin || minVotes < 0 || rngSame < 0)
@@ -325,37 +322,15 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
     private void showData(short[] arr_hough_img)
     {
-        RoiManager roiManager = null;
-        ResultsTable rt = null;
-
-        // get ROI Manager
+        // prepare the ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+        
+        // prepare the ROI Manager
+        RoiManager roiMan = null;
+        
         if(enAddRoi)
         {
-            Frame frame = WindowManager.getFrame("ROI Manager");
-
-            if (frame==null)
-            {
-                IJ.run("ROI Manager...");
-            }
-
-            frame = WindowManager.getFrame("ROI Manager");
-            roiManager = (RoiManager)frame;
-
-            roiManager.reset();
-            roiManager.runCommand("show none");
-        }
-
-        // get ResultsTable
-        if(enDispTbl)
-        {
-            rt = ResultsTable.getResultsTable();
-
-            if(rt == null || rt.getCounter() == 0)
-            {
-                rt = new ResultsTable();
-            }
-
-            rt.reset();
+            roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         }
 
         // judge to be the same
@@ -426,26 +401,20 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
             int vt = (int)res_ar[IVOTE];
             int n = (int)res_ar[IN];
             
-            if(enDispTbl && (rt != null))
-            {          
-                rt.incrementCounter();
-                rt.addValue("CenterX", xave);
-                rt.addValue("CenterY", yave);
-                rt.addValue("R", r);
-                rt.addValue("MaxVotes", vt);
-                rt.addValue("NumOfSame", n);
-            }
+            rt.incrementCounter();
+            rt.addValue("CenterX", xave);
+            rt.addValue("CenterY", yave);
+            rt.addValue("R", r);
+            rt.addValue("MaxVotes", vt);
+            rt.addValue("NumOfSame", n);
 
-            if(enAddRoi && (null != roiManager))
+            if(enAddRoi && (null != roiMan))
             {
                 OvalRoi roi = new OvalRoi((xave - r), (yave - r), dia, dia);
-                roiManager.addRoi(roi);
+                roiMan.addRoi(roi);
             }
         }
 
-        if(enDispTbl && (rt != null))
-        {
-            rt.show("Results");
-        }
+        rt.show("Results");
     }
 }

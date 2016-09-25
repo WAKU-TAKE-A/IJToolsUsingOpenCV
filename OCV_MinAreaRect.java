@@ -89,7 +89,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         int w = ip.getWidth();
         int h = ip.getHeight();
 
-        List<Point> lstPt = new ArrayList<Point>();
+        ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint2f pts = new MatOfPoint2f();
 
         for(int y = 0; y < h; y++)
@@ -135,14 +135,8 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
     }
 
     private void showData(RotatedRect rect)
-    {
-        ResultsTable rt = ResultsTable.getResultsTable();
-
-        if(rt == null || rt.getCounter() == 0)
-        {
-            rt = new ResultsTable();
-        }
-
+    {       
+        // set ROI
         if(enSetRoi)
         {
             float[] xPoints = new float[4];
@@ -167,8 +161,11 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
             PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
             impSrc.setRoi(proi);
         }
-
-        if(enRefTbl && 1 == nPass)
+        
+        // set ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
+        
+        if(enRefTbl && nPass == 1)
         {
             rt.reset();
         }

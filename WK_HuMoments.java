@@ -259,11 +259,10 @@ public class WK_HuMoments implements ExtendedPlugInFilter
 
     private void showData(double[] results)
     {
-        ResultsTable rt = ResultsTable.getResultsTable();
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
-        if (rt == null || rt.getCounter() == 0)
+        if (rt.getCounter() == 0)
         {
-            rt = new ResultsTable();
             res_ini[0] = results[0];
             res_ini[1] = results[1];
             res_ini[2] = results[2];

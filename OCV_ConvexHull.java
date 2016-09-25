@@ -8,7 +8,6 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.util.ArrayList;
-import java.util.List;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
@@ -91,7 +90,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         int w = ip.getWidth();
         int h = ip.getHeight();
 
-        List<Point> lstPt = new ArrayList<Point>();
+        ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint pts = new MatOfPoint();
 
         for(int y = 0; y < h; y++)
@@ -139,7 +138,8 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
 
     private void showData(MatOfPoint pts, MatOfInt hull)
     {
-        ResultsTable rt = new ResultsTable();
+        // set ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
         int num_hull = (int)hull.size().height;
         float[] xPoints = new float[num_hull];
@@ -158,6 +158,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
 
         rt.show("Results");
 
+        // set ROI
         if(enSetRoi)
         {
             PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);

@@ -7,7 +7,6 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.util.ArrayList;
-import java.util.List;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.RotatedRect;
@@ -88,7 +87,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
         int w = ip.getWidth();
         int h = ip.getHeight();
 
-        List<Point> lstPt = new ArrayList<Point>();
+        ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint2f pts = new MatOfPoint2f();
 
         for(int y = 0; y < h; y++)
@@ -135,13 +134,23 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
 
     private void showData(RotatedRect rect)
     {
-        ResultsTable rt = ResultsTable.getResultsTable();
-
-        if(rt == null || rt.getCounter() == 0)
+        // set ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
+        
+        if(enRefTbl && nPass == 1)
         {
-            rt = new ResultsTable();
+            rt.reset();
         }
 
+        rt.incrementCounter();
+        rt.addValue("CenterX", rect.center.x);
+        rt.addValue("CenterY", rect.center.y);
+        rt.addValue("Width", rect.size.width);
+        rt.addValue("Height", rect.size.height);
+        rt.addValue("Angle", rect.angle);
+        rt.show("Results");
+        
+        // ser ROI
         if(enSetRoi)
         {
             double[] xPoints = new double[2];
@@ -163,18 +172,5 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
             EllipseRoi eroi = new EllipseRoi(xPoints[0], yPoints[0], xPoints[1], yPoints[1], ratio);
             impSrc.setRoi(eroi);
         }
-
-        if(enRefTbl && 1 == nPass)
-        {
-            rt.reset();
-        }
-
-        rt.incrementCounter();
-        rt.addValue("CenterX", rect.center.x);
-        rt.addValue("CenterY", rect.center.y);
-        rt.addValue("Width", rect.size.width);
-        rt.addValue("Height", rect.size.height);
-        rt.addValue("Angle", rect.angle);
-        rt.show("Results");
     }
 }

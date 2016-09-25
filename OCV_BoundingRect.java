@@ -7,7 +7,6 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.util.ArrayList;
-import java.util.List;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
@@ -88,7 +87,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
         int w = ip.getWidth();
         int h = ip.getHeight();
 
-        List<Point> lstPt = new ArrayList<Point>();
+        ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint pts = new MatOfPoint();
 
         for(int y = 0; y < h; y++)
@@ -135,30 +134,26 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
 
     private void showData(Rect rect)
     {
+        // set ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
 
-        ResultsTable rt = ResultsTable.getResultsTable();
-
-        if(rt == null || rt.getCounter() == 0)
-        {
-            rt = new ResultsTable();
-        }
-
-        if(enSetRoi)
-        {
-            Roi roi = new Roi(rect.x, rect.y, rect.width, rect.height);
-            impSrc.setRoi(roi);
-        }
-
-        if(enRefTbl && 1 == nPass)
+        if(enRefTbl && nPass == 1)
         {
             rt.reset();
         }
-
+        
         rt.incrementCounter();
         rt.addValue("BX", rect.x);
         rt.addValue("BY", rect.y);
         rt.addValue("Width", rect.width);
         rt.addValue("Height", rect.height);
         rt.show("Results");
+        
+        // set ROI
+        if(enSetRoi)
+        {
+            Roi roi = new Roi(rect.x, rect.y, rect.width, rect.height);
+            impSrc.setRoi(roi);
+        }
     }
 }

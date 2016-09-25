@@ -5,7 +5,6 @@ import ij.plugin.Macro_Runner;
 import ij.plugin.filter.*;
 import ij.plugin.frame.RoiManager;
 import ij.process.*;
-import java.awt.Frame;
 import java.awt.Rectangle;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -161,15 +160,8 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
             areas[i] = (int)(stats_mat.get(i, 4)[0]);
         }
 
-        // Results Table
-        ResultsTable rt = ResultsTable.getResultsTable();
-
-        if(rt == null || rt.getCounter() == 0)
-        {
-            rt = new ResultsTable();
-        }
-
-        rt.reset();
+        // set ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
         for(int i = 1; i < output_con; i++)
         {
@@ -183,22 +175,10 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         rt.show("Results");
 
-        // ROI Manager
-        Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager;
+        // set ROI Manager
+        RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
+        
         Macro_Runner mr = new Macro_Runner();
-
-        if (frame==null)
-        {
-            IJ.run("ROI Manager...");
-        }
-
-        frame = WindowManager.getFrame("ROI Manager");
-        roiManager = (RoiManager)frame;
-
-        roiManager.reset();
-        roiManager.runCommand("show none");
-
         mr.runMacro("setBatchMode(true);", "");
 
         int[] tbl = new int[num_lab + 1];
@@ -223,5 +203,4 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         mr.runMacro("setBatchMode(false);", "");
         roiManager.runCommand("show all");
     }
-
 }

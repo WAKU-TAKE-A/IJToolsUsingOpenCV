@@ -9,7 +9,6 @@ import ij.process.ImageProcessor;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
-import java.util.List;
 import java.util.ArrayList;
 
 /*
@@ -90,7 +89,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         int w = ip.getWidth();
         int h = ip.getHeight();
 
-        List<Point> lstPt = new ArrayList<Point>();
+        ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint2f pts = new MatOfPoint2f();
 
         for(int y = 0; y < h; y++)
@@ -139,22 +138,10 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
 
     private void showData(double center_x, double center_y, double radius)
     {
-        double diameter = (double)(radius * 2);
+        // set ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
 
-        ResultsTable rt = ResultsTable.getResultsTable();
-
-        if(rt == null || rt.getCounter() == 0)
-        {
-            rt = new ResultsTable();
-        }
-
-        if(enSetRoi)
-        {
-            OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
-            impSrc.setRoi(roi);
-        }
-
-        if(enRefTbl && 1 == nPass)
+        if(enRefTbl && nPass == 1)
         {
             rt.reset();
         }
@@ -164,6 +151,14 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         rt.addValue("CenterY", center_y);
         rt.addValue("R", radius);
         rt.show("Results");
+        
+        // set ROI
+        if(enSetRoi)
+        {
+            double diameter = (double)(radius * 2);
+            OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
+            impSrc.setRoi(roi);
+        }
     }
 }
 

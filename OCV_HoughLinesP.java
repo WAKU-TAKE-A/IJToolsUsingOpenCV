@@ -10,7 +10,6 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 import java.awt.AWTEvent;
-import java.awt.Frame;
 
 /*
  * The MIT License
@@ -53,10 +52,6 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
     private static double minLen = 1;
     private static double maxGap = 1;
     private static boolean enAddRoi = true;
-    private static boolean enDispTbl = true;
-
-    // var.
-    private ImagePlus impSrc = null;
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
@@ -70,7 +65,6 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("min_length", minLen, 4);
         gd.addNumericField("max_allowed_gap", maxGap, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
-        gd.addCheckbox("enable_display_table", enDispTbl);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -107,7 +101,6 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         }
         else
         {
-            impSrc = imp;
             return DOES_8G;
         }
     }
@@ -141,7 +134,6 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         minLen = (double)gd.getNextNumber();
         maxGap = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
-        enDispTbl = gd.getNextBoolean();
 
         if (resDist < 0 || resAngFact < 0 || minVotes < 0 || minLen < 0 || maxGap < 0)
         {
@@ -156,37 +148,15 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
     // private
     private void showData(Mat lines)
     {
-        RoiManager roiManager = null;
-        ResultsTable rt = null;
+        // prepare the ResultsTable
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);        
 
-        // get ROI Manager
+        // prepare the ROI Manager
+        RoiManager roiMan = null;
+        
         if(enAddRoi)
         {
-            Frame frame = WindowManager.getFrame("ROI Manager");
-
-            if (frame==null)
-            {
-                IJ.run("ROI Manager...");
-            }
-
-            frame = WindowManager.getFrame("ROI Manager");
-            roiManager = (RoiManager)frame;
-
-            roiManager.reset();
-            roiManager.runCommand("show none");
-        }
-
-        // get ResultsTable
-        if(enDispTbl)
-        {
-            rt = ResultsTable.getResultsTable();
-
-            if(rt == null || rt.getCounter() == 0)
-            {
-                rt = new ResultsTable();
-            }
-
-            rt.reset();
+            roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         }
        
         // show
@@ -202,25 +172,19 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
             int x2 = line[2];
             int y2 = line[3];
             
-            if(enDispTbl && (rt != null))
-            {          
-                rt.incrementCounter();
-                rt.addValue("x1", x1);
-                rt.addValue("y1", y1);
-                rt.addValue("x2", x2);
-                rt.addValue("y2", y2);
-            }
+            rt.incrementCounter();
+            rt.addValue("x1", x1);
+            rt.addValue("y1", y1);
+            rt.addValue("x2", x2);
+            rt.addValue("y2", y2);
 
-            if(enAddRoi && (roiManager != null))
+            if(enAddRoi && (roiMan != null))
             {
                 Line roi = new Line(x1, y1, x2, y2);
-                roiManager.addRoi(roi);
+                roiMan.addRoi(roi);
             }
         }
 
-        if(enDispTbl && (rt != null))
-        {
-            rt.show("Results");
-        }
+        rt.show("Results");
     }
 }
