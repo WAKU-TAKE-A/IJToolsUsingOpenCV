@@ -6,6 +6,7 @@ import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.util.ArrayList;
 import org.opencv.core.MatOfInt;
@@ -39,21 +40,13 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * convexHull (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_ConvexHull implements ExtendedPlugInFilter
 {
     // static var.
     private static boolean enCW = true;
-    private static boolean enSetRoi;
 
-    // var.
-    private ImagePlus impSrc = null;
-    private String name_cmd = null;
-
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
-     */
     @Override
     public void setNPasses(int arg0)
     {
@@ -63,11 +56,8 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        name_cmd = cmd;
-
-        GenericDialog gd = new GenericDialog(name_cmd + "...");
+        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
         gd.addCheckbox("enable_clockwise", enCW);
-        gd.addCheckbox("enable_set_roi", enSetRoi);
         gd.showDialog();
 
         if (gd.wasCanceled())
@@ -77,8 +67,6 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         else
         {
             enCW = (boolean)gd.getNextBoolean();
-            enSetRoi = (boolean)gd.getNextBoolean();
-
             return DOES_8G;
         }
     }
@@ -131,14 +119,13 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         }
         else
         {
-            impSrc = imp;
             return DOES_8G;
         }
     }
 
     private void showData(MatOfPoint pts, MatOfInt hull)
     {
-        // set ResultsTable
+        // set the ResultsTable
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
         int num_hull = (int)hull.size().height;
@@ -158,11 +145,9 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
 
         rt.show("Results");
 
-        // set ROI
-        if(enSetRoi)
-        {
-            PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
-            impSrc.setRoi(proi);
-        }
+        // set the ROI
+        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
+        PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
+        roiMan.addRoi(proi);
     }
 }

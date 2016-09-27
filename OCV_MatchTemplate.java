@@ -42,19 +42,19 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * matchTemplate (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private final int FLAGS = DOES_8G;
-    private final String[] TYPE_STR = new String[] { "TM_SQDIFF", "TM_SQDIFF_NORMED", "TM_CCORR", "TM_CCORR_NORMED", "TM_CCOEFF", "TM_CCOEFF_NORMED"};
-    private final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF, Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF, Imgproc.TM_CCOEFF_NORMED };
+    private final String[] TYPE_STR = new String[] { "1 - TM_SQDIFF_NORMED", "TM_CCORR_NORMED", "TM_CCOEFF_NORMED"};
+    private final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF_NORMED };
 
     // static var.
     private static int ind_src;
     private static int ind_tmp;
-    private static int ind_type = 3;
+    private static int ind_type = 1;
     private static float thr_res = (float)0.5;
     private static boolean enResult = true;
     private static boolean enSearchMax = false;
@@ -162,6 +162,12 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         Imgproc.matchTemplate(mat_src, mat_tmp, mat_dst, TYPE_VAL[ind_type]);
         mat_dst.get(0, 0, arr_dst);
         imp_dst.show();
+        
+        if(TYPE_VAL[ind_type] == Imgproc.TM_SQDIFF_NORMED)
+        {
+            substracted_from_one(arr_dst);
+        }
+        
         IJ.run(imp_dst, "Enhance Contrast", "saturated=0.35");
 
         // show data
@@ -250,11 +256,9 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             int by = (int)res.get(i)[1];
             float match = res.get(i)[2];
             
-            // set roi
             Roi roi = new Roi(bx, by, imw_tmp, imh_tmp);
             imp_src.setRoi(roi);
             
-            // RoiManager
             roiMan.addRoi(roi);
             int idx_last = roiMan.getCount() - 1;
             roiMan.select(idx_last);
@@ -275,7 +279,6 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     
     private void showData_enSearchMaxPoint(ImagePlus imp_dst, float thr, int imw_tmp, int imh_tmp)
     {
-        // search max point
         ImagePlus imp_bin = imp_dst.duplicate();
         imp_bin.setTitle("__bin");
         float[] arr_bin = (float[]) imp_bin.getChannelProcessor().getPixels();        
@@ -323,10 +326,10 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         imp_bin.close();
         imp_lab.close();
         
-        // prepare the table
+        // prepare the ResultsTable
         rt.reset();
         
-        // prepare ROI Manager
+        // prepare the ROI Manager
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         
         // show
@@ -340,11 +343,9 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             int by = (int)arr_point_max.get(i)[1];
             float match = arr_point_max.get(i)[2];
             
-            // set roi
             Roi roi = new Roi(bx, by, imw_tmp, imh_tmp);
             imp_src.setRoi(roi);
             
-            // RoiManager
             roiMan.addRoi(roi);
             int idx_last = roiMan.getCount() - 1;
             roiMan.select(idx_last);
@@ -361,6 +362,16 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         
         mr.runMacro("setBatchMode(false);", "");
         roiMan.runCommand("Show All");    
+    }
+    
+    private void substracted_from_one(float[] srcdst)
+    {
+         int num = srcdst.length;
+        
+        for(int i = 0; i < num; i++)
+        {
+            srcdst[i] = 1 - srcdst[i];
+        }
     }
     
     private void binary_float(float[] srcdst, float thr)

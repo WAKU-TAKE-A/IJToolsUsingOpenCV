@@ -38,14 +38,14 @@ import org.opencv.core.Rect;
 
 /**
  * grabCut (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW;
-    private String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK" };
-    private int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK };
+    private final String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK" };
+    private final int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK };
 
     // static var.
     private static int ind_src;
@@ -68,8 +68,8 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
 
         gd.addChoice("src", titles_wnd, titles_wnd[0]);
         gd.addChoice("mask", titles_wnd, titles_wnd[1]);
+        gd.addNumericField("iterCount", iter, 0);
         gd.addChoice("mode", TYPE_STR, TYPE_STR[ind_type]);
-        gd.addNumericField("iter_count", iter, 0);
         gd.addCheckbox("enable_foreground_is_255", enFgd);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -108,7 +108,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         }
         else
         {
-            // get windows
+            // get the windows
             lst_wnd = WindowManager.getIDList();
 
             if (lst_wnd==null || lst_wnd.length < 2)
@@ -125,7 +125,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
                 titles_wnd[i] = imp2 != null ? imp2.getTitle() : "";
             }
             
-            // get ROI
+            // get the ROI
             Rectangle rect_java;
 
             if(imp.getRoi() != null)
@@ -190,6 +190,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     {
         ind_src = (int)gd.getNextChoiceIndex();
         ind_msk = (int)gd.getNextChoiceIndex();
+        iter = (int)gd.getNextNumber();
         ind_type = (int)gd.getNextChoiceIndex();
         enFgd = (boolean)gd.getNextBoolean();   
         

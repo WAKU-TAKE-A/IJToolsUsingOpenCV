@@ -5,6 +5,7 @@ import ij.gui.OvalRoi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -37,18 +38,17 @@ import java.util.ArrayList;
 
 /**
  * minEnclosingCircle (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
 {
     // static var.
-    private static boolean enSetRoi;
-    private static boolean enRefTbl = true;
+    private static boolean enRefData;
 
     // var.
     private ImagePlus impSrc = null;
-    private String name_cmd = null;
-    private int nPass;
+    private ResultsTable rt = null;
+    private RoiManager roiMan = null;
 
     /*
      * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
@@ -56,17 +56,14 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
     @Override
     public void setNPasses(int arg0)
     {
-        nPass = arg0;
+        // do nothing
     }
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        name_cmd = cmd;
-
-        GenericDialog gd = new GenericDialog(name_cmd + "...");
-        gd.addCheckbox("enable_set_roi", enSetRoi);
-        gd.addCheckbox("enable_refresh_table", enRefTbl);
+        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
         if (gd.wasCanceled())
@@ -75,8 +72,13 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         }
         else
         {
-            enSetRoi = (boolean)gd.getNextBoolean();
-            enRefTbl = (boolean)gd.getNextBoolean();
+            enRefData = (boolean)gd.getNextBoolean();
+            
+            if(enRefData)
+            {
+                rt.reset();
+                roiMan.reset();
+            }
 
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
@@ -88,6 +90,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         byte[] byteArray = (byte[])ip.getPixels();
         int w = ip.getWidth();
         int h = ip.getHeight();
+        int num_slice = ip.getSliceNumber();
 
         ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint2f pts = new MatOfPoint2f();
@@ -112,7 +115,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         float[] radius = new float[1];
         Point center = new Point();
         Imgproc.minEnclosingCircle(pts, center, radius);
-        showData(center.x, center.y, (double)radius[0]);
+        showData(center.x, center.y, (double)radius[0], num_slice);
     }
 
     @Override
@@ -132,33 +135,26 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         else
         {
             impSrc = imp;
+            rt = OCV__LoadLibrary.GetResultsTable(false);
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             return DOES_8G;
         }
     }
 
-    private void showData(double center_x, double center_y, double radius)
+    private void showData(double center_x, double center_y, double radius, int num_slice)
     {
-        // set ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
-
-        if(enRefTbl && nPass == 1)
-        {
-            rt.reset();
-        }
-
+        // set the ResultsTable
         rt.incrementCounter();
         rt.addValue("CenterX", center_x);
         rt.addValue("CenterY", center_y);
         rt.addValue("R", radius);
         rt.show("Results");
         
-        // set ROI
-        if(enSetRoi)
-        {
-            double diameter = (double)(radius * 2);
-            OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
-            impSrc.setRoi(roi);
-        }
+        // set the ROI
+        double diameter = (double)(radius * 2);
+        impSrc.setSlice(num_slice);
+        OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
+        roiMan.addRoi(roi);
     }
 }
 

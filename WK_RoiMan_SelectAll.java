@@ -32,7 +32,7 @@ import java.awt.Frame;
 
 /**
  * select all ROI
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter
 {
@@ -51,9 +51,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(cmd + "...");
-
         gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
-
         gd.showDialog();
 
         if (gd.wasCanceled())
@@ -63,7 +61,6 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         else
         {
             type_ind = (int)gd.getNextChoiceIndex();
-
             return FLAGS;
         }
     }

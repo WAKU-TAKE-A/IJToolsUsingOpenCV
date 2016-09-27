@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * connectedComponentsWithStats (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 {
@@ -160,7 +160,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
             areas[i] = (int)(stats_mat.get(i, 4)[0]);
         }
 
-        // set ResultsTable
+        // set the ResultsTable
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
         for(int i = 1; i < output_con; i++)
@@ -175,9 +175,9 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         rt.show("Results");
 
-        // set ROI Manager
+        // set the ROI Manager
         RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
-        
+
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
 

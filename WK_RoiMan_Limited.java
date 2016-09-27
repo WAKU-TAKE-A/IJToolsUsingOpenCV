@@ -1,6 +1,5 @@
 import ij.IJ;
 import ij.ImagePlus;
-import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.Macro_Runner;
@@ -8,7 +7,6 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-import java.awt.Frame;
 
 /*
  * The MIT License
@@ -36,7 +34,7 @@ import java.awt.Frame;
 
 /**
  * limit ROI
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 {
@@ -113,17 +111,8 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         }
         else
         {
-            // get the RoiManager
-            Frame frame = WindowManager.getFrame("ROI Manager");
-
-            if (frame==null)
-            {
-                IJ.run("ROI Manager...");
-            }
-
-            frame = WindowManager.getFrame("ROI Manager");
-            roiManager = (RoiManager)frame;
-
+            // get the ROI Manager
+            roiManager = OCV__LoadLibrary.GetRoiManager(false, true);
             num_roi = roiManager.getCount();
 
             if(num_roi == 0)
@@ -132,24 +121,13 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
                 return DONE;
             }
 
-            roiManager.runCommand("show none");
-
             // get the ResultsTable
-            rt = ResultsTable.getResultsTable();
+            rt = OCV__LoadLibrary.GetResultsTable(false);
 
-            if(rt == null || rt.getCounter() == 0)
+            if(rt.getCounter() != roiManager.getCount())
             {
-                rt = new ResultsTable();
+                rt.reset();
             }
-            else
-            {
-                if(rt.getCounter() != roiManager.getCount())
-                {
-                    rt.reset();
-                }
-            }
-
-            rt.show("Results");
 
             // Mesure
             roiManager.deselect();

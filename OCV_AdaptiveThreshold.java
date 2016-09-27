@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * adaptiveThreshold (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -58,11 +58,11 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
 
-        gd.addNumericField("max_value", maxValue, 4);
-        gd.addChoice("adaptive_method", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indMethod]);
-        gd.addChoice("threshold_type", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
-        gd.addNumericField("block_size", blockSize, 0);
-        gd.addNumericField("number_to_be_subtracted", subC, 4);
+        gd.addNumericField("maxValue", maxValue, 4);
+        gd.addChoice("adaptiveMethod", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indMethod]);
+        gd.addChoice("thresholdType", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
+        gd.addNumericField("blockSize", blockSize, 0);
+        gd.addNumericField("constSubtractedFromMean", subC, 4);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

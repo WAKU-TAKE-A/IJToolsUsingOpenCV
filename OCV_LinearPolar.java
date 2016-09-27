@@ -5,7 +5,6 @@ import ij.plugin.filter.*;
 import ij.process.*;
 import java.awt.AWTEvent;
 import java.awt.Rectangle;
-import java.util.Arrays;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
@@ -37,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * linearPolar (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
 {

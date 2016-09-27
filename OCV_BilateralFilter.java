@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * bilateralFilter (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -67,9 +67,9 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         
         gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
         gd.addNumericField("diameter", diameter, 0);
-        gd.addNumericField("sigma_color", sigmaColor, 4);
-        gd.addNumericField("sigma_space", sigmaSpace, 4);
-        gd.addChoice("border_type", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
+        gd.addNumericField("sigmaColor", sigmaColor, 4);
+        gd.addNumericField("sigmaSpace", sigmaSpace, 4);
+        gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -160,7 +160,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         sigmaSpace = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(0 < sigmaColor && 0 < sigmaSpace)
+        if((0 < sigmaColor) && (0 < sigmaSpace))
         {
             return true;
         }

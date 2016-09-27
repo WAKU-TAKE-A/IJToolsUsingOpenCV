@@ -36,7 +36,7 @@ import java.awt.Rectangle;
  * I referred to the followings.
  * https://en.wikipedia.org/wiki/Image_moment#Rotation_invariant_moments
  * \opencv-3.1.0\sources\modules\imgproc\src\moments.cpp
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class WK_HuMoments implements ExtendedPlugInFilter
 {
@@ -44,8 +44,8 @@ public class WK_HuMoments implements ExtendedPlugInFilter
     private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT;
 
     // static var.
-    private static double[] res_ini = new double[7];
-
+    private static final double[] RES_INI = new double[7];
+    
     // var.
     private Rectangle rect = null;
 
@@ -259,17 +259,17 @@ public class WK_HuMoments implements ExtendedPlugInFilter
 
     private void showData(double[] results)
     {
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
 
         if (rt.getCounter() == 0)
         {
-            res_ini[0] = results[0];
-            res_ini[1] = results[1];
-            res_ini[2] = results[2];
-            res_ini[3] = results[3];
-            res_ini[4] = results[4];
-            res_ini[5] = results[5];
-            res_ini[6] = results[6];
+            RES_INI[0] = results[0];
+            RES_INI[1] = results[1];
+            RES_INI[2] = results[2];
+            RES_INI[3] = results[3];
+            RES_INI[4] = results[4];
+            RES_INI[5] = results[5];
+            RES_INI[6] = results[6];
             results[7] = 0;
         }
         else
@@ -277,7 +277,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
             for(int i = 0; i < 7; i++)
             {
                 double res = Math.copySign(Math.log(Math.abs(results[i])), results[i]);
-                double ini = Math.copySign(Math.log(Math.abs(res_ini[i])), res_ini[i]);
+                double ini = Math.copySign(Math.log(Math.abs(RES_INI[i])), RES_INI[i]);
 
                 results[7] += Math.abs(1 / res - 1 / ini);
             }

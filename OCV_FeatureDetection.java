@@ -45,7 +45,7 @@ import org.opencv.features2d.Features2d;
  * 
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilter
 {
@@ -54,7 +54,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
     private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB"};
     private final int[] TYPE_VAL_DET = new int[] { FeatureDetector.AKAZE, FeatureDetector.BRISK, FeatureDetector.ORB };    
     private final int[] TYPE_VAL_EXT = new int[] { DescriptorExtractor.AKAZE, DescriptorExtractor.BRISK, DescriptorExtractor.ORB };
-    private final String[] TYPE_STR_MATCH = new String[] { "BRUTEFORCE", "BRUTEFORCE_HAMMING", "BRUTEFORCE_HAMMINGLUT", "BRUTEFORCE_L1", "BRUTEFORCE_SL2", "FLANNBASED" };
+    private final String[] TYPE_STR_MATCH = new String[] { "BRUTEFORCE", "BRUTEFORCE_HAMMING", "BRUTEFORCE_HAMMINGLUT", "BRUTEFORCE_L1", "BRUTEFORCE_SL2" };
     private final int[] TYPE_VAL_MATCH = new int[] { DescriptorMatcher.BRUTEFORCE, DescriptorMatcher.BRUTEFORCE_HAMMING, DescriptorMatcher.BRUTEFORCE_HAMMINGLUT, DescriptorMatcher.BRUTEFORCE_L1, DescriptorMatcher.BRUTEFORCE_SL2 };
     
     // static var.

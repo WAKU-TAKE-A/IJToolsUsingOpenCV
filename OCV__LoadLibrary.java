@@ -36,7 +36,7 @@ import org.opencv.core.Mat;
 
 /**
  * load library
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
@@ -156,6 +156,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         {
             rt.reset();
         }
+        
+        rt.show("Results");
         
         return rt;
     }

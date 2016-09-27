@@ -6,9 +6,9 @@ import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.util.ArrayList;
-import java.util.List;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.RotatedRect;
@@ -40,33 +40,29 @@ import org.opencv.imgproc.Imgproc;
 
 /**
  * minAreaRect (OpenCV3.1)
- * @version 0.9.6.0
+ * @version 0.9.6.1
  */
 public class OCV_MinAreaRect implements ExtendedPlugInFilter
 {
     // static var.
-    private static boolean enSetRoi;
-    private static boolean enRefTbl = true;
+    private static boolean enRefData;
 
     // var.
     private ImagePlus impSrc = null;
-    private String name_cmd = null;
-    private int nPass;
+    private ResultsTable rt = null;
+    private RoiManager roiMan = null;
 
     @Override
     public void setNPasses(int arg0)
     {
-        nPass = arg0;
+        // do nothing
     }
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        name_cmd = cmd;
-
-        GenericDialog gd = new GenericDialog(name_cmd + "...");
-        gd.addCheckbox("enable_set_roi", enSetRoi);
-        gd.addCheckbox("enable_refresh_table", enRefTbl);
+        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
         if (gd.wasCanceled())
@@ -75,8 +71,13 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         }
         else
         {
-            enSetRoi = (boolean)gd.getNextBoolean();
-            enRefTbl = (boolean)gd.getNextBoolean();
+            enRefData = (boolean)gd.getNextBoolean();
+            
+            if(enRefData)
+            {
+                rt.reset();
+                roiMan.reset();
+            }
 
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
@@ -88,7 +89,8 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         byte[] byteArray = (byte[])ip.getPixels();
         int w = ip.getWidth();
         int h = ip.getHeight();
-
+        int num_slice = ip.getSliceNumber();
+        
         ArrayList<Point> lstPt = new ArrayList();
         MatOfPoint2f pts = new MatOfPoint2f();
 
@@ -110,7 +112,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
 
         pts.fromList(lstPt);
         RotatedRect rect = Imgproc.minAreaRect(pts);
-        showData(rect);
+        showData(rect, num_slice);
     }
 
     @Override
@@ -130,46 +132,15 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         else
         {
             impSrc = imp;
+            rt = OCV__LoadLibrary.GetResultsTable(false);
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             return DOES_8G;
         }
     }
 
-    private void showData(RotatedRect rect)
-    {       
-        // set ROI
-        if(enSetRoi)
-        {
-            float[] xPoints = new float[4];
-            float[] yPoints = new float[4];
-            double cx = rect.center.x;
-            double cy = rect.center.y;
-            double w = rect.size.width;
-            double h = rect.size.height;
-            double rad =  rect.angle * Math.PI / 180;
-            double cos = Math.cos(rad);
-            double sin = Math.sin(rad);
-
-            xPoints[0] = (float)((w / 2.0) * cos - (h / 2.0) * sin + cx);
-            yPoints[0] = (float)((w / 2.0) * sin + (h / 2.0) * cos + cy);
-            xPoints[1] = (float)(((-1) * w / 2.0) * cos - (h / 2.0) * sin + cx);
-            yPoints[1] = (float)(((-1) * w / 2.0) * sin + (h / 2.0) * cos + cy);
-            xPoints[2] = (float)(((-1) * w / 2.0) * cos - ((-1) * h / 2.0) * sin + cx);
-            yPoints[2] = (float)(((-1) * w / 2.0) * sin + ((-1) * h / 2.0) * cos + cy);
-            xPoints[3] = (float)((w / 2.0) * cos - ((-1) * h / 2.0) * sin + cx);
-            yPoints[3] = (float)((w / 2.0) * sin + ((-1) * h / 2.0) * cos + cy);
-
-            PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
-            impSrc.setRoi(proi);
-        }
-        
-        // set ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
-        
-        if(enRefTbl && nPass == 1)
-        {
-            rt.reset();
-        }
-
+    private void showData(RotatedRect rect, int num_slice)
+    {  
+        // set the ResultsTable
         rt.incrementCounter();
         rt.addValue("CenterX", rect.center.x);
         rt.addValue("CenterY", rect.center.y);
@@ -177,5 +148,29 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         rt.addValue("Height", rect.size.height);
         rt.addValue("Angle", rect.angle);
         rt.show("Results");
+        
+        // set the ROI
+            float[] xPoints = new float[4];
+        float[] yPoints = new float[4];
+        double cx = rect.center.x;
+        double cy = rect.center.y;
+        double w = rect.size.width;
+        double h = rect.size.height;
+        double rad =  rect.angle * Math.PI / 180;
+        double cos = Math.cos(rad);
+        double sin = Math.sin(rad);
+
+        xPoints[0] = (float)((w / 2.0) * cos - (h / 2.0) * sin + cx);
+        yPoints[0] = (float)((w / 2.0) * sin + (h / 2.0) * cos + cy);
+        xPoints[1] = (float)(((-1) * w / 2.0) * cos - (h / 2.0) * sin + cx);
+        yPoints[1] = (float)(((-1) * w / 2.0) * sin + (h / 2.0) * cos + cy);
+        xPoints[2] = (float)(((-1) * w / 2.0) * cos - ((-1) * h / 2.0) * sin + cx);
+        yPoints[2] = (float)(((-1) * w / 2.0) * sin + ((-1) * h / 2.0) * cos + cy);
+        xPoints[3] = (float)((w / 2.0) * cos - ((-1) * h / 2.0) * sin + cx);
+        yPoints[3] = (float)((w / 2.0) * sin + ((-1) * h / 2.0) * cos + cy);
+
+        impSrc.setSlice(num_slice);
+        PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
+        roiMan.addRoi(proi);
     }
 }
