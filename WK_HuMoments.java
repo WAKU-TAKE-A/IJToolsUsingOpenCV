@@ -259,7 +259,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
 
     private void showData(double[] results)
     {
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
+        ResultsTable rt = getResultsTable(false);
 
         if (rt.getCounter() == 0)
         {
@@ -297,5 +297,29 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         rt.addValue("Height", rect.height);
 
         rt.show("Results");
+    }
+    
+    /**
+     * get the ResultsTable or create a new ResultsTable
+     * @param enReset reset or not
+     * @return ResultsTable
+     */
+    private ResultsTable getResultsTable(boolean enReset)
+    {
+        ResultsTable rt = ResultsTable.getResultsTable();        
+
+        if(rt == null || rt.getCounter() == 0)
+        {
+            rt = new ResultsTable();
+        }
+        
+        if(enReset)
+        {
+            rt.reset();
+        }
+        
+        rt.show("Results");
+        
+        return rt;
     }
 }

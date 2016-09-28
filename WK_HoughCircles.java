@@ -8,6 +8,7 @@ import ij.plugin.filter.*;
 import ij.plugin.frame.RoiManager;
 import ij.process.*;
 import java.awt.AWTEvent;
+import java.awt.Frame;
 import java.awt.Rectangle;
 import java.util.ArrayList;
 
@@ -70,7 +71,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
     // var.
     private ImagePlus impSrc = null;
-    private ArrayList<double[]> res = new ArrayList();
+    private final ArrayList<double[]> res = new ArrayList();
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
@@ -322,14 +323,14 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     private void showData(short[] arr_hough_img)
     {
         // prepare the ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+        ResultsTable rt = getResultsTable(true);
         
         // prepare the ROI Manager
         RoiManager roiMan = null;
         
         if(enAddRoi)
         {
-            roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
+            roiMan = getRoiManager(true, true);
         }
 
         // judge to be the same
@@ -415,5 +416,61 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         }
 
         rt.show("Results");
+    }
+
+    /**
+     * get the ResultsTable or create a new ResultsTable
+     * @param enReset reset or not
+     * @return ResultsTable
+     */
+    private ResultsTable getResultsTable(boolean enReset)
+    {
+        ResultsTable rt = ResultsTable.getResultsTable();        
+
+        if(rt == null || rt.getCounter() == 0)
+        {
+            rt = new ResultsTable();
+        }
+        
+        if(enReset)
+        {
+            rt.reset();
+        }
+        
+        rt.show("Results");
+        
+        return rt;
+    }
+    
+    /**
+     * get the RoiManager or create a new RoiManager
+     * @param enReset reset or not
+     * @param enShowNone show none or not
+     * @return RoiManager
+     */
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
+    {
+        Frame frame = WindowManager.getFrame("ROI Manager");
+        RoiManager roiManager;        
+        
+        if (frame==null)
+        {
+            IJ.run("ROI Manager...");
+        }
+
+        frame = WindowManager.getFrame("ROI Manager");
+        roiManager = (RoiManager)frame;
+        
+        if(enReset)
+        {
+            roiManager.reset();
+        }
+        
+        if(enShowNone)
+        {
+            roiManager.runCommand("Show None");
+        }
+        
+        return roiManager;
     }
 }

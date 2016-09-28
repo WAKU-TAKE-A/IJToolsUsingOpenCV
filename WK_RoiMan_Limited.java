@@ -1,5 +1,6 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.Macro_Runner;
@@ -7,6 +8,7 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import java.awt.Frame;
 
 /*
  * The MIT License
@@ -112,7 +114,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         else
         {
             // get the ROI Manager
-            roiManager = OCV__LoadLibrary.GetRoiManager(false, true);
+            roiManager = getRoiManager(false, true);
             num_roi = roiManager.getCount();
 
             if(num_roi == 0)
@@ -122,7 +124,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             }
 
             // get the ResultsTable
-            rt = OCV__LoadLibrary.GetResultsTable(false);
+            rt = getResultsTable(false);
 
             if(rt.getCounter() != roiManager.getCount())
             {
@@ -173,5 +175,61 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
         mr.runMacro("setBatchMode(false);", "");
         rt.show("Results");
+    }
+    
+    /**
+     * get the ResultsTable or create a new ResultsTable
+     * @param enReset reset or not
+     * @return ResultsTable
+     */
+    private ResultsTable getResultsTable(boolean enReset)
+    {
+        ResultsTable rt = ResultsTable.getResultsTable();        
+
+        if(rt == null || rt.getCounter() == 0)
+        {
+            rt = new ResultsTable();
+        }
+        
+        if(enReset)
+        {
+            rt.reset();
+        }
+        
+        rt.show("Results");
+        
+        return rt;
+    }
+    
+    /**
+     * get the RoiManager or create a new RoiManager
+     * @param enReset reset or not
+     * @param enShowNone show none or not
+     * @return RoiManager
+     */
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
+    {
+        Frame frame = WindowManager.getFrame("ROI Manager");
+        RoiManager roiMan;        
+        
+        if (frame==null)
+        {
+            IJ.run("ROI Manager...");
+        }
+
+        frame = WindowManager.getFrame("ROI Manager");
+        roiMan = (RoiManager)frame;
+        
+        if(enReset)
+        {
+            roiMan.reset();
+        }
+        
+        if(enShowNone)
+        {
+            roiMan.runCommand("Show None");
+        }
+        
+        return roiMan;
     }
 }
