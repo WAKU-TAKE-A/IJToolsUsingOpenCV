@@ -32,4 +32,4 @@ It is described in the following site. I think very easy way.
 Please contact me here.
 
 * [Twitter](https://twitter.com/WAKU_TAKE_A?lang=en)
-* E-mail
+* <takehito.nishida@gmail.com>
