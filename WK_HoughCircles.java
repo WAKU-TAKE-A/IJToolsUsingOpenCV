@@ -71,7 +71,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
     // var.
     private ImagePlus impSrc = null;
-    private final ArrayList<double[]> res = new ArrayList();
+    private final ArrayList<double[]> res = new ArrayList<double[]>();
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)

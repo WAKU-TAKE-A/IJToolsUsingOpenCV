@@ -78,7 +78,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         int w = ip.getWidth();
         int h = ip.getHeight();
 
-        ArrayList<Point> lstPt = new ArrayList();
+        ArrayList<Point> lstPt = new ArrayList<Point>();
         MatOfPoint pts = new MatOfPoint();
 
         for(int y = 0; y < h; y++)

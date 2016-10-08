@@ -91,7 +91,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         int h = ip.getHeight();
         int num_slice = ip.getSliceNumber();
         
-        ArrayList<Point> lstPt = new ArrayList();
+        ArrayList<Point> lstPt = new ArrayList<Point>();
         MatOfPoint2f pts = new MatOfPoint2f();
 
         for(int y = 0; y < h; y++)

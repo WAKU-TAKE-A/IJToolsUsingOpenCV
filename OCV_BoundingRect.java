@@ -90,7 +90,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
         int h = ip.getHeight();
         int num_slice = ip.getSliceNumber();
 
-        ArrayList<Point> lstPt = new ArrayList();
+        ArrayList<Point> lstPt = new ArrayList<Point>();
         MatOfPoint pts = new MatOfPoint();
         
         for(int y = 0; y < h; y++)

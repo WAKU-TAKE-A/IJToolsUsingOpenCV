@@ -235,7 +235,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         // show
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
-        ArrayList<float[]> res = new ArrayList();
+        ArrayList<float[]> res = new ArrayList<float[]>();
         
         for(int y = 0; y < imh_dst; y++)
         {
@@ -293,7 +293,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         int col_y = rt.getColumnIndex("BY");
         int col_w = rt.getColumnIndex("Width");
         int col_h = rt.getColumnIndex("Height");
-        ArrayList<float[]> arr_point_max = new ArrayList();
+        ArrayList<float[]> arr_point_max = new ArrayList<float[]>();
         
         for(int i = 0; i < rt.size(); i++)
         {
