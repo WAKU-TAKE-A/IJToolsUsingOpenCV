@@ -16,7 +16,7 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 
 疑問・不具合などありましたら、以下に連絡をお願いします。
 * [ツイッター](https://twitter.com/WAKU_TAKE_A?lang=ja)
-* 電子メール
+* <takehito.nishida@gmail.com>
 
 ## <a name="eng">Message
 
@@ -32,4 +32,4 @@ It is described in the following site. I think very easy way.
 Please contact me here.
 
 * [Twitter](https://twitter.com/WAKU_TAKE_A?lang=en)
-* E-mail
+* <takehito.nishida@gmail.com>
