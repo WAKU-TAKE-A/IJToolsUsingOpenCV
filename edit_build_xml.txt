@@ -1,0 +1,24 @@
+Please add the following to <target name="-post-compile"> （以下を追加する）
+
+        <move todir="plugins">
+            <fileset dir="${build.classes.dir}" includes="OCV_*.class"/>
+        </move>
+        <move todir="plugins">
+            <fileset dir="${build.classes.dir}" includes="WK_*.class"/>
+        </move>
+        <jar jarfile="IJTools_UsingOpenCV.jar">
+            <fileset dir="plugins" includes="OCV_*.class"/>
+            <manifest>
+                <attribute name="Main-Class" value="Main" />
+            </manifest>
+        </jar>
+        <jar jarfile="IJTools_Waku.jar">
+            <fileset dir="plugins" includes="WK_*.class"/>
+            <manifest>
+                <attribute name="Main-Class" value="Main" />
+            </manifest>
+        </jar>
+
+※
+When a Java platform is changed, it is disappeared, so I take notes.
+（Javaプラットフォームを切り替えると消えてしまうので、メモしておきます。）
