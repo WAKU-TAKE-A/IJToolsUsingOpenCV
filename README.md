@@ -12,7 +12,8 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 * [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01_ja)
 * [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02_ja)
 
-プラグインの説明なども、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
+プラグインの説明などは、[GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)に書きました。
+コンパイルしたバイナリーは、[Release](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)にあります。
 
 疑問・不具合などありましたら、以下に連絡をお願いします。
 * [ツイッター](https://twitter.com/WAKU_TAKE_A?lang=ja)
@@ -27,7 +28,8 @@ It is described in the following site. I think very easy way.
 * [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01_en)
 * [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02_en)
 
-[Here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/Home_en) is brief descriptions of my plugins.
+[Here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/Home_en) is the brief descriptions of my plugins.
+[Here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases) is the binaries of my plugins.
 
 Please contact me here.
 
