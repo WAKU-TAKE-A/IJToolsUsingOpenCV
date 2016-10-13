@@ -1,6 +1,7 @@
 import ij.*;
 import ij.IJ;
 import ij.gui.GenericDialog;
+import ij.plugin.Macro_Runner;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
@@ -107,6 +108,9 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     @Override
     public void run(ImageProcessor ip)
     {
+        Macro_Runner mr = new Macro_Runner();
+        mr.runMacro("setBatchMode(true);", "");
+        
         int num_roi = roiManager.getCount();
 
         if(num_roi == 0)
@@ -130,5 +134,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
                 roiManager.runCommand(TYPE_STR[type_ind]);
             }
         }
+        
+        mr.runMacro("setBatchMode(false);", "");
     }
 }

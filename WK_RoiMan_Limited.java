@@ -161,7 +161,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
         for(int i = num_roi - 1; 0 <= i; i--)
         {
-            val = (double)rt.getValueAsDouble(col, i);
+            val = Double.valueOf(rt.getStringValue(col, i));
             chk_min = enMin ? min <= val : true;
             chk_max = enMax ? val <= max : true;
 

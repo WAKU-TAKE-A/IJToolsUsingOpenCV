@@ -44,8 +44,8 @@ public class WK_HuMoments implements ExtendedPlugInFilter
     private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT;
 
     // static var.
-    private static final double[] RES_INI = new double[7];
-    
+    private static final double[] RES_INI = new double[9];
+
     // var.
     private Rectangle rect = null;
 
@@ -106,15 +106,15 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         }
 
         moments mom = new moments();
-        double[] hu = new double[9];
+        double[] res = new double[9]; // 0 - 6:HuMoments, 7:match, 8:rotation
 
         calc_moments(fltArr_roi, mom, roi_w, roi_h);
-        calc_humoments(mom, hu);
+        calc_humoments(mom, res);
 
-        // hu_dbl[7] is calculated in showData().
-        hu[8] = 0.5 * Math.atan(2.0 * mom.nu11/ (mom.nu20 - mom.nu02)) * 180 / Math.PI;
+        // res[7] is calculated in showData().
+        res[8] = 0.5 * Math.atan(2.0 * mom.nu11/ (mom.nu20 - mom.nu02)) * 180 / Math.PI;
 
-        showData(hu);
+        showData(res);
     }
 
     // private
@@ -171,16 +171,16 @@ public class WK_HuMoments implements ExtendedPlugInFilter
                 yy = y * y;
                 xxx = xx * x;
                 yyy = yy * y;
-                M00 += val * 1 * 1;
-                M10 += val * x * 1;
-                M01 += val * 1 * y;
-                M20 += val * xx * 1;
+                M00 += val * 1.0 * 1.0;
+                M10 += val * x * 1.0;
+                M01 += val * 1.0 * y;
+                M20 += val * xx * 1.0;
                 M11 += val * x * y;
-                M02 += val * 1 * yy;
-                M30 += val * xxx * 1;
+                M02 += val * 1.0 * yy;
+                M30 += val * xxx * 1.0;
                 M21 += val * xx * y;
                 M12 += val * x * yy;
-                M03 += val * 1 * yyy;
+                M03 += val * 1.0 * yyy;
             }
         }
 
@@ -202,10 +202,10 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         mu20 = M20 - av_x * M10;
         mu11 = M11 - av_x * M01; // M11 - av_y * M10
         mu02 = M02 - av_y * M01;
-        mu30 = M30 - 3 * av_x * M20 + 2 * av_x * av_x * M10;
-        mu21 = M21 - 2 * av_x * M11 - av_y * M20 + 2 * av_x * av_x * M01;
-        mu12 = M12 - 2 * av_y * M11 - av_x * M02 + 2 * av_y * av_y * M10;
-        mu03 = M03 - 3 * av_y * M02 + 2 * av_y * av_y * M01;
+        mu30 = M30 - 3.0 * av_x * M20 + 2.0 * av_x * av_x * M10;
+        mu21 = M21 - 2.0 * av_x * M11 - av_y * M20 + 2.0 * av_x * av_x * M01;
+        mu12 = M12 - 2.0 * av_y * M11 - av_x * M02 + 2.0 * av_y * av_y * M10;
+        mu03 = M03 - 3.0 * av_y * M02 + 2.0 * av_y * av_y * M01;
 
         dst.mu00 = mu00;
         dst.mu20 = mu20;
@@ -216,13 +216,13 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         dst.mu12 = mu12;
         dst.mu03 = mu03;
 
-        dst.nu20 = mu20 / Math.pow(mu00, ((2 + 0) / 2 + 1));
-        dst.nu11 = mu11 / Math.pow(mu00, ((1 + 1) / 2 + 1));
-        dst.nu02 = mu02 / Math.pow(mu00, ((0 + 2) / 2 + 1));
-        dst.nu30 = mu30 / Math.pow(mu00, ((3 + 0) / 2 + 1));
-        dst.nu21 = mu21 / Math.pow(mu00, ((2 + 1) / 2 + 1));
-        dst.nu12 = mu12 / Math.pow(mu00, ((1 + 2) / 2 + 1));
-        dst.nu03 = mu03 / Math.pow(mu00, ((0 + 3) / 2 + 1));
+        dst.nu20 = mu20 / Math.pow(mu00, ((2.0 + 0.0) / 2.0 + 1.0));
+        dst.nu11 = mu11 / Math.pow(mu00, ((1.0 + 1.0) / 2.0 + 1.0));
+        dst.nu02 = mu02 / Math.pow(mu00, ((0.0 + 2.0) / 2.0 + 1.0));
+        dst.nu30 = mu30 / Math.pow(mu00, ((3.0 + 0.0) / 2.0 + 1.0));
+        dst.nu21 = mu21 / Math.pow(mu00, ((2.0 + 1.0) / 2.0 + 1.0));
+        dst.nu12 = mu12 / Math.pow(mu00, ((1.0 + 2.0) / 2.0 + 1.0));
+        dst.nu03 = mu03 / Math.pow(mu00, ((0.0 + 3.0) / 2.0 + 1.0));
     }
 
     private void calc_humoments(moments mom, double[] hu)
@@ -237,7 +237,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
 
         double q0 = t0 * t0, q1 = t1 * t1;
 
-        double n4 = 4 * mom.nu11;
+        double n4 = 4.0 * mom.nu11;
         double s = mom.nu20 + mom.nu02;
         double d = mom.nu20 - mom.nu02;
 
@@ -246,11 +246,11 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         hu[3] = q0 + q1;
         hu[5] = d * (q0 - q1) + n4 * t0 * t1;
 
-        t0 *= q0 - 3 * q1;
-        t1 *= 3 * q0 - q1;
+        t0 *= q0 - 3.0 * q1;
+        t1 *= 3.0 * q0 - q1;
 
-        q0 = mom.nu30 - 3 * mom.nu12;
-        q1 = 3 * mom.nu21 - mom.nu03;
+        q0 = mom.nu30 - 3.0 * mom.nu12;
+        q1 = 3.0 * mom.nu21 - mom.nu03;
 
         hu[2] = q0 * q0 + q1 * q1;
         hu[4] = q0 * t0 + q1 * t1;
@@ -270,17 +270,23 @@ public class WK_HuMoments implements ExtendedPlugInFilter
             RES_INI[4] = results[4];
             RES_INI[5] = results[5];
             RES_INI[6] = results[6];
+            RES_INI[7] = 0;
+            RES_INI[8] = results[8];
+
             results[7] = 0;
+            results[8] = 0;
         }
         else
         {
-            for(int i = 0; i < 7; i++)
+            for(int i = 0; i < 6; i++) // Except the 7th Hu moment, it is unchangeable for a scale change, a rotation, inversion.
             {
                 double res = Math.copySign(Math.log(Math.abs(results[i])), results[i]);
                 double ini = Math.copySign(Math.log(Math.abs(RES_INI[i])), RES_INI[i]);
 
                 results[7] += Math.abs(1 / res - 1 / ini);
             }
+
+            results[8] = results[8] - RES_INI[8];
         }
 
         rt.incrementCounter();
@@ -298,7 +304,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter
 
         rt.show("Results");
     }
-    
+
     /**
      * get the ResultsTable or create a new ResultsTable
      * @param enReset reset or not
@@ -306,20 +312,20 @@ public class WK_HuMoments implements ExtendedPlugInFilter
      */
     private ResultsTable getResultsTable(boolean enReset)
     {
-        ResultsTable rt = ResultsTable.getResultsTable();        
+        ResultsTable rt = ResultsTable.getResultsTable();
 
         if(rt == null || rt.getCounter() == 0)
         {
             rt = new ResultsTable();
         }
-        
+
         if(enReset)
         {
             rt.reset();
         }
-        
+
         rt.show("Results");
-        
+
         return rt;
     }
 }
