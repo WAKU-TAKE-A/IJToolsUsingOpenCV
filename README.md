@@ -21,8 +21,9 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 * <takehito.nishida@gmail.com>
 
 ## <a name="eng">Message
+IJToolsUsingOpenCV is the plugins of ImageJ.
 
-The OpenCV of the windows version has been wrapper for Java. Using that, I created plugin.
+The OpenCV of the windows version has been wrapper for Java. IJToolsUsingOpenCV uses the wrapper.
 
 It is described in the following site. I think very easy way.
 
