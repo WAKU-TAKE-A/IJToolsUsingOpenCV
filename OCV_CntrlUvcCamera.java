@@ -40,7 +40,6 @@ import org.opencv.videoio.VideoCapture;
 
 /**
  * Control UVC camera using VideoCapture function (OpenCV3.1)
- * @version 0.9.6.1
  */
 public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 {

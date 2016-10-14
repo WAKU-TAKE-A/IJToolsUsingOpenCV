@@ -36,10 +36,10 @@ import org.opencv.core.Mat;
 
 /**
  * load library
- * @version 0.9.6.1
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
+    private static final String VER = "0.9.6.3";
     public static boolean isLoad = false;
 
     @Override
@@ -66,7 +66,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         try
         {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            IJ.showMessage("Load " + Core.NATIVE_LIBRARY_NAME + ".dll");
+            IJ.showMessage("Ver.  " + VER, "Load " + Core.NATIVE_LIBRARY_NAME + ".dll");
 
             isLoad = true;
         }

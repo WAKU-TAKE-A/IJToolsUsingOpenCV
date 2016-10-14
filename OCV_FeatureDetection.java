@@ -45,7 +45,6 @@ import org.opencv.features2d.Features2d;
  * 
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB
- * @version 0.9.6.1
  */
 public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilter
 {

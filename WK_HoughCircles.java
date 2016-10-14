@@ -38,7 +38,6 @@ import java.util.ArrayList;
 
 /**
  * Circle hough transform
- * @version 0.9.6.1
  */
 public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 {

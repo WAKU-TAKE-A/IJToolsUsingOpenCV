@@ -33,7 +33,6 @@ import java.awt.Frame;
 
 /**
  * select all ROI
- * @version 0.9.6.1
  */
 public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter
 {
