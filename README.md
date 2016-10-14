@@ -3,8 +3,9 @@
 [English messages - >](#eng)  
 
 ## <a name="ja">メッセージ
+IJToolsUsingOpenCVは、ImageJ用のプラグインです。
 
-Windows版OpenCVにはJava用のラッパーが用意されています。これを使って、OpenCVの関数を利用するプラグインを作りました。
+Windows版OpenCVにはJava用のラッパーが用意されています。これを使ったOpenCVの関数を利用するプラグインです。
 
 コンパイルは、ImageJの「Compile and Run」でも出来ますが、便利とは言えません。NetBeansをおすすめします。  
 以下のページで、NetBeansの設定を説明します。思ったより簡単で自分でも驚きました。
