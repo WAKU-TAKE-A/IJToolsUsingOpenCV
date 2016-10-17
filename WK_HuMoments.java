@@ -289,15 +289,15 @@ public class WK_HuMoments implements ExtendedPlugInFilter
         }
 
         rt.incrementCounter();
-        rt.addValue("Hu0", String.format("%8e", results[0]));
-        rt.addValue("Hu1", String.format("%8e", results[1]));
-        rt.addValue("Hu2", String.format("%8e", results[2]));
-        rt.addValue("Hu3", String.format("%8e", results[3]));
-        rt.addValue("Hu4", String.format("%8e", results[4]));
-        rt.addValue("Hu5", String.format("%8e", results[5]));
-        rt.addValue("Hu6", String.format("%8e", results[6]));
-        rt.addValue("Match", String.format("%8e", results[7]));
-        rt.addValue("Rotation", String.format("%8f", results[8]));
+        rt.addValue("Hu0", String.valueOf(results[0]));
+        rt.addValue("Hu1", String.valueOf(results[1]));
+        rt.addValue("Hu2", String.valueOf(results[2]));
+        rt.addValue("Hu3", String.valueOf(results[3]));
+        rt.addValue("Hu4", String.valueOf(results[4]));
+        rt.addValue("Hu5", String.valueOf(results[5]));
+        rt.addValue("Hu6", String.valueOf(results[6]));
+        rt.addValue("Match", String.valueOf(results[7]));
+        rt.addValue("Rotation", String.valueOf(results[8]));
         rt.addValue("Width", rect.width);
         rt.addValue("Height", rect.height);
 
