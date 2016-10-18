@@ -424,20 +424,20 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
      */
     private ResultsTable getResultsTable(boolean enReset)
     {
-        ResultsTable rt = ResultsTable.getResultsTable();        
+        ResultsTable rt = ResultsTable.getResultsTable();
 
         if(rt == null || rt.getCounter() == 0)
         {
             rt = new ResultsTable();
         }
-        
+
         if(enReset)
         {
             rt.reset();
         }
-        
+
         rt.show("Results");
-        
+
         return rt;
     }
     
@@ -450,7 +450,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager;        
+        RoiManager rm;        
         
         if (frame==null)
         {
@@ -458,18 +458,18 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         }
 
         frame = WindowManager.getFrame("ROI Manager");
-        roiManager = (RoiManager)frame;
+        rm = (RoiManager)frame;
         
         if(enReset)
         {
-            roiManager.reset();
+            rm.reset();
         }
         
         if(enShowNone)
         {
-            roiManager.runCommand("Show None");
+            rm.runCommand("Show None");
         }
         
-        return roiManager;
+        return rm;
     }
 }

@@ -50,16 +50,16 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     private static double max;
 
     // var.
-    private RoiManager roiManager = null;
+    private RoiManager roiMan = null;
     private int num_roi = 0;
-    private ResultsTable rt = null;
+    private ResultsTable rsTbl = null;
     private final Macro_Runner mr = new Macro_Runner();
     private boolean useExistRes;
 
     @Override
     public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr)
     {
-        String[] feats = rt.getHeadings();
+        String[] feats = rsTbl.getHeadings();
 
         GenericDialog gd = new GenericDialog(cmd + "...");
 
@@ -113,8 +113,8 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         else
         {
             // get the ROI Manager
-            roiManager = getRoiManager(false, true);
-            num_roi = roiManager.getCount();
+            roiMan = getRoiManager(false, true);
+            num_roi = roiMan.getCount();
 
             if(num_roi == 0)
             {
@@ -123,17 +123,17 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             }
 
             // get the ResultsTable
-            rt = getResultsTable(false);
+            rsTbl = getResultsTable(false);
 
-            if(rt.getCounter() != roiManager.getCount())
+            if(rsTbl.getCounter() != roiMan.getCount())
             {
-                rt.reset();
+                rsTbl.reset();
             }
 
             // Mesure
-            roiManager.deselect();
+            roiMan.deselect();
 
-            if(rt.getCounter() == 0)
+            if(rsTbl.getCounter() == 0)
             {
                 mr.runMacro("roiManager(\"Measure\");", "");
                 useExistRes = false;
@@ -150,30 +150,29 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     @Override
     public void run(ImageProcessor ip)
     {
-        // limit
         mr.runMacro("setBatchMode(true);", "");
 
-        int col = rt.getColumnIndex(type);
+        int col = rsTbl.getColumnIndex(type);
         double val;
         boolean chk_min;
         boolean chk_max;
 
         for(int i = num_roi - 1; 0 <= i; i--)
         {
-            val = Double.valueOf(rt.getStringValue(col, i));
+            val = Double.valueOf(rsTbl.getStringValue(col, i));
             chk_min = enMin ? min <= val : true;
             chk_max = enMax ? val <= max : true;
 
             if(!chk_min || !chk_max)
             {
-                roiManager.select(i);
-                roiManager.runCommand("delete");
-                rt.deleteRow(i);
+                roiMan.select(i);
+                roiMan.runCommand("delete");
+                rsTbl.deleteRow(i);
             }
         }
 
         mr.runMacro("setBatchMode(false);", "");
-        rt.show("Results");
+        rsTbl.show("Results");
     }
     
     /**
@@ -183,20 +182,20 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
      */
     private ResultsTable getResultsTable(boolean enReset)
     {
-        ResultsTable rt = ResultsTable.getResultsTable();        
+        ResultsTable rt = ResultsTable.getResultsTable();
 
         if(rt == null || rt.getCounter() == 0)
         {
             rt = new ResultsTable();
         }
-        
+
         if(enReset)
         {
             rt.reset();
         }
-        
+
         rt.show("Results");
-        
+
         return rt;
     }
     
@@ -209,7 +208,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiMan;        
+        RoiManager rm;        
         
         if (frame==null)
         {
@@ -217,18 +216,18 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         }
 
         frame = WindowManager.getFrame("ROI Manager");
-        roiMan = (RoiManager)frame;
+        rm = (RoiManager)frame;
         
         if(enReset)
         {
-            roiMan.reset();
+            rm.reset();
         }
         
         if(enShowNone)
         {
-            roiMan.runCommand("Show None");
+            rm.runCommand("Show None");
         }
         
-        return roiMan;
+        return rm;
     }
 }

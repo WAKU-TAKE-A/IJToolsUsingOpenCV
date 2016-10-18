@@ -45,7 +45,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     private static int type_ind = 0;
 
     // var.
-    private RoiManager roiManager = null;
+    private RoiManager roiMan = null;
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
@@ -81,26 +81,17 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         }
         else
         {
-            Frame frame = WindowManager.getFrame("ROI Manager");
-
-            if (frame==null)
-            {
-                return DONE;
-            }
-
-            frame = WindowManager.getFrame("ROI Manager");
-            roiManager = (RoiManager)frame;
-
-            int num_roi = roiManager.getCount();
+            // get the ROI Manager
+            roiMan = getRoiManager(false, true);
+            int num_roi = roiMan.getCount();
 
             if(num_roi == 0)
             {
+                IJ.error("ERR : ROI is vacant.");
                 return DONE;
             }
 
-            roiManager.runCommand("show none");
-
-            return DOES_ALL;
+            return FLAGS;
         }
     }
 
@@ -110,7 +101,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
         
-        int num_roi = roiManager.getCount();
+        int num_roi = roiMan.getCount();
 
         if(num_roi == 0)
         {
@@ -118,22 +109,54 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
         }
         else if(num_roi == 1)
         {
-            roiManager.select(0);
+            roiMan.select(0);
             // do nothing after selecting
         }
         else
         {
-            roiManager.deselect();
+            roiMan.deselect();
 
-            int[] indx_all = roiManager.getIndexes();
-            roiManager.setSelectedIndexes(indx_all);
+            int[] indx_all = roiMan.getIndexes();
+            roiMan.setSelectedIndexes(indx_all);
 
             if(!TYPE_STR[type_ind].equals(STR_NONE))
             {
-                roiManager.runCommand(TYPE_STR[type_ind]);
+                roiMan.runCommand(TYPE_STR[type_ind]);
             }
         }
         
         mr.runMacro("setBatchMode(false);", "");
+    }
+    
+    /**
+     * get the RoiManager or create a new RoiManager
+     * @param enReset reset or not
+     * @param enShowNone show none or not
+     * @return RoiManager
+     */
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
+    {
+        Frame frame = WindowManager.getFrame("ROI Manager");
+        RoiManager rm;        
+        
+        if (frame==null)
+        {
+            IJ.run("ROI Manager...");
+        }
+
+        frame = WindowManager.getFrame("ROI Manager");
+        rm = (RoiManager)frame;
+        
+        if(enReset)
+        {
+            rm.reset();
+        }
+        
+        if(enShowNone)
+        {
+            rm.runCommand("Show None");
+        }
+        
+        return rm;
     }
 }
