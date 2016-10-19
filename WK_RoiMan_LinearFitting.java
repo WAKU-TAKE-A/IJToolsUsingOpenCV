@@ -3,7 +3,6 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.Line;
-import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
@@ -46,14 +45,14 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
     private static final int FLAGS = DOES_ALL;
 
     // static var.
+    private static int num_run = 0;
     private static boolean enRefData = false;
     private static boolean enAddRoi = true;
 
     // var.
     private ImagePlus impSrc = null;
-    private FloatPolygon fPoly = null;
     private RoiManager roiMan = null;
-    private int selectedIndex = -1;
+    private int[] selectedIndexes = null;
     private ResultsTable rsTbl = null;
 
     @Override
@@ -116,12 +115,12 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
                 return DONE;
             }
             
-            // selectr roi
-            selectedIndex = roiMan.getSelectedIndex();
+            // get the selected rois
+            selectedIndexes = roiMan.getSelectedIndexes();
             
-            if(selectedIndex < 0)
+            if(selectedIndexes == null || selectedIndexes.length == 0)
             {
-                selectedIndex = 0;
+                selectedIndexes = new int[] { 0 };
             }
 
             return FLAGS;
@@ -131,43 +130,55 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
     @Override
     public void run(ImageProcessor ip)
     {       
-        Roi roi = roiMan.getRoi(selectedIndex);
-        fPoly = getCoordinates(roi);
+        int num_slctd = selectedIndexes.length;
         
-        int num = fPoly.npoints;
         boolean all_eq_x = true;
         boolean all_eq_y = true;
+        int num_all = 0;
         float sxy = 0;
         float sx = 0;
         float sy = 0;
         float sxx = 0;
         
-        for(int i = 0; i < num; i++)
+        FloatPolygon fPoly_ini = getCoordinates(roiMan.getRoi(selectedIndexes[0]));
+        float ini_x = fPoly_ini.xpoints[0];
+        float ini_y = fPoly_ini.ypoints[0];
+        
+        for(int i = 0; i < num_slctd; i++)
         {
-            if(fPoly.xpoints[0] != fPoly.xpoints[i])
-            {
-                all_eq_x = false;
-            }
+            Roi roi = roiMan.getRoi(selectedIndexes[i]);
+            FloatPolygon fPoly = getCoordinates(roi);
+            int num_poly = fPoly.npoints;
             
-            if(fPoly.ypoints[0] != fPoly.ypoints[i])
+            for(int di = 0; di < num_poly; di++)
             {
-                all_eq_y = false;
+                if(ini_x != fPoly.xpoints[di])
+                {
+                    all_eq_x = false;
+                }
+
+                if(ini_y != fPoly.ypoints[di])
+                {
+                    all_eq_y = false;
+                }
+
+                sxy += fPoly.xpoints[di] * fPoly.ypoints[di];
+                sx += fPoly.xpoints[di];
+                sy += fPoly.ypoints[di];
+                sxx += fPoly.xpoints[di] * fPoly.xpoints[di];
+                
+                num_all++;
             }
-            
-            sxy += fPoly.xpoints[i] * fPoly.ypoints[i];
-            sx += fPoly.xpoints[i];
-            sy += fPoly.ypoints[i];
-            sxx += fPoly.xpoints[i] * fPoly.xpoints[i];
         }
         
-        double a = (double)num * sxx - sx * sx;        
+        double a = (double)num_all * (double)sxx - (double)sx * (double)sx;        
         double slope = 0;
         double intercept = 0;
         
         if(all_eq_x && all_eq_y)
         {
-            slope = 0.0 / 0.0;
-            intercept = 0.0 / 0.0;
+            IJ.error("ERR : only one point");
+            return;
         }
         else if(all_eq_x && !all_eq_y)
         {
@@ -177,12 +188,12 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
         else if(!all_eq_x && all_eq_y)
         {
             slope = 0;
-            intercept = fPoly.ypoints[0];
+            intercept = ini_y;
         }
         else
         {
-            slope = ((double)num * sxy - sx * sy) / a;
-            intercept = (sxx * sy - sxy * sx) / a;
+            slope = ((double)num_all * (double)sxy - (double)sx * (double)sy) / a;
+            intercept = ((double)sxx * (double)sy - (double)sxy * (double)sx) / a;
         }
         
         rsTbl.incrementCounter();
@@ -193,38 +204,50 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
         
         if(enAddRoi)
         {
-            if(all_eq_x && all_eq_y)
-            {
-                PointRoi pt = new PointRoi(fPoly.xpoints[0], fPoly.ypoints[0]);
-                roiMan.addRoi(pt);
-            }
-            else if(all_eq_x && !all_eq_y)
+            double x1 = 0.0;
+            double y1 = 0.0;
+            double x2 = 0.0;
+            double y2 = 0.0;
+            
+            if(all_eq_x && !all_eq_y)
             {
                 double h = (double)(impSrc.getHeight());
-                Line ln = new Line(fPoly.xpoints[0], 0.0, fPoly.xpoints[0], h);
-                roiMan.addRoi(ln);
+                x1 = (double)ini_x;
+                y1 = 0.0;
+                x2 = x1;
+                y2 = h + (double)num_run;
             }
             else if(!all_eq_x && all_eq_y)
             {
                 double w = (double)(impSrc.getWidth());
-                Line ln = new Line(0.0, fPoly.ypoints[0], w, fPoly.ypoints[0]);
-                roiMan.addRoi(ln); 
+                x1 = 0.0;
+                y1 = (double)ini_y;
+                x2 = w + (double)num_run;
+                y2 = y1;               
             }
             else
             {
                 if(-1 <= slope && slope <= 1)
                 {
                     double w = (double)(impSrc.getWidth());
-                    Line ln = new Line(0.0, intercept, w, slope * w + intercept);
-                    roiMan.addRoi(ln);               
+                    x1 = 0.0;
+                    y1 = slope * x1 + intercept;
+                    x2 = w + (double)num_run;
+                    y2 = slope * x2 + intercept;  
                 }
                 else
                 {
                     double h = (double)(impSrc.getHeight());
-                    Line ln = new Line((0 - intercept) / slope, 0.0, (h - intercept) / slope, h);
-                    roiMan.addRoi(ln);                
+                    y1 = 0.0;
+                    x1 = (y1 - intercept) / slope;
+                    y2 = h + (double)num_run; 
+                    x2 = (y2 - intercept) / slope;               
                 }               
             }
+            
+            Line ln = new Line(x1, y1, x2, y2);
+            roiMan.addRoi(ln);
+            num_run++;
         }
     }
     
@@ -292,7 +315,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
     private FloatPolygon getCoordinates(Roi roi)
     {       
         FloatPolygon output = new FloatPolygon();
-        
+
         if (roi.getType() == Roi.LINE)
         {
             Line line = (Line)roi;
