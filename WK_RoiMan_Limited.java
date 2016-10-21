@@ -44,10 +44,10 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
     // static var.
     private static String type = "Area";
-    private static boolean enMin;
-    private static double min;
-    private static boolean enMax;
-    private static double max;
+    private static boolean enMin = false;
+    private static double min = 0.0;
+    private static boolean enMax = false;
+    private static double max = 0.0;
 
     // var.
     private RoiManager roiMan = null;

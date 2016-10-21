@@ -45,9 +45,9 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
     private static final String[] TYPE_STR = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "WARP_INVERSE_MAP" };
 
     // static var.
-    private static Rectangle rect;
-    private static int cx;
-    private static int cy;
+    private static Rectangle rect = new Rectangle(0, 0, 0, 0);
+    private static int cx = 0;
+    private static int cy = 0;
     private static int rmax = 1;
     private static int type_ind = 0;
 

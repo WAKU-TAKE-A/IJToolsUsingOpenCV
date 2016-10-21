@@ -42,7 +42,7 @@ import java.util.ArrayList;
 public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
 {
     // static var.
-    private static boolean enRefData;
+    private static boolean enRefData = false;
 
     // var.
     private ImagePlus impSrc = null;

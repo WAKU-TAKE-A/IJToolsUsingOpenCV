@@ -47,8 +47,8 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     private final int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK };
 
     // static var.
-    private static int ind_src;
-    private static int ind_msk;
+    private static int ind_src = 0;
+    private static int ind_msk = 1;
     private static int ind_type = 0;
     private static int iter = 3;
     private static boolean enFgd = true;   
@@ -65,8 +65,8 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addChoice("src", titles_wnd, titles_wnd[0]);
-        gd.addChoice("mask", titles_wnd, titles_wnd[1]);
+        gd.addChoice("src", titles_wnd, titles_wnd[ind_src]);
+        gd.addChoice("mask", titles_wnd, titles_wnd[ind_msk]);
         gd.addNumericField("iterCount", iter, 0);
         gd.addChoice("mode", TYPE_STR, TYPE_STR[ind_type]);
         gd.addCheckbox("enable_foreground_is_255", enFgd);

@@ -44,7 +44,7 @@ import org.opencv.imgproc.Imgproc;
 public class OCV_MinAreaRect implements ExtendedPlugInFilter
 {
     // static var.
-    private static boolean enRefData;
+    private static boolean enRefData = false;
 
     // var.
     private ImagePlus impSrc = null;

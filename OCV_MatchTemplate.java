@@ -51,8 +51,8 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     private final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF_NORMED };
 
     // static var.
-    private static int ind_src;
-    private static int ind_tmp;
+    private static int ind_src = 0;
+    private static int ind_tmp = 1;
     private static int ind_type = 1;
     private static float thr_res = (float)0.5;
     private static boolean enResult = true;
@@ -70,8 +70,8 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addChoice("src", titles, titles[0]);
-        gd.addChoice("template", titles, titles[1]);
+        gd.addChoice("src", titles, titles[ind_src]);
+        gd.addChoice("template", titles, titles[ind_tmp]);
         gd.addChoice("method", TYPE_STR, TYPE_STR[ind_type]);
         gd.addNumericField("threshold_of_results", thr_res, 4);
         gd.addCheckbox("enable_results_table", enResult);

@@ -39,7 +39,7 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.7.1";
+    private static final String VER = "0.9.7.2";
     public static boolean isLoad = false;
 
     @Override
@@ -171,15 +171,17 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager;        
+        RoiManager roiManager = null;        
         
-        if (frame==null)
+        if (frame == null)
         {
-            IJ.run("ROI Manager...");
+            roiManager = new RoiManager();
+            roiManager.setVisible(true);
         }
-
-        frame = WindowManager.getFrame("ROI Manager");
-        roiManager = (RoiManager)frame;
+        else
+        {
+            roiManager = (RoiManager)frame;       
+        }
         
         if(enReset)
         {

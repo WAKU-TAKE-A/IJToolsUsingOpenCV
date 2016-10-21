@@ -48,7 +48,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
     // static var.
     private static int type_ind = 1;
-    private static boolean enOutImg;
+    private static boolean enOutImg = false;
 
     // var.
     private ImagePlus impSrc = null;
