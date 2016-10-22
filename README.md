@@ -13,6 +13,7 @@ Windows版OpenCVにはJava用のラッパーが用意されています。これ
 * [How to use OpenCV from ImageJ](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile01_ja)
 * [How to use OpenCV from ImageJ Part2](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki/HowToCmpile02_ja)
 
+あと、  
 作成したプラグインのインストール方法や簡単な説明 ⇒ [GitHubのWiki](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/wiki)  
 作成したプラグインのバイナリー ⇒ [Release](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)  
 ImageJに関する記事 ⇒ [GitHub Pages](https://waku-take-a.github.io)
