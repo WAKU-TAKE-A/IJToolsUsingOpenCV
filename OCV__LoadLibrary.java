@@ -171,28 +171,28 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager roiManager = null;        
+        RoiManager rm = null;        
         
         if (frame == null)
         {
-            roiManager = new RoiManager();
-            roiManager.setVisible(true);
+            rm = new RoiManager();
+            rm.setVisible(true);
         }
         else
         {
-            roiManager = (RoiManager)frame;       
+            rm = (RoiManager)frame;       
         }
         
         if(enReset)
         {
-            roiManager.reset();
+            rm.reset();
         }
         
         if(enShowNone)
         {
-            roiManager.runCommand("Show None");
+            rm.runCommand("Show None");
         }
         
-        return roiManager;
+        return rm;
     }
 }

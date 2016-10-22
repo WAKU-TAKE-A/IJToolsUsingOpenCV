@@ -208,15 +208,17 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm;        
+        RoiManager rm = null;        
         
-        if (frame==null)
+        if (frame == null)
         {
-            IJ.run("ROI Manager...");
+            rm = new RoiManager();
+            rm.setVisible(true);
         }
-
-        frame = WindowManager.getFrame("ROI Manager");
-        rm = (RoiManager)frame;
+        else
+        {
+            rm = (RoiManager)frame;       
+        }
         
         if(enReset)
         {
