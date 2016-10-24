@@ -114,16 +114,18 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         // dst
         String titleDst = WindowManager.getUniqueName(impSrc.getTitle() + "_Connect" + String.valueOf(TYPE_INT[type_ind]));
-        ImagePlus impDst = new ImagePlus (titleDst, new ShortProcessor(imw, imh));
-        short[] dst_arr = (short[]) impDst.getChannelProcessor().getPixels();
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_16U);
+        ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(imw, imh));
+        float[] dst_arr = (float[]) impDst.getChannelProcessor().getPixels();
+        Mat dst_mat_32s = new Mat(imh, imw, CvType.CV_32S);
+        Mat dst_mat_32f = new Mat(imh, imw, CvType.CV_32F);
         Mat stats_mat = new Mat();
         Mat cens_mat = new Mat();
 
         // run
         src_mat.put(0, 0, src_arr);
-        int output_con = Imgproc.connectedComponentsWithStats(src_mat, dst_mat, stats_mat, cens_mat, TYPE_INT[type_ind], CvType.CV_16U);
-        dst_mat.get(0, 0, dst_arr);
+        int output_con = Imgproc.connectedComponentsWithStats(src_mat, dst_mat_32s, stats_mat, cens_mat, TYPE_INT[type_ind], CvType.CV_32S);
+        dst_mat_32s.convertTo(dst_mat_32f, CvType.CV_32F);
+        dst_mat_32f.get(0, 0, dst_arr);
 
         // show data
         if(1 < output_con)
@@ -142,7 +144,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         }
     }
 
-    private void showData(short[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat)
+    private void showData(float[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat)
     {
         int num_lab = output_con - 1;
 
