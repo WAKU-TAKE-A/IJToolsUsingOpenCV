@@ -11,6 +11,7 @@ import ij.plugin.frame.RoiManager;
 import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
+import java.awt.Rectangle;
 
 /*
  * The MIT License
@@ -310,23 +311,30 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
     }
     
     /**
-     * get the coordinates of the roi
+     * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
      * @param roi ROI
      * @return Points
      */
     private FloatPolygon getCoordinates(Roi roi)
-    {       
+    {
         FloatPolygon output = new FloatPolygon();
+        ImageProcessor mask = roi.getMask();
+        Rectangle r = roi.getBounds();
+        ResultsTable rt = new ResultsTable();
+        int pos_x = 0;
+        int pos_y = 0;
 
-        if (roi.getType() == Roi.LINE)
+        for(int y = 0; y < r.height; y++)
         {
-            Line line = (Line)roi;
-            output.addPoint(line.x1d, line.y1d);
-            output.addPoint(line.x2d, line.y2d);
-        }
-        else 
-        {
-            output = roi.getFloatPolygon();
+            for(int x = 0; x < r.width; x++)
+            {
+                if (mask == null || mask.getPixel(x, y) != 0)
+                {
+                    pos_x = r.x + x;
+                    pos_y = r.y + y;
+                    output.addPoint((float)pos_x, (float)pos_y);
+                }
+            }
         }
         
         return output;
