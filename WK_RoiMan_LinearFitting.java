@@ -8,10 +8,11 @@ import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
-import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 import java.awt.Rectangle;
+import java.util.ArrayList;
+import org.opencv.core.Point;
 
 /*
  * The MIT License
@@ -136,40 +137,43 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
         boolean all_eq_x = true;
         boolean all_eq_y = true;
         int num_all = 0;
-        float sxy = 0;
-        float sx = 0;
-        float sy = 0;
-        float sxx = 0;
-        
-        FloatPolygon fPoly_ini = getCoordinates(roiMan.getRoi(selectedIndexes[0]));
-        float ini_x = fPoly_ini.xpoints[0];
-        float ini_y = fPoly_ini.ypoints[0];
-        
+        double ini_x = 0;
+        double ini_y = 0;
+        double sxy = 0;
+        double sx = 0;
+        double sy = 0;
+        double sxx = 0;
+        ArrayList<Point> lstPt = new ArrayList<Point>();
+
         for(int i = 0; i < num_slctd; i++)
         {
             Roi roi = roiMan.getRoi(selectedIndexes[i]);
-            FloatPolygon fPoly = getCoordinates(roi);
-            int num_poly = fPoly.npoints;
+            getCoordinates(roi, lstPt);           
+        }
+
+        ini_x = lstPt.get(0).x;
+        ini_y = lstPt.get(0).y;        
+        num_all = lstPt.size();
+        
+        for(int i = 0; i < num_all; i++)
+        {
+            double x = lstPt.get(i).x;
+            double y = lstPt.get(i).y;
             
-            for(int di = 0; di < num_poly; di++)
+            if(ini_x != x)
             {
-                if(ini_x != fPoly.xpoints[di])
-                {
-                    all_eq_x = false;
-                }
-
-                if(ini_y != fPoly.ypoints[di])
-                {
-                    all_eq_y = false;
-                }
-
-                sxy += fPoly.xpoints[di] * fPoly.ypoints[di];
-                sx += fPoly.xpoints[di];
-                sy += fPoly.ypoints[di];
-                sxx += fPoly.xpoints[di] * fPoly.xpoints[di];
-                
-                num_all++;
+               all_eq_x = false;
             }
+
+            if(ini_y != y)
+            {
+               all_eq_y = false;
+            }
+            
+            sx += x;
+            sy += y;
+            sxx += x * x;
+            sxy += x * y;
         }
         
         double a = (double)num_all * (double)sxx - (double)sx * (double)sx;        
@@ -198,9 +202,8 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
         }
         
         rsTbl.incrementCounter();
-        rsTbl.addValue("Slope", slope);
-        rsTbl.addValue("Intercept", intercept);
-
+        rsTbl.addValue("Slope", String.valueOf(slope));
+        rsTbl.addValue("Intercept", String.valueOf(intercept));
         rsTbl.show("Results");
         
         if(enAddRoi)
@@ -315,12 +318,10 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
      * @param roi ROI
      * @return Points
      */
-    private FloatPolygon getCoordinates(Roi roi)
+    private void getCoordinates(Roi roi, ArrayList<Point> lstPt)
     {
-        FloatPolygon output = new FloatPolygon();
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();
-        ResultsTable rt = new ResultsTable();
         int pos_x = 0;
         int pos_y = 0;
 
@@ -332,11 +333,9 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
                 {
                     pos_x = r.x + x;
                     pos_y = r.y + y;
-                    output.addPoint((float)pos_x, (float)pos_y);
+                    lstPt.add(new Point(pos_x, pos_y));
                 }
             }
         }
-        
-        return output;
     }
 }
