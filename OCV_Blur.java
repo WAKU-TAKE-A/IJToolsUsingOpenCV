@@ -9,6 +9,8 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Point;
+import org.opencv.core.Size;
 
 /*
  * The MIT License
@@ -35,12 +37,12 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * bilateralFilter (OpenCV3.1)
+ * blur (OpenCV3.1)
  */
-public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | DOES_16 | KEEP_PREVIEW;
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -55,10 +57,12 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     private static final String[] STR_BORDERTYPE = { "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_REPLICATE" };
 
     // staic var.
-    private static int diameter = 5; // Diameter of each pixel neighborhood that is used during filtering.
-    private static double sigmaColor  = 15; // Filter sigma in the color space.
-    private static double sigmaSpace  = 8; // Filter sigma in the coordinate space.
+    private static double ksize_x = 3; // Blurring kernel size of x
+    private static double ksize_y = 3; // Blurring kernel size of y
     private static int indBorderType = 1; // Border types.
+    
+    // var.
+    private Size ksize = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
@@ -66,9 +70,8 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
         gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
-        gd.addNumericField("diameter", diameter, 0);
-        gd.addNumericField("sigmaColor", sigmaColor, 4);
-        gd.addNumericField("sigmaSpace", sigmaSpace, 4);
+        gd.addNumericField("ksize_x", ksize_x, 4);
+        gd.addNumericField("ksize_y", ksize_y, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -127,7 +130,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
             
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 24)
@@ -143,8 +146,40 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
          
             // run
             OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
             OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
+        }
+        else if(ip.getBitDepth() == 32)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            float[] srcdst_floats = (float[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
+            
+            // run
+            src_mat.put(0, 0, srcdst_floats);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            dst_mat.get(0, 0, srcdst_floats);        
+        }
+        else if(ip.getBitDepth() == 16)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            short[] srcdst_shorts = (short[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
+            
+            // run
+            src_mat.put(0, 0, srcdst_shorts);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            dst_mat.get(0, 0, srcdst_shorts);        
         }
         else
         {
@@ -155,13 +190,13 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {
-        diameter = (int)gd.getNextNumber();
-        sigmaColor = (double)gd.getNextNumber();
-        sigmaSpace = (double)gd.getNextNumber();
+        ksize_x = (double)gd.getNextNumber();
+        ksize_y = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if((0 < sigmaColor) && (0 < sigmaSpace))
+        if((0 < ksize_x) && (0 < ksize_y))
         {
+            ksize = new Size(ksize_x, ksize_y);
             return true;
         }
         else
