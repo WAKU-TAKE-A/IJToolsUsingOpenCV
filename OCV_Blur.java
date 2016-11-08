@@ -69,7 +69,6 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
         gd.addNumericField("ksize_x", ksize_x, 4);
         gd.addNumericField("ksize_y", ksize_y, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
@@ -133,6 +132,22 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
+        else if(ip.getBitDepth() == 16)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            short[] srcdst_shorts = (short[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
+            
+            // run
+            src_mat.put(0, 0, srcdst_shorts);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            dst_mat.get(0, 0, srcdst_shorts);        
+        }
         else if(ip.getBitDepth() == 24)
         {
             // dst
@@ -164,22 +179,6 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             src_mat.put(0, 0, srcdst_floats);
             Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_floats);        
-        }
-        else if(ip.getBitDepth() == 16)
-        {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            short[] srcdst_shorts = (short[])ip.getPixels();
-            
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-            
-            // run
-            src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_shorts);        
         }
         else
         {
