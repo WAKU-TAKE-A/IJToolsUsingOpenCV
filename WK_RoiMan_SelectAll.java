@@ -32,7 +32,7 @@ import java.awt.Frame;
  */
 
 /**
- * select all ROI
+ * Select all ROI.
  */
 public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter
 {

@@ -35,11 +35,11 @@ import org.opencv.core.Mat;
  */
 
 /**
- * load library
+ * Load OpenCV library.
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.8.1";
+    private static final String VER = "0.9.9.0";
     public static boolean isLoad = false;
 
     @Override

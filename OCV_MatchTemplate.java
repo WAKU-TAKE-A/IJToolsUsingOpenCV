@@ -41,7 +41,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * matchTemplate (OpenCV3.1)
+ * matchTemplate (OpenCV3.1).
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * convexHull (OpenCV3.1)
+ * convexHull (OpenCV3.1).
  */
 public class OCV_ConvexHull implements ExtendedPlugInFilter
 {

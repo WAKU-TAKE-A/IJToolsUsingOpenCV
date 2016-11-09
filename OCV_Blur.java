@@ -37,7 +37,7 @@ import org.opencv.core.Size;
  */
 
 /**
- * blur (OpenCV3.1)
+ * blur (OpenCV3.1).
  */
 public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

@@ -31,7 +31,7 @@ import java.awt.Rectangle;
  */
 
 /**
- * Change the pixel values
+ * Change the pixel values.
  */
 public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 {

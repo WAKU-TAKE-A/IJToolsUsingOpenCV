@@ -31,7 +31,7 @@ import java.awt.Rectangle;
  */
 
 /**
- * calculate HuMoments within the ROI.
+ * Calculate HuMoments within the ROI.
  *
  * I referred to the followings.
  * https://en.wikipedia.org/wiki/Image_moment#Rotation_invariant_moments

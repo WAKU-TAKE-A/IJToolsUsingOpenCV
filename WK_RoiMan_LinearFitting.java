@@ -39,7 +39,7 @@ import org.opencv.core.Point;
  */
 
 /**
- * linear fitting
+ * Linear fitting.
  */
 public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
 {
