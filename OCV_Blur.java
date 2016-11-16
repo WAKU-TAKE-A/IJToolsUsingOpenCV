@@ -196,6 +196,8 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
         if(ksize_x <= 0) { IJ.showStatus("ERR : ksize_x <= 0"); return false; }
         if(ksize_y <= 0) { IJ.showStatus("ERR : ksize_y <= 0"); return false; }
         
+        ksize = new Size(ksize_x, ksize_y);
+        
         IJ.showStatus("OCV_Blur");
         return true;
     }
