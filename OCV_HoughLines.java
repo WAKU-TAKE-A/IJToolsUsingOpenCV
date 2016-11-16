@@ -144,14 +144,19 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         maxDeg = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
 
-        if (resDist < 0 || resAngFact < 0 || minVotes < 0 || divDist < 0 || divAng < 0 || minDeg < 0 || maxDeg < 0 || 360 < minDeg || 360 < maxDeg || maxDeg < minDeg)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        if(resDist < 0) { IJ.showStatus("ERR : resDist < 0"); return false; }
+        if(resAngFact < 0) { IJ.showStatus("ERR : resAngFact < 0"); return false; }
+        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
+        if(divDist < 0) { IJ.showStatus("ERR : divDist < 0"); return false; }
+        if(divAng < 0) { IJ.showStatus("ERR : divAng < 0"); return false; }
+        if(minDeg < 0) { IJ.showStatus("ERR : minDeg < 0"); return false; }
+        if(maxDeg < 0) { IJ.showStatus("ERR : maxDeg < 0"); return false; }
+        if(maxDeg < 0) { IJ.showStatus("ERR : maxDeg < 0"); return false; }
+        if(360 < minDeg) { IJ.showStatus("ERR : 360 < minDeg"); return false; }
+        if(360 < maxDeg) { IJ.showStatus("ERR : 360 < maxDeg"); return false; }
+        if(maxDeg < minDeg) { IJ.showStatus("ERR : maxDeg < minDeg"); return false; }
+        
+        return true;
     }
 
     // private

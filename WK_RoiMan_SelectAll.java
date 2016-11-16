@@ -87,7 +87,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
 
             if(num_roi == 0)
             {
-                IJ.error("ERR : ROI is vacant.");
+                IJ.error("ROI is vacant.");
                 return DONE;
             }
 

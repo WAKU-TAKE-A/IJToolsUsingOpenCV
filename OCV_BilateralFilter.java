@@ -160,13 +160,9 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         sigmaSpace = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if((0 < sigmaColor) && (0 < sigmaSpace))
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if(sigmaColor <= 0) { IJ.showStatus("ERR : sigmaColor <= 0"); return false; }
+        if(sigmaSpace <= 0) { IJ.showStatus("ERR : sigmaSpace <= 0"); return false; }
+        
+        return true;
     }
 }

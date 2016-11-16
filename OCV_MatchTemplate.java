@@ -116,7 +116,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
 
             if (lst_wid==null || lst_wid.length < 2)
             {
-                IJ.error("ERR : require at least two open images.");
+                IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
@@ -193,28 +193,15 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         enResult = (boolean)gd.getNextBoolean();   
         enSearchMax = (boolean)gd.getNextBoolean(); 
        
-        if(ind_src == ind_tmp)
-        {
-            IJ.error("ERR : cannot be the same as.");
-            return false;
-        }
+        if(ind_src == ind_tmp) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
 
         imp_src = WindowManager.getImage(lst_wid[ind_src]);
         imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
         title_src = imp_src.getShortTitle();
 
-        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8)
-        {
-            IJ.error("ERR : only 8bit.");
-            return false;
-        }
-        
-        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight())
-        {
-            IJ.error("ERR : the size of template is larger than the size of src.");
-            return false;
-        }
-        
+        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8) { IJ.showStatus("ERR : only 8bit"); return false; }
+        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight()) { IJ.showStatus("ERR : The size of template is larger than the size of src."); return false; }
+                
         if(enSearchMax)
         {
             enResult = true;

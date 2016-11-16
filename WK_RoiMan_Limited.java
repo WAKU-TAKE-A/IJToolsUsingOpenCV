@@ -118,7 +118,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
             if(num_roi == 0)
             {
-                IJ.error("ERR : ROI is vacant.");
+                IJ.error("ROI is vacant.");
                 return DONE;
             }
 

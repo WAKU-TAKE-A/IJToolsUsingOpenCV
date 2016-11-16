@@ -141,7 +141,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 
         if(!bret)
         {
-            IJ.error("camera initialization failed.");
+            IJ.error("Camera initialization is failed.");
             diag_free.dispose();
             return;
         }
@@ -178,7 +178,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             
             if(!bret)
             {
-                IJ.error("error occurred in grabbing.");
+                IJ.error("Error occurred in grabbing.");
                 diag_free.dispose();
                 break;
             }
@@ -197,7 +197,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             }
             else
             {
-                IJ.error("only color camera is supported.");
+                IJ.error("Color camera is supported only.");
                 diag_free.dispose();
                 break;
             }

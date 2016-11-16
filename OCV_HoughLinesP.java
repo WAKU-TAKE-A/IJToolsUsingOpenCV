@@ -134,14 +134,13 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         maxGap = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
 
-        if (resDist < 0 || resAngFact < 0 || minVotes < 0 || minLen < 0 || maxGap < 0)
-        {
-            return false;
-        }
-        else
-        {
-            return true;
-        }
+        if(resDist < 0) { IJ.showStatus("ERR : resDist < 0"); return false; }
+        if(resAngFact < 0) { IJ.showStatus("ERR : resAngFact < 0"); return false; }
+        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
+        if(minLen < 0) { IJ.showStatus("ERR : minLen < 0"); return false; }
+        if(maxGap < 0) { IJ.showStatus("ERR : maxGap < 0"); return false; }
+        
+        return true;
     }
 
     // private

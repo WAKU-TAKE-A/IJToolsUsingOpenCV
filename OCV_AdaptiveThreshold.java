@@ -131,13 +131,11 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         blockSize = (int)gd.getNextNumber();
         subC = (double)gd.getNextNumber();
 
-        if(0 < maxValue && 1 < blockSize && blockSize % 2 ==1 && 0 < subC)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if(maxValue <= 0) { IJ.showStatus("ERR : maxValue <= 0"); return false; }
+        if(blockSize <= 1) { IJ.showStatus("ERR : blockSize <= 1"); return false; }
+        if(blockSize % 2 == 0) { IJ.showStatus("ERR : blockSize is not odd."); return false; }
+        if(subC <= 0) { IJ.showStatus("ERR : subC <= 0"); return false; }
+        
+        return true;
     }
 }

@@ -193,14 +193,9 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
         ksize_y = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if((0 < ksize_x) && (0 < ksize_y))
-        {
-            ksize = new Size(ksize_x, ksize_y);
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if(ksize_x <= 0) { IJ.showStatus("ERR : ksize_x <= 0"); return false; }
+        if(ksize_y <= 0) { IJ.showStatus("ERR : ksize_y <= 0"); return false; }
+        
+        return true;
     }
 }

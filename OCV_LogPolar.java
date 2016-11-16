@@ -141,13 +141,10 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
         rmax = (int)gd.getNextNumber();
         type_ind = (int)gd.getNextChoiceIndex();
 
-        if(0 <= cx && 0 <= cy && 0 < rmax)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if(cx < 0) { IJ.showStatus("ERR : cx < 0"); return false; }
+        if(cy < 0) { IJ.showStatus("ERR : cy < 0"); return false; }
+        if(rmax <= 0) { IJ.showStatus("ERR : rmax <= 0"); return false; }
+        
+        return true;
     }
 }

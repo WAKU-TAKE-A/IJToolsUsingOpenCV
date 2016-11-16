@@ -113,7 +113,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
 
             if(num_roi == 0)
             {
-                IJ.error("ERR : ROI is vacant.");
+                IJ.error("ROI is vacant.");
                 return DONE;
             }
             
@@ -182,7 +182,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
         
         if(all_eq_x && all_eq_y)
         {
-            IJ.error("ERR : only one point");
+            IJ.error("only one point");
             return;
         }
         else if(all_eq_x && !all_eq_y)

@@ -1,11 +1,13 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
+import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
+import java.awt.AWTEvent;
 import java.io.File;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -46,7 +48,7 @@ import org.opencv.features2d.Features2d;
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB
  */
-public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilter
+public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private final int FLAGS = DOES_RGB;
@@ -85,6 +87,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
         gd.addChoice("DescriptorMatcher", TYPE_STR_MATCH, TYPE_STR_MATCH[ind_match]);
         gd.addNumericField("MaxDistance", max_distance, 4);
         gd.addCheckbox("DrawMatches", enDrawMatches);
+        gd.addDialogListener(this);
 
         gd.showDialog();
 
@@ -94,43 +97,6 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
         }
         else
         {
-            ind_query = (int)gd.getNextChoiceIndex();
-            ind_train = (int)gd.getNextChoiceIndex();
-            ind_det = (int)gd.getNextChoiceIndex();
-            ind_match = (int)gd.getNextChoiceIndex();
-            max_distance = (double)gd.getNextNumber();
-            enDrawMatches = (boolean)gd.getNextBoolean();
-            
-            if(ind_train == ind_query)
-            {
-                IJ.error("ERR : cannot be the same as.");
-                return DONE;
-            }
-
-            imp_query = WindowManager.getImage(lst_wid[ind_query]);
-            imp_train = WindowManager.getImage(lst_wid[ind_train]);
-
-            if(imp_query.getBitDepth() != 24 || imp_train.getBitDepth() != 24)
-            {
-                IJ.error("ERR : only RGB.");
-                return DONE;
-            }
-
-            type_det = TYPE_VAL_DET[ind_det];
-            type_ext = TYPE_VAL_EXT[ind_det];
-            detector = FeatureDetector.create(type_det);
-            
-            fname = TYPE_STR_DET[ind_det] + ".yaml";
-            File file = new File(fname);
-            
-            if(file.exists())
-            {
-                detector.read(fname);
-            }
-            else
-            {
-                detector.write(fname);
-            }
             return FLAGS;
         }
     }
@@ -161,7 +127,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
 
             if (lst_wid==null || lst_wid.length < 2)
             {
-                IJ.error("ERR : require at least two open images.");
+                IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
@@ -230,6 +196,43 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
         }
     }
 
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        ind_query = (int)gd.getNextChoiceIndex();
+        ind_train = (int)gd.getNextChoiceIndex();
+        ind_det = (int)gd.getNextChoiceIndex();
+        ind_match = (int)gd.getNextChoiceIndex();
+        max_distance = (double)gd.getNextNumber();
+        enDrawMatches = (boolean)gd.getNextBoolean();
+        
+        if(max_distance < 0) { IJ.showStatus("ERR : max_distance < 0"); return false; }
+        if(ind_train == ind_query) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
+
+        imp_query = WindowManager.getImage(lst_wid[ind_query]);
+        imp_train = WindowManager.getImage(lst_wid[ind_train]);
+
+        if(imp_query.getBitDepth() != 24 || imp_train.getBitDepth() != 24) { IJ.showStatus("ERR : not RGB."); return false; }
+
+        type_det = TYPE_VAL_DET[ind_det];
+        type_ext = TYPE_VAL_EXT[ind_det];
+        detector = FeatureDetector.create(type_det);
+
+        fname = TYPE_STR_DET[ind_det] + ".yaml";
+        File file = new File(fname);
+
+        if(file.exists())
+        {
+            detector.read(fname);
+        }
+        else
+        {
+            detector.write(fname);
+        }
+        
+        return true;
+    }
+    
     private MatOfDMatch showData(MatOfKeyPoint key_query, MatOfKeyPoint key_train, MatOfDMatch dmatch)
     {
         MatOfDMatch output = new MatOfDMatch();

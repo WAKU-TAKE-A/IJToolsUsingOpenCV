@@ -112,7 +112,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
 
             if (lst_wnd==null || lst_wnd.length < 2)
             {
-                IJ.error("Require at least two open images.");
+                IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
@@ -193,26 +193,13 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         ind_type = (int)gd.getNextChoiceIndex();
         enFgd = (boolean)gd.getNextBoolean();   
         
-        if(ind_src == ind_msk)
-        {
-            IJ.error("Cannot be the same as.");
-            return false;
-        }
+        if(ind_src == ind_msk) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
 
         imp_src = WindowManager.getImage(lst_wnd[ind_src]);
         imp_msk = WindowManager.getImage(lst_wnd[ind_msk]);
 
-        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8)
-        {
-            IJ.error("Src is only RGB color. Mask is only 8bit.");
-            return false;
-        }
-        
-        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight())
-        {
-            IJ.error("Size of src is not same as size of mask.");
-            return false;
-        }
+        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) { IJ.showStatus("ERR : The image is not 24bit, or The mask is not 8bit."); return false; }
+        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) { IJ.showStatus("ERR : The size of src is not same as the size of mask."); return false; }
         
         return true;
     }

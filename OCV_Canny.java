@@ -126,13 +126,9 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         ind_size = (int)gd.getNextChoiceIndex();
         l2grad = (boolean)gd.getNextBoolean();
 
-        if(0 <= thr1 && 0 <= thr2)
-        {
-            return true;
-        }
-        else
-        {
-            return false;
-        }
+        if(thr1 < 0) { IJ.showStatus("ERR : thr1 < 0"); return false; }
+        if(thr2 < 0) { IJ.showStatus("ERR : thr2 < 0"); return false; }
+        
+        return true;
     }
 }

@@ -149,11 +149,7 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         lower = (int)gd.getNextNumber();
         upper = (int)gd.getNextNumber();
 
-        if(upper < lower)
-        {
-            IJ.error("upper < lower");
-            return false;
-        }
+        if(upper < lower) { IJ.showStatus("ERR : upper < lower"); return false; }
 
         lower = checkValue(lower, 0, valMax);
         upper = checkValue(upper, 0, valMax);
