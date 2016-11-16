@@ -40,13 +40,13 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 {
     // constant var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW;
-    private final String[] SIZE_STR = new String[] { "1", "3", "5", "7"};
-    private final int[] SIZE_VAL = new int[] { 1, 3, 5, 7 }; 
+    private final String[] SIZE_STR = new String[] { "3", "5", "7"};
+    private final int[] SIZE_VAL = new int[] { 3, 5, 7 }; 
 
     // staic var.
     private static double thr1  = 0; // first threshold for the hysteresis procedure.
     private static double thr2  = 0; // second threshold for the hysteresis procedure.
-    private static int ind_size = 1; // aperture size for the Sobel operator. 
+    private static int ind_size = 0; // aperture size for the Sobel operator. 
     private static boolean l2grad = false; // L2gradient;
 
     @Override
