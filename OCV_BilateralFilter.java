@@ -163,6 +163,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         if(sigmaColor <= 0) { IJ.showStatus("ERR : sigmaColor <= 0"); return false; }
         if(sigmaSpace <= 0) { IJ.showStatus("ERR : sigmaSpace <= 0"); return false; }
         
+        IJ.showStatus("OCV_BilateralFilter");
         return true;
     }
 }

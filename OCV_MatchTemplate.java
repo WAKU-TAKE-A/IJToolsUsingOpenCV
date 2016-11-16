@@ -207,6 +207,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             enResult = true;
         }
         
+        IJ.showStatus("OCV_MatchTemplate");
         return true;
     }
     

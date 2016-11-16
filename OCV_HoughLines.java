@@ -156,6 +156,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         if(360 < maxDeg) { IJ.showStatus("ERR : 360 < maxDeg"); return false; }
         if(maxDeg < minDeg) { IJ.showStatus("ERR : maxDeg < minDeg"); return false; }
         
+        IJ.showStatus("OCV_HoughLines");
         return true;
     }
 

@@ -230,6 +230,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
             detector.write(fname);
         }
         
+        IJ.showStatus("OCV_FeatureDetection");
         return true;
     }
     

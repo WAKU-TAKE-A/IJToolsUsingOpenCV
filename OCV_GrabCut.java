@@ -201,6 +201,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) { IJ.showStatus("ERR : The image is not 24bit, or The mask is not 8bit."); return false; }
         if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) { IJ.showStatus("ERR : The size of src is not same as the size of mask."); return false; }
         
+        IJ.showStatus("OCV_GrabCut");
         return true;
     }
 }

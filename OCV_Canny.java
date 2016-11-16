@@ -129,6 +129,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         if(thr1 < 0) { IJ.showStatus("ERR : thr1 < 0"); return false; }
         if(thr2 < 0) { IJ.showStatus("ERR : thr2 < 0"); return false; }
         
+        IJ.showStatus("OCV_Canny");
         return true;
     }
 }

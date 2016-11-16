@@ -145,6 +145,7 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
         if(cy < 0) { IJ.showStatus("ERR : cy < 0"); return false; }
         if(rmax <= 0) { IJ.showStatus("ERR : rmax <= 0"); return false; }
         
+        IJ.showStatus("OCV_LinearPolar");
         return true;
     }
 }

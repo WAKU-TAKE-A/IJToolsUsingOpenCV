@@ -161,6 +161,7 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         valTrue = checkValue(valTrue, 0, valMax);
         valFalse = checkValue(valFalse, 0, valMax);
         
+        IJ.showStatus("WK_ChangePixelValue");
         return true;
     }
     

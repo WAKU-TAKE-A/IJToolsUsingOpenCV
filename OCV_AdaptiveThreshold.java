@@ -136,6 +136,7 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         if(blockSize % 2 == 0) { IJ.showStatus("ERR : blockSize is not odd."); return false; }
         if(subC <= 0) { IJ.showStatus("ERR : subC <= 0"); return false; }
         
+        IJ.showStatus("OCV_AdaptiveThreshold");
         return true;
     }
 }

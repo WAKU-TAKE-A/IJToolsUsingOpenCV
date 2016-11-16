@@ -108,6 +108,7 @@ public class WK_ErodeWhite implements ExtendedPlugInFilter, DialogListener
         if((tap_x % 2) ==0) { IJ.showStatus("ERR : tap_x is not odd."); return false; }
         if((tap_y % 2) ==0) { IJ.showStatus("ERR : tap_y is not odd."); return false; }
 
+        IJ.showStatus("WK_ErodeWhite");
         return true;
     }
 

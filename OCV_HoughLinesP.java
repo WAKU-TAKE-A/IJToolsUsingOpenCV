@@ -140,6 +140,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         if(minLen < 0) { IJ.showStatus("ERR : minLen < 0"); return false; }
         if(maxGap < 0) { IJ.showStatus("ERR : maxGap < 0"); return false; }
         
+        IJ.showStatus("OCV_HoughLinesP");
         return true;
     }
 
