@@ -83,6 +83,34 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        resDist = (double)gd.getNextNumber();
+        resAngFact = (double)gd.getNextNumber();
+        minVotes = (int)gd.getNextNumber();
+        divDist = (double)gd.getNextNumber();
+        divAng = (double)gd.getNextNumber();
+        minDeg = (double)gd.getNextNumber();
+        maxDeg = (double)gd.getNextNumber();
+        enAddRoi = gd.getNextBoolean();
+        
+        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(divDist) || Double.isNaN(divAng) || Double.isNaN(minDeg) || Double.isNaN(maxDeg)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(resDist < 0) { IJ.showStatus("'0 <= distance_resolution' is necessary."); return false; }
+        if(resAngFact < 0) { IJ.showStatus("'0 <= angle_resolution_factor' is necessary."); return false; }
+        if(minVotes < 0) { IJ.showStatus("'0 <= min_votes' is necessary."); return false; }
+        if(divDist < 0) { IJ.showStatus("'0 <= divisor_distance' is necessary."); return false; }
+        if(divAng < 0) { IJ.showStatus("'0 <= devisor_angle' is necessary."); return false; }
+        if(minDeg < 0) { IJ.showStatus("'0 <= min_angle' is necessary."); return false; }
+        if(maxDeg < 0) { IJ.showStatus("'0 <= max_angle' is necessary."); return false; }
+        if(360 < minDeg) { IJ.showStatus("'min_angle <= 360' is necessary."); return false; }
+        if(360 < maxDeg) { IJ.showStatus("'max_angle <= 360' is necessary."); return false; }
+        if(maxDeg < minDeg) { IJ.showStatus("'min_angle <= max_angle' is necessary."); return false; }
+        
+        IJ.showStatus("OCV_HoughLines");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int arg0)
     {
         //do nothing
@@ -130,34 +158,6 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
 
         // fin
         showData(dst_lines, imw, imh);
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        resDist = (double)gd.getNextNumber();
-        resAngFact = (double)gd.getNextNumber();
-        minVotes = (int)gd.getNextNumber();
-        divDist = (double)gd.getNextNumber();
-        divAng = (double)gd.getNextNumber();
-        minDeg = (double)gd.getNextNumber();
-        maxDeg = (double)gd.getNextNumber();
-        enAddRoi = gd.getNextBoolean();
-
-        if(resDist < 0) { IJ.showStatus("ERR : resDist < 0"); return false; }
-        if(resAngFact < 0) { IJ.showStatus("ERR : resAngFact < 0"); return false; }
-        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
-        if(divDist < 0) { IJ.showStatus("ERR : divDist < 0"); return false; }
-        if(divAng < 0) { IJ.showStatus("ERR : divAng < 0"); return false; }
-        if(minDeg < 0) { IJ.showStatus("ERR : minDeg < 0"); return false; }
-        if(maxDeg < 0) { IJ.showStatus("ERR : maxDeg < 0"); return false; }
-        if(maxDeg < 0) { IJ.showStatus("ERR : maxDeg < 0"); return false; }
-        if(360 < minDeg) { IJ.showStatus("ERR : 360 < minDeg"); return false; }
-        if(360 < maxDeg) { IJ.showStatus("ERR : 360 < maxDeg"); return false; }
-        if(maxDeg < minDeg) { IJ.showStatus("ERR : maxDeg < minDeg"); return false; }
-        
-        IJ.showStatus("OCV_HoughLines");
-        return true;
     }
 
     // private

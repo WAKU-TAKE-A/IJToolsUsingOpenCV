@@ -102,6 +102,45 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        ind_query = (int)gd.getNextChoiceIndex();
+        ind_train = (int)gd.getNextChoiceIndex();
+        ind_det = (int)gd.getNextChoiceIndex();
+        ind_match = (int)gd.getNextChoiceIndex();
+        max_distance = (double)gd.getNextNumber();
+        enDrawMatches = (boolean)gd.getNextBoolean();
+        
+        if(Double.isNaN(max_distance)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(max_distance < 0) { IJ.showStatus("'0 <= MaxDistance' is necessary."); return false; }
+        if(ind_train == ind_query) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
+
+        imp_query = WindowManager.getImage(lst_wid[ind_query]);
+        imp_train = WindowManager.getImage(lst_wid[ind_train]);
+
+        if(imp_query.getBitDepth() != 24 || imp_train.getBitDepth() != 24) { IJ.showStatus("The both images should be RGB."); return false; }
+
+        type_det = TYPE_VAL_DET[ind_det];
+        type_ext = TYPE_VAL_EXT[ind_det];
+        detector = FeatureDetector.create(type_det);
+
+        fname = TYPE_STR_DET[ind_det] + ".yaml";
+        File file = new File(fname);
+
+        if(file.exists())
+        {
+            detector.read(fname);
+        }
+        else
+        {
+            detector.write(fname);
+        }
+        
+        IJ.showStatus("OCV_FeatureDetection");
+        return true;
+    }
+
+    @Override
     public void setNPasses(int nPasses)
     {
         // do nothing
@@ -195,45 +234,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
             imp_dst.show();
         }
     }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        ind_query = (int)gd.getNextChoiceIndex();
-        ind_train = (int)gd.getNextChoiceIndex();
-        ind_det = (int)gd.getNextChoiceIndex();
-        ind_match = (int)gd.getNextChoiceIndex();
-        max_distance = (double)gd.getNextNumber();
-        enDrawMatches = (boolean)gd.getNextBoolean();
-        
-        if(max_distance < 0) { IJ.showStatus("ERR : max_distance < 0"); return false; }
-        if(ind_train == ind_query) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
-
-        imp_query = WindowManager.getImage(lst_wid[ind_query]);
-        imp_train = WindowManager.getImage(lst_wid[ind_train]);
-
-        if(imp_query.getBitDepth() != 24 || imp_train.getBitDepth() != 24) { IJ.showStatus("ERR : not RGB."); return false; }
-
-        type_det = TYPE_VAL_DET[ind_det];
-        type_ext = TYPE_VAL_EXT[ind_det];
-        detector = FeatureDetector.create(type_det);
-
-        fname = TYPE_STR_DET[ind_det] + ".yaml";
-        File file = new File(fname);
-
-        if(file.exists())
-        {
-            detector.read(fname);
-        }
-        else
-        {
-            detector.write(fname);
-        }
-        
-        IJ.showStatus("OCV_FeatureDetection");
-        return true;
-    }
-    
+   
     private MatOfDMatch showData(MatOfKeyPoint key_query, MatOfKeyPoint key_train, MatOfDMatch dmatch)
     {
         MatOfDMatch output = new MatOfDMatch();

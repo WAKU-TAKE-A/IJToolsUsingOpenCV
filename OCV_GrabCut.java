@@ -86,6 +86,27 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        ind_src = (int)gd.getNextChoiceIndex();
+        ind_msk = (int)gd.getNextChoiceIndex();
+        iter = (int)gd.getNextNumber();
+        ind_type = (int)gd.getNextChoiceIndex();
+        enFgd = (boolean)gd.getNextBoolean();   
+        
+        if(ind_src == ind_msk) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
+
+        imp_src = WindowManager.getImage(lst_wnd[ind_src]);
+        imp_msk = WindowManager.getImage(lst_wnd[ind_msk]);
+
+        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) { IJ.showStatus("The image should be RGB, and the mask should be 8bit gray."); return false; }
+        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) { IJ.showStatus("The size of src should be same as the size of mask."); return false; }
+        
+        IJ.showStatus("OCV_GrabCut");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int nPasses)
     {
         // do nothing
@@ -182,26 +203,5 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
                 }
             }
         }  
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        ind_src = (int)gd.getNextChoiceIndex();
-        ind_msk = (int)gd.getNextChoiceIndex();
-        iter = (int)gd.getNextNumber();
-        ind_type = (int)gd.getNextChoiceIndex();
-        enFgd = (boolean)gd.getNextBoolean();   
-        
-        if(ind_src == ind_msk) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
-
-        imp_src = WindowManager.getImage(lst_wnd[ind_src]);
-        imp_msk = WindowManager.getImage(lst_wnd[ind_msk]);
-
-        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) { IJ.showStatus("ERR : The image is not 24bit, or The mask is not 8bit."); return false; }
-        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) { IJ.showStatus("ERR : The size of src is not same as the size of mask."); return false; }
-        
-        IJ.showStatus("OCV_GrabCut");
-        return true;
     }
 }

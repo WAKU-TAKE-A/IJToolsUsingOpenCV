@@ -43,6 +43,9 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
 {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | DOES_16 | KEEP_PREVIEW;
+    public static int ERR_OK = 0;
+    public static int ERR_NG = -1;
+    
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -86,7 +89,24 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             return IJ.setupDialog(imp, FLAGS);
         }
     }
+    
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {        
+        ksize_x = (double)gd.getNextNumber();
+        ksize_y = (double)gd.getNextNumber();
+        indBorderType = (int)gd.getNextChoiceIndex();
 
+        if(Double.isNaN(ksize_x) || Double.isNaN(ksize_y)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(ksize_x <= 0) { IJ.showStatus("'0 < ksize_x' is necessary."); return false; }
+        if(ksize_y <= 0) { IJ.showStatus("'0 < ksize_y' is necessary."); return false; }
+        
+        ksize = new Size(ksize_x, ksize_y);
+        
+        IJ.showStatus("OCV_Blur");
+        return true;
+    }
+    
     @Override
     public void setNPasses(int nPasses)
     {
@@ -115,7 +135,7 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
 
     @Override
     public void run(ImageProcessor ip)
-    {
+    {        
         if(ip.getBitDepth() == 8)
         {
             // srcdst
@@ -184,21 +204,5 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
         {
             IJ.error("Wrong image format");
         }
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        ksize_x = (double)gd.getNextNumber();
-        ksize_y = (double)gd.getNextNumber();
-        indBorderType = (int)gd.getNextChoiceIndex();
-
-        if(ksize_x <= 0) { IJ.showStatus("ERR : ksize_x <= 0"); return false; }
-        if(ksize_y <= 0) { IJ.showStatus("ERR : ksize_y <= 0"); return false; }
-        
-        ksize = new Size(ksize_x, ksize_y);
-        
-        IJ.showStatus("OCV_Blur");
-        return true;
     }
 }

@@ -78,6 +78,22 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        cx = (int)gd.getNextNumber();
+        cy = (int)gd.getNextNumber();
+        rmax = (int)gd.getNextNumber();
+        type_ind = (int)gd.getNextChoiceIndex();
+
+        if(cx < 0) { IJ.showStatus("'0 <= centerx' is necessary."); return false; }
+        if(cy < 0) { IJ.showStatus("'0 <= centery' is necessary."); return false; }
+        if(rmax <= 0) { IJ.showStatus("'0 <= max_radius' is necessary."); return false; }
+        
+        IJ.showStatus("OCV_LinearPolar");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int arg0)
     {
         // do nothing
@@ -131,21 +147,5 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
         src_mat.put(0, 0, srcdst_ar);
         Imgproc.linearPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
         dst_mat.get(0, 0, srcdst_ar);
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        cx = (int)gd.getNextNumber();
-        cy = (int)gd.getNextNumber();
-        rmax = (int)gd.getNextNumber();
-        type_ind = (int)gd.getNextChoiceIndex();
-
-        if(cx < 0) { IJ.showStatus("ERR : cx < 0"); return false; }
-        if(cy < 0) { IJ.showStatus("ERR : cy < 0"); return false; }
-        if(rmax <= 0) { IJ.showStatus("ERR : rmax <= 0"); return false; }
-        
-        IJ.showStatus("OCV_LinearPolar");
-        return true;
     }
 }

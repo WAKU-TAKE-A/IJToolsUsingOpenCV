@@ -79,6 +79,27 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        resDist = (double)gd.getNextNumber();
+        resAngFact = (double)gd.getNextNumber();
+        minVotes = (int)gd.getNextNumber();
+        minLen = (double)gd.getNextNumber();
+        maxGap = (double)gd.getNextNumber();
+        enAddRoi = gd.getNextBoolean();
+
+        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(minLen) || Double.isNaN(maxGap)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(resDist < 0) { IJ.showStatus("'0 <= distance_resolution' is necessary."); return false; }
+        if(resAngFact < 0) { IJ.showStatus("'0 <= angle_resolution_factor' is necessary."); return false; }
+        if(minVotes < 0) { IJ.showStatus("'0 <= min_votes' is necessary."); return false; }
+        if(minLen < 0) { IJ.showStatus("'0 <= min_length' is necessary."); return false; }
+        if(maxGap < 0) { IJ.showStatus("'0 <= max_allowed_gap' is necessary."); return false; }
+        
+        IJ.showStatus("OCV_HoughLinesP");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int arg0)
     {
         //do nothing
@@ -122,26 +143,6 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
 
         // fin
         showData(dst_lines);
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        resDist = (double)gd.getNextNumber();
-        resAngFact = (double)gd.getNextNumber();
-        minVotes = (int)gd.getNextNumber();
-        minLen = (double)gd.getNextNumber();
-        maxGap = (double)gd.getNextNumber();
-        enAddRoi = gd.getNextBoolean();
-
-        if(resDist < 0) { IJ.showStatus("ERR : resDist < 0"); return false; }
-        if(resAngFact < 0) { IJ.showStatus("ERR : resAngFact < 0"); return false; }
-        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
-        if(minLen < 0) { IJ.showStatus("ERR : minLen < 0"); return false; }
-        if(maxGap < 0) { IJ.showStatus("ERR : maxGap < 0"); return false; }
-        
-        IJ.showStatus("OCV_HoughLinesP");
-        return true;
     }
 
     // private

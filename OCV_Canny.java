@@ -74,6 +74,22 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        thr1 = (double)gd.getNextNumber();
+        thr2 = (double)gd.getNextNumber();
+        ind_size = (int)gd.getNextChoiceIndex();
+        l2grad = (boolean)gd.getNextBoolean();
+
+        if(Double.isNaN(thr1) || Double.isNaN(thr2)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(thr1 < 0) { IJ.showStatus("'0 <= threshold1' is necessary."); return false; }
+        if(thr2 < 0) { IJ.showStatus("'0 <= threshold2' is necessary."); return false; }
+        
+        IJ.showStatus("OCV_Canny");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int nPasses)
     {
         // do nothing
@@ -115,21 +131,5 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         src_mat.put(0, 0, srcdst_bytes);
         Imgproc.Canny(src_mat, dst_mat, thr1, thr2, SIZE_VAL[ind_size], l2grad);
         dst_mat.get(0, 0, srcdst_bytes);
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-
-        thr1 = (double)gd.getNextNumber();
-        thr2 = (double)gd.getNextNumber();
-        ind_size = (int)gd.getNextChoiceIndex();
-        l2grad = (boolean)gd.getNextBoolean();
-
-        if(thr1 < 0) { IJ.showStatus("ERR : thr1 < 0"); return false; }
-        if(thr2 < 0) { IJ.showStatus("ERR : thr2 < 0"); return false; }
-        
-        IJ.showStatus("OCV_Canny");
-        return true;
     }
 }

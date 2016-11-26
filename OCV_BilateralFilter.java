@@ -86,6 +86,22 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        diameter = (int)gd.getNextNumber();
+        sigmaColor = (double)gd.getNextNumber();
+        sigmaSpace = (double)gd.getNextNumber();
+        indBorderType = (int)gd.getNextChoiceIndex();
+
+        if(Double.isNaN(sigmaColor) || Double.isNaN(sigmaSpace)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(sigmaColor <= 0) { IJ.showStatus("'0 < sigmaColor' is necessary."); return false; }
+        if(sigmaSpace <= 0) { IJ.showStatus("'0 < sigmaSpace' is necessary."); return false; }
+        
+        IJ.showStatus("OCV_BilateralFilter");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int nPasses)
     {
         // do nothing
@@ -150,20 +166,5 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         {
             IJ.error("Wrong image format");
         }
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        diameter = (int)gd.getNextNumber();
-        sigmaColor = (double)gd.getNextNumber();
-        sigmaSpace = (double)gd.getNextNumber();
-        indBorderType = (int)gd.getNextChoiceIndex();
-
-        if(sigmaColor <= 0) { IJ.showStatus("ERR : sigmaColor <= 0"); return false; }
-        if(sigmaSpace <= 0) { IJ.showStatus("ERR : sigmaSpace <= 0"); return false; }
-        
-        IJ.showStatus("OCV_BilateralFilter");
-        return true;
     }
 }

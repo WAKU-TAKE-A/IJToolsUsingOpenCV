@@ -99,6 +99,27 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        rmin = (int)gd.getNextNumber();
+        rmax = (int)gd.getNextNumber();
+        indMode = gd.getNextChoiceIndex();
+        minVotes = (int)gd.getNextNumber();
+        rngSame = (double)gd.getNextNumber();
+        enAddRoi = gd.getNextBoolean();
+        enOutputImg = gd.getNextBoolean();
+
+        if(rmin < 0) { IJ.showStatus("ERR : rmin < 0"); return false; }
+        if(rmax < 0) { IJ.showStatus("ERR : rmax < 0"); return false; }
+        if(rmax < rmin) { IJ.showStatus("ERR : rmax < rmin"); return false; }
+        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
+        if(rngSame < 0) { IJ.showStatus("ERR : rngSame < 0"); return false; }
+        
+        IJ.showStatus("WK_HoughCircles");
+        return true;
+    }    
+    
+    @Override
     public void setNPasses(int arg0)
     {
         //do nothing
@@ -159,27 +180,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         }
 
         showData(dst);
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        rmin = (int)gd.getNextNumber();
-        rmax = (int)gd.getNextNumber();
-        indMode = gd.getNextChoiceIndex();
-        minVotes = (int)gd.getNextNumber();
-        rngSame = (double)gd.getNextNumber();
-        enAddRoi = gd.getNextBoolean();
-        enOutputImg = gd.getNextBoolean();
-
-        if(rmin < 0) { IJ.showStatus("ERR : rmin < 0"); return false; }
-        if(rmax < 0) { IJ.showStatus("ERR : rmax < 0"); return false; }
-        if(rmax < rmin) { IJ.showStatus("ERR : rmax < rmin"); return false; }
-        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
-        if(rngSame < 0) { IJ.showStatus("ERR : rngSame < 0"); return false; }
-        
-        IJ.showStatus("WK_HoughCircles");
-        return true;
     }
 
     // private

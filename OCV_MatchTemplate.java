@@ -91,6 +91,35 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        ind_src = (int)gd.getNextChoiceIndex();
+        ind_tmp = (int)gd.getNextChoiceIndex();
+        ind_type = (int)gd.getNextChoiceIndex();
+        thr_res = (float)gd.getNextNumber();
+        enResult = (boolean)gd.getNextBoolean();   
+        enSearchMax = (boolean)gd.getNextBoolean(); 
+       
+        if(Float.isNaN(thr_res)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(ind_src == ind_tmp) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
+
+        imp_src = WindowManager.getImage(lst_wid[ind_src]);
+        imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
+        title_src = imp_src.getShortTitle();
+
+        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8) { IJ.showStatus("The both images should be 8bit gray"); return false; }
+        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight()) { IJ.showStatus("The size of src should be larger than the size of template."); return false; }
+                
+        if(enSearchMax)
+        {
+            enResult = true;
+        }
+        
+        IJ.showStatus("OCV_MatchTemplate");
+        return true;
+    }
+    
+    @Override
     public void setNPasses(int nPasses)
     {
         // do nothing
@@ -181,34 +210,6 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
                 showData(arr_dst, imw_dst, imh_dst, imw_tmp, imh_tmp);
             }
         }
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        ind_src = (int)gd.getNextChoiceIndex();
-        ind_tmp = (int)gd.getNextChoiceIndex();
-        ind_type = (int)gd.getNextChoiceIndex();
-        thr_res = (float)gd.getNextNumber();
-        enResult = (boolean)gd.getNextBoolean();   
-        enSearchMax = (boolean)gd.getNextBoolean(); 
-       
-        if(ind_src == ind_tmp) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
-
-        imp_src = WindowManager.getImage(lst_wid[ind_src]);
-        imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
-        title_src = imp_src.getShortTitle();
-
-        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8) { IJ.showStatus("ERR : only 8bit"); return false; }
-        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight()) { IJ.showStatus("ERR : The size of template is larger than the size of src."); return false; }
-                
-        if(enSearchMax)
-        {
-            enResult = true;
-        }
-        
-        IJ.showStatus("OCV_MatchTemplate");
-        return true;
     }
     
     private void showData(float[] arr_dst, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)

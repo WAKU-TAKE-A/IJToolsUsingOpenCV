@@ -63,6 +63,21 @@ public class WK_ErodeWhite implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        tap_x = (int)gd.getNextNumber();
+        tap_y = (int)gd.getNextNumber();
+
+        if(tap_x <= 0) { IJ.showStatus("ERR : tap_x <= 0"); return false; }
+        if(tap_y <= 0) { IJ.showStatus("ERR : tap_y <= 0"); return false; }
+        if((tap_x % 2) ==0) { IJ.showStatus("ERR : tap_x is not odd."); return false; }
+        if((tap_y % 2) ==0) { IJ.showStatus("ERR : tap_y is not odd."); return false; }
+
+        IJ.showStatus("WK_ErodeWhite");
+        return true;
+    }    
+    
+    @Override
     public void run(ImageProcessor ip)
     {
         int ret = ERR_OK;
@@ -95,21 +110,6 @@ public class WK_ErodeWhite implements ExtendedPlugInFilter, DialogListener
         {
             return FLAGS;
         }
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        tap_x = (int)gd.getNextNumber();
-        tap_y = (int)gd.getNextNumber();
-
-        if(tap_x <= 0) { IJ.showStatus("ERR : tap_x <= 0"); return false; }
-        if(tap_y <= 0) { IJ.showStatus("ERR : tap_y <= 0"); return false; }
-        if((tap_x % 2) ==0) { IJ.showStatus("ERR : tap_x is not odd."); return false; }
-        if((tap_y % 2) ==0) { IJ.showStatus("ERR : tap_y is not odd."); return false; }
-
-        IJ.showStatus("WK_ErodeWhite");
-        return true;
     }
 
     private int fltrMin_Binary(float[] pSrc, float[] pDst, int imw, int imh, int tapX, int tapY)

@@ -81,7 +81,29 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
             return IJ.setupDialog(ip, FLAGS);
         }
     }
+    
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        lower = (int)gd.getNextNumber();
+        upper = (int)gd.getNextNumber();
 
+        if(upper < lower) { IJ.showStatus("ERR : upper < lower"); return false; }
+
+        lower = checkValue(lower, 0, valMax);
+        upper = checkValue(upper, 0, valMax);
+
+        type = (String)BYNARY_TYPE[(int)gd.getNextChoiceIndex()];
+
+        valTrue = (int)gd.getNextNumber();
+        valFalse = (int)gd.getNextNumber();
+        valTrue = checkValue(valTrue, 0, valMax);
+        valFalse = checkValue(valFalse, 0, valMax);
+        
+        IJ.showStatus("WK_ChangePixelValue");
+        return true;
+    }
+    
     @Override
     public void setNPasses(int i)
     {
@@ -142,29 +164,7 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
             changePixelValue(srcdst, imw, rect.x, rect.y, rect.width, rect.height, table);
         }
     }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        lower = (int)gd.getNextNumber();
-        upper = (int)gd.getNextNumber();
-
-        if(upper < lower) { IJ.showStatus("ERR : upper < lower"); return false; }
-
-        lower = checkValue(lower, 0, valMax);
-        upper = checkValue(upper, 0, valMax);
-
-        type = (String)BYNARY_TYPE[(int)gd.getNextChoiceIndex()];
-
-        valTrue = (int)gd.getNextNumber();
-        valFalse = (int)gd.getNextNumber();
-        valTrue = checkValue(valTrue, 0, valMax);
-        valFalse = checkValue(valFalse, 0, valMax);
-        
-        IJ.showStatus("WK_ChangePixelValue");
-        return true;
-    }
-    
+   
     private int checkValue(int src, int min, int max)
     {
         int dst = 0;

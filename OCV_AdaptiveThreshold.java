@@ -76,6 +76,25 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
             return IJ.setupDialog(imp, FLAGS);
         }
     }
+    
+    @Override
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    {
+        maxValue = (double)gd.getNextNumber();
+        indMethod = (int)gd.getNextChoiceIndex();
+        indType = (int)gd.getNextChoiceIndex();
+        blockSize = (int)gd.getNextNumber();
+        subC = (double)gd.getNextNumber();
+
+        if(Double.isNaN(maxValue) || Double.isNaN(subC)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(maxValue <= 0) { IJ.showStatus("'0 < maxValue' is necessary."); return false; }
+        if(blockSize <= 1) { IJ.showStatus("'1 < blockSize' is necessary."); return false; }
+        if(blockSize % 2 == 0) { IJ.showStatus("blockSize should be odd."); return false; }
+        if(subC <= 0) { IJ.showStatus("'0 < subC'"); return false; }
+        
+        IJ.showStatus("OCV_AdaptiveThreshold");
+        return true;
+    }
 
     @Override
     public void setNPasses(int nPasses)
@@ -120,23 +139,5 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         src_mat.put(0, 0, srcdst_ar);
         Imgproc.adaptiveThreshold(src_mat, dst_mat, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, subC);
         dst_mat.get(0, 0, srcdst_ar);
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        maxValue = (double)gd.getNextNumber();
-        indMethod = (int)gd.getNextChoiceIndex();
-        indType = (int)gd.getNextChoiceIndex();
-        blockSize = (int)gd.getNextNumber();
-        subC = (double)gd.getNextNumber();
-
-        if(maxValue <= 0) { IJ.showStatus("ERR : maxValue <= 0"); return false; }
-        if(blockSize <= 1) { IJ.showStatus("ERR : blockSize <= 1"); return false; }
-        if(blockSize % 2 == 0) { IJ.showStatus("ERR : blockSize is not odd."); return false; }
-        if(subC <= 0) { IJ.showStatus("ERR : subC <= 0"); return false; }
-        
-        IJ.showStatus("OCV_AdaptiveThreshold");
-        return true;
     }
 }
