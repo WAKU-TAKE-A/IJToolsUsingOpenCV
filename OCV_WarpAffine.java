@@ -5,10 +5,9 @@ import ij.measure.ResultsTable;
 import ij.plugin.filter.*;
 import ij.process.*;
 import java.awt.AWTEvent;
-import java.awt.Rectangle;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
+import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
 /*
@@ -36,33 +35,25 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * logPolar (OpenCV3.1).
+ * warpAffine (OpenCV3.1).
  */
 public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private final int FLAGS = DOES_8G | KEEP_PREVIEW;
-    private static final int[] TYPE_INT = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
-    private static final String[] TYPE_STR = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "WARP_INVERSE_MAP" };
+    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | DOES_16 | KEEP_PREVIEW;
+    private static final int[] FLAGS_INT = new int[] { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
+    private static final String[] FLAGS_STR = new String [] { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "INVERSE_TRANSFORMATION" };
 
     // static var.
-    private static Rectangle rect = new Rectangle(0, 0, 0, 0);
-    private static int cx = 0;
-    private static int cy = 0;
-    private static int rmax = 1;
-    private static int type_ind = 0;
+    private static int flags_ind = 1;
+    private ResultsTable rt  = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
-        rect = imp.getRoi().getBounds();
-
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addNumericField("centerx", rect.getX() + rect.getWidth() / 2, 0);
-        gd.addNumericField("centery", rect.getY() + rect.getHeight() /2, 0);
-        gd.addNumericField("max_radius", rmax, 0);
-        gd.addChoice("color", TYPE_STR, TYPE_STR[type_ind]);
+        gd.addChoice("interpolation_method", FLAGS_STR, FLAGS_STR[flags_ind]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -81,16 +72,8 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {
-        cx = (int)gd.getNextNumber();
-        cy = (int)gd.getNextNumber();
-        rmax = (int)gd.getNextNumber();
-        type_ind = (int)gd.getNextChoiceIndex();
-
-        if(cx < 0) { IJ.showStatus("'0 <= centerx' is necessary."); return false; }
-        if(cy < 0) { IJ.showStatus("'0 <= centery' is necessary."); return false; }
-        if(rmax <= 0) { IJ.showStatus("'0 <= max_radius' is necessary."); return false; }
-        
-        IJ.showStatus("OCV_LogPolar");
+        flags_ind = (int)gd.getNextChoiceIndex();       
+        IJ.showStatus("OCV_WarpAffine");
         return true;
     }
     
@@ -114,22 +97,16 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener
             IJ.noImage();
             return DONE;
         }
-        else
+        
+        rt = OCV__LoadLibrary.GetResultsTable(false);
+        
+        if(rt == null || rt.size() < 2)
         {
-            if(imp.getRoi() != null)
-            {
-                rect = imp.getRoi().getBounds();
-            }
-            else
-            {
-                rect = new Rectangle(0, 0, imp.getWidth(), imp.getHeight());
-            }
-
-            imp.setRoi(0, 0, imp.getWidth(), imp.getHeight());
-            imp.setRoi(rect);
-
-            return FLAGS;
+            IJ.error("'2 < ResultsTable.size() ' is necessary.");
+            return DONE;
         }
+        
+        return FLAGS;
     }
 
     @Override
@@ -137,37 +114,59 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener
     {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
-        byte[] srcdst_ar = (byte[])ip.getPixels();
+        Size size =  new Size((double)imw, (double)imh);
         
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
         Mat mat = new Mat(2, 3, CvType.CV_64FC1);
+        mat.put(0, 0, new double[] { Double.valueOf(rt.getStringValue(0, 0).replaceAll("\"|'", ""))});
+        mat.put(0, 1, new double[] { Double.valueOf(rt.getStringValue(1, 0).replaceAll("\"|'", ""))});
+        mat.put(0, 2, new double[] { Double.valueOf(rt.getStringValue(2, 0).replaceAll("\"|'", ""))});
+        mat.put(1, 0, new double[] { Double.valueOf(rt.getStringValue(0, 1).replaceAll("\"|'", ""))});
+        mat.put(1, 1, new double[] { Double.valueOf(rt.getStringValue(1, 1).replaceAll("\"|'", ""))});
+        mat.put(1, 2, new double[] { Double.valueOf(rt.getStringValue(2, 1).replaceAll("\"|'", ""))});
         
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(false);
-        
-        mat.put(0, 0, new double[] { Double.valueOf(rt.getStringValue(0, 0))});
-        mat.put(0, 1, new double[] { Double.valueOf(rt.getStringValue(1, 0))});
-        mat.put(0, 2, new double[] { Double.valueOf(rt.getStringValue(2, 0))});
-        mat.put(1, 0, new double[] { Double.valueOf(rt.getStringValue(0, 1))});
-        mat.put(1, 1, new double[] { Double.valueOf(rt.getStringValue(1, 1))});
-        mat.put(1, 2, new double[] { Double.valueOf(rt.getStringValue(2, 1))});
-        
-        src_mat.put(0, 0, srcdst_ar);
-        Imgproc.warpAffine(src_mat, dst_mat, mat, new org.opencv.core.Size((double)imw, (double)imh));
-        dst_mat.get(0, 0, srcdst_ar);
-        
-//        // srcdst
-//        int imw = ip.getWidth();
-//        int imh = ip.getHeight();
-//        byte[] srcdst_ar = (byte[])ip.getPixels();
-//        
-//        // mat
-//        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-//        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);      
-//
-//        // run
-//        src_mat.put(0, 0, srcdst_ar);
-//        Imgproc.logPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
-//         dst_mat.get(0, 0, srcdst_ar);
+        if(ip.getBitDepth() == 8)
+        {
+            byte[] srcdst_ar = (byte[])ip.getPixels();
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            
+            src_mat.put(0, 0, srcdst_ar);
+            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
+            dst_mat.get(0, 0, srcdst_ar);            
+        }
+        else if(ip.getBitDepth() == 16)
+        {
+           short[] srcdst_ar = (short[])ip.getPixels();
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16UC1);
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_16UC1);
+            
+            src_mat.put(0, 0, srcdst_ar);
+            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
+            dst_mat.get(0, 0, srcdst_ar);   
+        }
+        else if(ip.getBitDepth() == 24)
+        {
+            int[] srcdst_ar = (int[])ip.getPixels();
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
+            
+            OCV__LoadLibrary.intarray2mat(srcdst_ar, src_mat, imw, imh);
+            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
+            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ar, imw, imh);
+        }
+        else if(ip.getBitDepth() == 32)
+        {
+          float[] srcdst_ar = (float[])ip.getPixels();
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32FC1);
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_32FC1);
+            
+            src_mat.put(0, 0, srcdst_ar);
+            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
+            dst_mat.get(0, 0, srcdst_ar);   
+        }
+        else
+        {
+            IJ.error("Wrong image format");
+        }
     }
 }

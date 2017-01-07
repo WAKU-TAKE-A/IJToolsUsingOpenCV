@@ -42,7 +42,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
 {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
-    
+
     // staic var.
     private static double center_x = 0; // Center of the rotation in the source image (x)
     private static double center_y = 0; // Center of the rotation in the source image (y)
@@ -59,7 +59,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
         GenericDialog gd = new GenericDialog(cmd.trim() + " ...");
-        
+
         gd.addNumericField("center_x", center_x, 4);
         gd.addNumericField("center_y", center_y, 4);
         gd.addNumericField("angle", angle, 4);
@@ -67,17 +67,17 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
         gd.addDialogListener(this);
 
         gd.showDialog();
-        
+
          if (gd.wasCanceled())
         {
             return DONE;
         }
         else
         {
-            return IJ.setupDialog(imp, FLAGS);
+            return FLAGS;
         }
     }
-    
+
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {
@@ -85,7 +85,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
         center_y = (double)gd.getNextNumber();
         angle = (double)gd.getNextNumber();
         scale = (double)gd.getNextNumber();
-        
+
         if(Double.isNaN(center_x) || Double.isNaN(center_y) || Double.isNaN(angle) || Double.isNaN(scale)) { IJ.showStatus("ERR : NaN"); return false; }
         if(scale <= 0) { IJ.showStatus("'0 < scale' is necessary."); return false; }
 
@@ -97,16 +97,16 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     public void run(ImageProcessor ip)
     {
         Mat mat = Imgproc.getRotationMatrix2D(new Point(center_x, center_y), angle, scale);
-        
+
         if(mat == null || mat.rows() <= 0 || mat.cols() <= 0)
         {
             IJ.showMessage("Output is null or error");
             return;
         }
 
-        // set the ResultsTable   
+        // set the ResultsTable
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        
+
         rt.incrementCounter();
         rt.addValue("Column01", String.valueOf(mat.get(0, 0)[0]));
         rt.addValue("Column02", String.valueOf(mat.get(0, 1)[0]));
@@ -114,8 +114,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
          rt.incrementCounter();
         rt.addValue("Column01", String.valueOf(mat.get(1, 0)[0]));
         rt.addValue("Column02", String.valueOf(mat.get(1, 1)[0]));
-        rt.addValue("Column03", String.valueOf(mat.get(1, 2)[0])); 
-        
+        rt.addValue("Column03", String.valueOf(mat.get(1, 2)[0]));
         rt.show("Results");
     }
 
@@ -127,7 +126,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
+
         return FLAGS;
     }
 }
