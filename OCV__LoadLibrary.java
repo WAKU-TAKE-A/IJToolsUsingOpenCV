@@ -200,12 +200,12 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         return rm;
     }
     
-      /**
+    /**
      * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
-     * @param roi ROI
-     * @return Points
+     * @param roi
+     * @param lstPt 
      */
-    private void GetCoordinates(Roi roi, ArrayList<Point> lstPt)
+    public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt)
     {
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();

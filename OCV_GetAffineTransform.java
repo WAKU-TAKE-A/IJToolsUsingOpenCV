@@ -2,12 +2,16 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
+import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
+import java.util.ArrayList;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
 
@@ -36,18 +40,17 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * getRotationMatrix2D (OpenCV3.1).
+ * getAffineTransform (OpenCV3.1).
  */
-public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogListener
+public class OCV_GetAffineTransform implements ExtendedPlugInFilter
 {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
-
-    // staic var.
-    private static double center_x = 0; // Center of the rotation in the source image (x)
-    private static double center_y = 0; // Center of the rotation in the source image (y)
-    private static double angle = 0; // Rotation angle in degrees
-    private static double scale = 1; // Isotropic scale factor
+    
+    // var.
+    private RoiManager roiMan = null;
+    private ArrayList<Point> lstPt_src = null;
+    private ArrayList<Point> lstPt_dst = null;
 
     @Override
     public void setNPasses(int arg0)
@@ -58,45 +61,20 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        GenericDialog gd = new GenericDialog(cmd.trim() + " ...");
-
-        gd.addNumericField("center_x", center_x, 4);
-        gd.addNumericField("center_y", center_y, 4);
-        gd.addNumericField("angle", angle, 4);
-        gd.addNumericField("scale", scale, 4);
-        gd.addDialogListener(this);
-
-        gd.showDialog();
-
-         if (gd.wasCanceled())
-        {
-            return DONE;
-        }
-        else
-        {
-            return FLAGS;
-        }
-    }
-
-    @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        center_x = (double)gd.getNextNumber();
-        center_y = (double)gd.getNextNumber();
-        angle = (double)gd.getNextNumber();
-        scale = (double)gd.getNextNumber();
-
-        if(Double.isNaN(center_x) || Double.isNaN(center_y) || Double.isNaN(angle) || Double.isNaN(scale)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(scale <= 0) { IJ.showStatus("'0 < scale' is necessary."); return false; }
-
-        IJ.showStatus("OCV_GetRotationMatrix2D");
-        return true;
+        // do nothing
+        return FLAGS;
     }
 
     @Override
     public void run(ImageProcessor ip)
     {
-        Mat mat = Imgproc.getRotationMatrix2D(new Point(center_x, center_y), angle, scale);
+        MatOfPoint2f matPt_src = new MatOfPoint2f();
+        MatOfPoint2f matPt_dst = new MatOfPoint2f();
+        
+        matPt_src.fromList(lstPt_src);
+        matPt_dst.fromList(lstPt_dst);
+        
+        Mat mat = Imgproc.getAffineTransform(matPt_src, matPt_dst);
 
         if(mat == null || mat.rows() <= 0 || mat.cols() <= 0)
         {
@@ -109,7 +87,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
         rt.addValue("Column01", String.valueOf(mat.get(0, 0)[0]));
         rt.addValue("Column02", String.valueOf(mat.get(0, 1)[0]));
         rt.addValue("Column03", String.valueOf(mat.get(0, 2)[0]));
-        rt.incrementCounter();
+         rt.incrementCounter();
         rt.addValue("Column01", String.valueOf(mat.get(1, 0)[0]));
         rt.addValue("Column02", String.valueOf(mat.get(1, 1)[0]));
         rt.addValue("Column03", String.valueOf(mat.get(1, 2)[0]));
@@ -125,6 +103,27 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             return DONE;
         }
         
+        roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+        
+        if(roiMan == null || roiMan.getCount() < 2)
+        {
+            IJ.error("'2 <= RoiManager.getCount()' is necessary.");
+            return DONE;
+        }
+        
+        Roi roi_src = roiMan.getRoi(0);
+        Roi roi_dst = roiMan.getRoi(1); 
+        lstPt_src = new ArrayList<Point>();
+        lstPt_dst = new ArrayList<Point>();
+        OCV__LoadLibrary.GetCoordinates(roi_src, lstPt_src);
+        OCV__LoadLibrary.GetCoordinates(roi_dst, lstPt_dst);
+        
+        if(lstPt_src.size() != 3 || lstPt_dst.size() != 3)
+        {
+            IJ.error("It is necessary that the number of point is 3.");
+            return DONE;
+        }
+
         return FLAGS;
     }
 }

@@ -3,7 +3,6 @@ import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.ImageCanvas;
 import ij.gui.Roi;
-import ij.measure.ResultsTable;
 import ij.plugin.Macro_Runner;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
@@ -169,8 +168,8 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
     
     /**
      * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
-     * @param roi ROI
-     * @return Points
+     * @param roi
+     * @param lstPt 
      */
     private void getCoordinates(Roi roi, ArrayList<Point> lstPt)
     {

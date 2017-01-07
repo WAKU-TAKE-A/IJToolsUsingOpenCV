@@ -96,7 +96,7 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
 
         if(rt == null || rt.size() < 2)
         {
-            IJ.error("'2 < ResultsTable.size() ' is necessary.");
+            IJ.error("'2 <= ResultsTable.size()' is necessary.");
             return DONE;
         }
 

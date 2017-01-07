@@ -315,8 +315,8 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
     
     /**
      * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
-     * @param roi ROI
-     * @return Points
+     * @param roi
+     * @param lstPt 
      */
     private void getCoordinates(Roi roi, ArrayList<Point> lstPt)
     {
