@@ -43,7 +43,7 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.11.0";
+    private static final String VER = "0.9.12.0";
     public static boolean isLoad = false;
 
     @Override

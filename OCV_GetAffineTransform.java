@@ -1,14 +1,11 @@
 import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.DialogListener;
-import ij.gui.GenericDialog;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-import java.awt.AWTEvent;
 import java.util.ArrayList;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
