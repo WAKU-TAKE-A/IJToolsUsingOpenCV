@@ -42,6 +42,7 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
 
     // var.
     private ResultsTable rt  = null;
+    private Boolean isPerspective = false;
 
     @Override
     public void setNPasses(int arg0)
@@ -59,28 +60,64 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
     @Override
     public void run(ImageProcessor ip)
     {
-        Mat mat_src = new Mat(2, 3, CvType.CV_64FC1);
-        Mat mat_dst = new Mat(2, 3, CvType.CV_64FC1);
+        if(isPerspective)
+        {
+            Mat mat_src = new Mat(3, 3, CvType.CV_64FC1);
+            Mat mat_dst = new Mat(3, 3, CvType.CV_64FC1);
 
-        mat_src.put(0, 0, new double[] { Double.valueOf(rt.getStringValue(0, 0).replaceAll("\"|'", ""))});
-        mat_src.put(0, 1, new double[] { Double.valueOf(rt.getStringValue(1, 0).replaceAll("\"|'", ""))});
-        mat_src.put(0, 2, new double[] { Double.valueOf(rt.getStringValue(2, 0).replaceAll("\"|'", ""))});
-        mat_src.put(1, 0, new double[] { Double.valueOf(rt.getStringValue(0, 1).replaceAll("\"|'", ""))});
-        mat_src.put(1, 1, new double[] { Double.valueOf(rt.getStringValue(1, 1).replaceAll("\"|'", ""))});
-        mat_src.put(1, 2, new double[] { Double.valueOf(rt.getStringValue(2, 1).replaceAll("\"|'", ""))});
+            mat_src.put(0, 0, new double[] { Double.valueOf(rt.getStringValue(0, 0).replaceAll("\"|'", ""))});
+            mat_src.put(0, 1, new double[] { Double.valueOf(rt.getStringValue(1, 0).replaceAll("\"|'", ""))});
+            mat_src.put(0, 2, new double[] { Double.valueOf(rt.getStringValue(2, 0).replaceAll("\"|'", ""))});
+            mat_src.put(1, 0, new double[] { Double.valueOf(rt.getStringValue(0, 1).replaceAll("\"|'", ""))});
+            mat_src.put(1, 1, new double[] { Double.valueOf(rt.getStringValue(1, 1).replaceAll("\"|'", ""))});
+            mat_src.put(1, 2, new double[] { Double.valueOf(rt.getStringValue(2, 1).replaceAll("\"|'", ""))});
+            mat_src.put(2, 0, new double[] { Double.valueOf(rt.getStringValue(0, 2).replaceAll("\"|'", ""))});
+            mat_src.put(2, 1, new double[] { Double.valueOf(rt.getStringValue(1, 2).replaceAll("\"|'", ""))});
+            mat_src.put(2, 2, new double[] { Double.valueOf(rt.getStringValue(2, 2).replaceAll("\"|'", ""))});
 
-        Imgproc.invertAffineTransform(mat_src, mat_dst);
+            Imgproc.invertAffineTransform(mat_src, mat_dst);
 
-        rt.reset();
-        rt.incrementCounter();
-        rt.addValue("Column01", String.valueOf(mat_dst.get(0, 0)[0]));
-        rt.addValue("Column02", String.valueOf(mat_dst.get(0, 1)[0]));
-        rt.addValue("Column03", String.valueOf(mat_dst.get(0, 2)[0]));
-         rt.incrementCounter();
-        rt.addValue("Column01", String.valueOf(mat_dst.get(1, 0)[0]));
-        rt.addValue("Column02", String.valueOf(mat_dst.get(1, 1)[0]));
-        rt.addValue("Column03", String.valueOf(mat_dst.get(1, 2)[0]));
-        rt.show("Results");
+            rt.reset();
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat_dst.get(0, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat_dst.get(0, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat_dst.get(0, 2)[0]));
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat_dst.get(1, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat_dst.get(1, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat_dst.get(1, 2)[0]));
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat_dst.get(2, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat_dst.get(2, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat_dst.get(2, 2)[0]));
+            rt.show("Results");
+        }
+        else
+        {
+            Mat mat_src = new Mat(2, 3, CvType.CV_64FC1);
+            Mat mat_dst = new Mat(2, 3, CvType.CV_64FC1);
+
+            mat_src.put(0, 0, new double[] { Double.valueOf(rt.getStringValue(0, 0).replaceAll("\"|'", ""))});
+            mat_src.put(0, 1, new double[] { Double.valueOf(rt.getStringValue(1, 0).replaceAll("\"|'", ""))});
+            mat_src.put(0, 2, new double[] { Double.valueOf(rt.getStringValue(2, 0).replaceAll("\"|'", ""))});
+            mat_src.put(1, 0, new double[] { Double.valueOf(rt.getStringValue(0, 1).replaceAll("\"|'", ""))});
+            mat_src.put(1, 1, new double[] { Double.valueOf(rt.getStringValue(1, 1).replaceAll("\"|'", ""))});
+            mat_src.put(1, 2, new double[] { Double.valueOf(rt.getStringValue(2, 1).replaceAll("\"|'", ""))});
+
+            Imgproc.invertAffineTransform(mat_src, mat_dst);
+
+            rt.reset();
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat_dst.get(0, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat_dst.get(0, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat_dst.get(0, 2)[0]));
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat_dst.get(1, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat_dst.get(1, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat_dst.get(1, 2)[0]));
+            rt.show("Results");
+
+        }
     }
 
     @Override
@@ -94,9 +131,23 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
 
         rt = OCV__LoadLibrary.GetResultsTable(false);
 
-        if(rt == null || rt.size() < 2)
+        if(rt == null)
         {
-            IJ.error("'2 <= ResultsTable.size()' is necessary.");
+            IJ.error("ResultsTable is none.");
+            return DONE;
+        }
+        
+        if(rt.size() == 2)
+        {
+            isPerspective = false;
+        }
+        else if(rt.size() == 3)
+        {
+            isPerspective = true;
+        }
+        else
+        {
+            IJ.error("It is necessary that ResultsTable.size() is either two or three.");
             return DONE;
         }
 

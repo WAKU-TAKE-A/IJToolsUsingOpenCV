@@ -1,18 +1,14 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.WindowManager;
-import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
-import java.awt.Rectangle;
-import java.util.ArrayList;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
 
 /*
  * The MIT License
@@ -43,7 +39,7 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.12.0";
+    private static final String VER = "0.9.13.0";
     public static boolean isLoad = false;
 
     @Override
@@ -198,31 +194,5 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         }
         
         return rm;
-    }
-    
-    /**
-     * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
-     * @param roi
-     * @param lstPt 
-     */
-    public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt)
-    {
-        ImageProcessor mask = roi.getMask();
-        Rectangle r = roi.getBounds();
-        int pos_x = 0;
-        int pos_y = 0;
-
-        for(int y = 0; y < r.height; y++)
-        {
-            for(int x = 0; x < r.width; x++)
-            {
-                if (mask == null || mask.getPixel(x, y) != 0)
-                {
-                    pos_x = r.x + x;
-                    pos_y = r.y + y;
-                    lstPt.add(new Point(pos_x, pos_y));
-                }
-            }
-        }
     }
 }

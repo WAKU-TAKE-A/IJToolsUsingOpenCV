@@ -37,9 +37,9 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * getAffineTransform (OpenCV3.1).
+ * getPerspectiveTransform (OpenCV3.1).
  */
-public class OCV_GetAffineTransform implements ExtendedPlugInFilter
+public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter
 {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
@@ -64,13 +64,13 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter
 
     @Override
     public void run(ImageProcessor ip)
-    {      
+    {       
         MatOfPoint2f matPt_src = new MatOfPoint2f();
-        MatOfPoint2f matPt_dst = new MatOfPoint2f();        
+        MatOfPoint2f matPt_dst = new MatOfPoint2f();
         matPt_src.fromList(lstPt_src);
         matPt_dst.fromList(lstPt_dst);
         
-        Mat mat = Imgproc.getAffineTransform(matPt_src, matPt_dst);
+        Mat mat = Imgproc.getPerspectiveTransform(matPt_src, matPt_dst);
 
         if(mat == null || mat.rows() <= 0 || mat.cols() <= 0)
         {
@@ -80,12 +80,12 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter
 
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
         
-        for(int i = 0; i < 2; i++)
+        for(int i = 0; i < 3; i++)
         {
             rt.incrementCounter();
             rt.addValue("Column01", String.valueOf(mat.get(i, 0)[0]));
             rt.addValue("Column02", String.valueOf(mat.get(i, 1)[0]));
-            rt.addValue("Column03", String.valueOf(mat.get(i, 2)[0]));
+            rt.addValue("Column03", String.valueOf(mat.get(i, 2)[0]));       
         }
 
         rt.show("Results");
@@ -119,16 +119,16 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter
         java.awt.Point[] pts_src = roi_src.getContainedPoints();
         java.awt.Point[] pts_dst = roi_dst.getContainedPoints();
         
-        if(pts_src.length != 3 || pts_dst.length != 3)
+        if(pts_src.length != 4 || pts_dst.length != 4)
         {
-            IJ.error("It is necessary that the number of point is three.");
+            IJ.error("It is necessary that the number of point is four.");
             return DONE;
         }
-        
+
         lstPt_src = new ArrayList<org.opencv.core.Point>();
         lstPt_dst = new ArrayList<org.opencv.core.Point>();
         
-        for(int i = 0; i < 3; i++)
+        for(int i = 0; i < 4; i++)
         {
             lstPt_src.add(new org.opencv.core.Point(pts_src[i].getX(), pts_src[i].getY()));
             lstPt_dst.add(new org.opencv.core.Point(pts_dst[i].getX(), pts_dst[i].getY()));
