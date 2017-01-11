@@ -6,6 +6,7 @@ import ij.plugin.Macro_Runner;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
+import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import java.util.ArrayList;
 import org.opencv.core.Mat;
@@ -116,8 +117,10 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter
         
        Roi roi_src = roiMan.getRoi(0);
        Roi roi_dst = roiMan.getRoi(1);
-        java.awt.Point[] pts_src = roi_src.getContainedPoints();
-        java.awt.Point[] pts_dst = roi_dst.getContainedPoints();
+        //java.awt.Point[] pts_src = roi_src.getContainedPoints();
+        java.awt.Point[] pts_src = getContainedPoints(roi_src);
+       // java.awt.Point[] pts_dst = roi_dst.getContainedPoints();
+        java.awt.Point[] pts_dst = getContainedPoints(roi_dst);
         
         if(pts_src.length != 3 || pts_dst.length != 3)
         {
@@ -135,5 +138,18 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter
         }
         
         return FLAGS;
+    }
+    
+    private java.awt.Point[] getContainedPoints(Roi roi)
+    {
+        FloatPolygon p = roi.getFloatPolygon();
+        java.awt.Point[] points = new java.awt.Point[p.npoints];
+
+        for (int i=0; i<p.npoints; i++)
+        {
+            points[i] = new java.awt.Point((int)Math.round(p.xpoints[i]),(int)Math.round(p.ypoints[i]));
+        }
+
+        return points;
     }
 }
