@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
 public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter
 {
     // constant var.
-    private static final int FLAGS = DOES_8G;
+    private static final int FLAGS = DOES_8G; // 8-bit single channel image.
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)

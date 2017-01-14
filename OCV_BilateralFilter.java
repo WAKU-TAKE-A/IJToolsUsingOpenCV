@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | KEEP_PREVIEW; // 8-bit or floating-point, 1-channel or 3-channel image.
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -161,6 +161,22 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
             OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
             OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
+        }
+        else if(ip.getBitDepth() == 32)
+        {
+             // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            float[] srcdst_bytes = (float[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32FC1);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_32FC1);
+            
+            // run
+            src_mat.put(0, 0, srcdst_bytes);
+            Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
+            dst_mat.get(0, 0, srcdst_bytes);           
         }
         else
         {

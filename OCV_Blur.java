@@ -42,7 +42,7 @@ import org.opencv.core.Size;
 public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | DOES_16 | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
     public static int ERR_OK = 0;
     public static int ERR_NG = -1;
     

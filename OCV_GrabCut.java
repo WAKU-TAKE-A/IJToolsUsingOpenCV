@@ -42,7 +42,7 @@ import org.opencv.core.Rect;
 public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW;
+    private final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 8-bit single-channel mask.
     private final String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK" };
     private final int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK };
 

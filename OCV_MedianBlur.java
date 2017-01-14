@@ -5,9 +5,12 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
+import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+import org.opencv.core.Point;
+import org.opencv.core.Size;
 
 /*
  * The MIT License
@@ -34,30 +37,24 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Cany (OpenCV3.1).
+ * medianBlur (OpenCV3.1).
  */
-public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | KEEP_PREVIEW; // 8-bit input image.
-    private final String[] SIZE_STR = new String[] { "3", "5", "7"};
-    private final int[] SIZE_VAL = new int[] { 3, 5, 7 }; 
+    private static final int FLAGS = DOES_8G| KEEP_PREVIEW; // For larger aperture sizes, it can only be CV_8U.
+    public static int ERR_OK = 0;
+    public static int ERR_NG = -1;
 
     // staic var.
-    private static double thr1  = 0; // first threshold for the hysteresis procedure.
-    private static double thr2  = 0; // second threshold for the hysteresis procedure.
-    private static int ind_size = 0; // aperture size for the Sobel operator. 
-    private static boolean l2grad = false; // L2gradient;
-
+    private static int ksize = 3; // aperture linear size; it must be odd and greater than 1, for example: 3, 5, 7 ...
+    
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addNumericField("threshold1", thr1, 4);
-        gd.addNumericField("threshold2", thr2, 4);
-        gd.addChoice("apertureSize", SIZE_STR, SIZE_STR[ind_size]);
-        gd.addCheckbox("L2gradient", l2grad);
+        gd.addNumericField("ksize", ksize, 0);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -72,20 +69,16 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-
+    
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
-        thr1 = (double)gd.getNextNumber();
-        thr2 = (double)gd.getNextNumber();
-        ind_size = (int)gd.getNextChoiceIndex();
-        l2grad = (boolean)gd.getNextBoolean();
+    {        
+        ksize = (int)gd.getNextNumber();
 
-        if(Double.isNaN(thr1) || Double.isNaN(thr2)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(thr1 < 0) { IJ.showStatus("'0 <= threshold1' is necessary."); return false; }
-        if(thr2 < 0) { IJ.showStatus("'0 <= threshold2' is necessary."); return false; }
+        if(ksize < 3) { IJ.showStatus("'3 <= ksize' is necessary."); return false; }
+        if(ksize % 2 == 0) { IJ.showStatus("ksize must be odd."); return false; }
         
-        IJ.showStatus("OCV_Canny");
+        IJ.showStatus("OCV_MedianBlur");
         return true;
     }
     
@@ -117,7 +110,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
     @Override
     public void run(ImageProcessor ip)
-    {
+    {        
         // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
@@ -129,7 +122,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         // run
         src_mat.put(0, 0, srcdst_bytes);
-        Imgproc.Canny(src_mat, dst_mat, thr1, thr2, SIZE_VAL[ind_size], l2grad);
+        Imgproc.medianBlur(src_mat, dst_mat, ksize);
         dst_mat.get(0, 0, srcdst_bytes);
     }
 }
