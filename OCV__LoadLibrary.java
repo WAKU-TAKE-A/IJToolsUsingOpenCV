@@ -39,7 +39,7 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.14.0";
+    private static final String VER = "0.9.14.1";
     public static boolean isLoad = false;
 
     @Override
