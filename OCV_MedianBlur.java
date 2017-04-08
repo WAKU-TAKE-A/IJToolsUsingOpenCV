@@ -5,12 +5,9 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.core.Point;
-import org.opencv.core.Size;
 
 /*
  * The MIT License
@@ -55,6 +52,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
         gd.addNumericField("ksize", ksize, 0);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

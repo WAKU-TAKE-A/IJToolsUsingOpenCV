@@ -78,6 +78,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             gd.addMessage("The new ResultsTable is used");
         }
 
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.showDialog();
 
         if (gd.wasCanceled())

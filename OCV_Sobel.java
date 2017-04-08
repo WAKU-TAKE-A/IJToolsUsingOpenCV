@@ -2,6 +2,11 @@ import ij.*;
 import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
+import static ij.plugin.filter.ExtendedPlugInFilter.KEEP_PREVIEW;
+import static ij.plugin.filter.PlugInFilter.DOES_16;
+import static ij.plugin.filter.PlugInFilter.DOES_32;
+import static ij.plugin.filter.PlugInFilter.DOES_8G;
+import static ij.plugin.filter.PlugInFilter.DONE;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
@@ -9,8 +14,6 @@ import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.core.Point;
-import org.opencv.core.Size;
 
 /*
  * The MIT License
@@ -37,12 +40,12 @@ import org.opencv.core.Size;
  */
 
 /**
- * blur (OpenCV3.1).
+ * Sobel (OpenCV3.1).
  */
-public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | KEEP_PREVIEW;
     
     /*
      Various border types, image boundaries are denoted with '|'
@@ -55,20 +58,23 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     private static final String[] STR_BORDERTYPE = { "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_REPLICATE" };
 
     // staic var.
-    private static double ksize_x = 3; // Blurring kernel size of x
-    private static double ksize_y = 3; // Blurring kernel size of y
-    private static int indBorderType = 1; // Border types.
-    
-    // var.
-    private Size ksize = null;
-
+    private static int dx = 1; // order of the derivative x.
+    private static int dy = 1; // order of the derivative y.
+    private static int ksize = 3; // size of the extended Sobel kernel; it must be 1, 3, 5, or 7.
+    private static double scale = 1; // optional scale factor for the computed derivative values.
+    private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst.
+    private static int indBorderType = 1; // border types
+ 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addNumericField("ksize_x", ksize_x, 4);
-        gd.addNumericField("ksize_y", ksize_y, 4);
+        gd.addNumericField("dx", dx, 0);
+        gd.addNumericField("dy", dy, 0);
+        gd.addNumericField("ksize", ksize, 0);
+        gd.addNumericField("scale", scale, 4);
+        gd.addNumericField("delta", delta, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
         gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
@@ -88,18 +94,20 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {        
-        ksize_x = (double)gd.getNextNumber();
-        ksize_y = (double)gd.getNextNumber();
+    {    
+        dx = (int)gd.getNextNumber();
+        dy = (int)gd.getNextNumber();
+        ksize = (int)gd.getNextNumber();
+        scale = (double)gd.getNextNumber();
+        delta = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(Double.isNaN(ksize_x) || Double.isNaN(ksize_y)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(ksize_x <= 0) { IJ.showStatus("'0 < ksize_x' is necessary."); return false; }
-        if(ksize_y <= 0) { IJ.showStatus("'0 < ksize_y' is necessary."); return false; }
+        if(dx < 0) { IJ.showStatus("'0 <= dx' is necessary."); return false; }
+        if(dy < 0) { IJ.showStatus("'0 <= dy' is necessary."); return false; }
+        if(ksize != 1 && ksize != 3 && ksize != 5 && ksize != 7) { IJ.showStatus("'ksize must be 1, 3, 5, or 7."); return false; }
+        if(Double.isNaN(scale) || Double.isNaN(delta)) { IJ.showStatus("ERR : NaN"); return false; } 
         
-        ksize = new Size(ksize_x, ksize_y);
-        
-        IJ.showStatus("OCV_Blur");
+        IJ.showStatus("OCV_Sobel");
         return true;
     }
     
@@ -145,7 +153,7 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 16)
@@ -161,26 +169,10 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             
             // run
             src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+             Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_shorts);        
         }
-        else if(ip.getBitDepth() == 24)
-        {
-            // dst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            int[] srcdst_ints = (int[])ip.getPixels();
-            
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-         
-            // run
-            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
-            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
-        }
-        else if(ip.getBitDepth() == 32)
+          else if(ip.getBitDepth() == 32)
         {
             // srcdst
             int imw = ip.getWidth();
@@ -193,7 +185,7 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             
             // run
             src_mat.put(0, 0, srcdst_floats);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_floats);        
         }
         else

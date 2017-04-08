@@ -39,7 +39,8 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.18.0";
+    private static final String VER = "0.9.19.0";
+    public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
     public static boolean isLoad = false;
 
     @Override

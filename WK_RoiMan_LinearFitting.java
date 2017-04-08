@@ -64,6 +64,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
 
         gd.addCheckbox("enable_refresh_data", enRefData);
         gd.addCheckbox("enable_add_roi", enAddRoi);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
 
         gd.showDialog();
 

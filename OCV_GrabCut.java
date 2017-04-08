@@ -70,6 +70,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         gd.addNumericField("iterCount", iter, 0);
         gd.addChoice("mode", TYPE_STR, TYPE_STR[ind_type]);
         gd.addCheckbox("enable_foreground_is_255", enFgd);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
         

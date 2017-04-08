@@ -70,6 +70,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
         gd.addNumericField("sigmaColor", sigmaColor, 4);
         gd.addNumericField("sigmaSpace", sigmaSpace, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

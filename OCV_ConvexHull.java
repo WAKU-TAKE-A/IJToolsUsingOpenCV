@@ -57,6 +57,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
     {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
         gd.addCheckbox("enable_clockwise", enCW);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.showDialog();
 
         if (gd.wasCanceled())

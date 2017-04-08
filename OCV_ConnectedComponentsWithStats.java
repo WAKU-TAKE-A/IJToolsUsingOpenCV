@@ -60,6 +60,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         gd.addChoice("connectivity", TYPE_STR, TYPE_STR[type_ind]);
         gd.addCheckbox("enable_output_labeled_image", enOutImg);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
 
         gd.showDialog();
 

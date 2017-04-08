@@ -64,6 +64,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("min_length", minLen, 4);
         gd.addNumericField("max_allowed_gap", maxGap, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addDialogListener(this);
 
         gd.showDialog();

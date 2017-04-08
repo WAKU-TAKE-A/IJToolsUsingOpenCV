@@ -73,6 +73,7 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
         gd.addNumericField("sigma_x", sigma_x, 4);
         gd.addNumericField("sigma_y", sigma_y, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -149,7 +150,7 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
             
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.GaussianBlur(src_mat, dst_mat, ksize, sigma_x, sigma_y, indBorderType);
+            Imgproc.GaussianBlur(src_mat, dst_mat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 16)
@@ -165,7 +166,7 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
             
             // run
             src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.GaussianBlur(src_mat, dst_mat, ksize, sigma_x, sigma_y, indBorderType);
+            Imgproc.GaussianBlur(src_mat, dst_mat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_shorts);        
         }
         else if(ip.getBitDepth() == 32)
@@ -181,7 +182,7 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
             
             // run
             src_mat.put(0, 0, srcdst_floats);
-           Imgproc.GaussianBlur(src_mat, dst_mat, ksize, sigma_x, sigma_y, indBorderType);
+           Imgproc.GaussianBlur(src_mat, dst_mat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_floats);        
         }
         else

@@ -76,6 +76,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         gd.addNumericField("threshold_of_results", thr_res, 4);
         gd.addCheckbox("enable_results_table", enResult);
         gd.addCheckbox("enable_search_max_point", enSearchMax);        
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addDialogListener(this);
 
         gd.showDialog();

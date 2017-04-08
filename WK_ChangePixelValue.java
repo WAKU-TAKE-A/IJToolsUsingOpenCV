@@ -67,6 +67,7 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         gd.addChoice("range_of_true", BYNARY_TYPE, type);
         gd.addNumericField("value_of_true", valTrue, 0);
         gd.addNumericField("value_of_false", valFalse, 0);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pifr);
         gd.addDialogListener(this);
 

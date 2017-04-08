@@ -56,6 +56,7 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         gd.addNumericField("thresh", thresh, 4);
         gd.addNumericField("maxval", maxVal, 4);
         gd.addChoice("adaptiveMethod", STR_TYPE, STR_TYPE[idxType]);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

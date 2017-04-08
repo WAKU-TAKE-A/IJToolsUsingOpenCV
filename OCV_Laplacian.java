@@ -57,8 +57,6 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static double scale = 1; // optional scale factor for the computed Laplacian values
     private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst
     private static int indBorderType = 1; // border types
-    
-    // var.
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
@@ -69,6 +67,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         gd.addNumericField("scale", scale, 4);
         gd.addNumericField("delta", delta, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -142,7 +141,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, indBorderType);
+            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 16)
@@ -158,7 +157,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             
             // run
             src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, indBorderType);
+            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_shorts);        
         }
         else if(ip.getBitDepth() == 24)
@@ -174,7 +173,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
          
             // run
             OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, indBorderType);
+            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
         }
         else if(ip.getBitDepth() == 32)
@@ -190,7 +189,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             
             // run
             src_mat.put(0, 0, srcdst_floats);
-           Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, indBorderType);
+           Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_floats);        
         }
         else

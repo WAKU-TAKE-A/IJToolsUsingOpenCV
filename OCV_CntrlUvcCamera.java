@@ -70,6 +70,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         gd.addNumericField("width", width, 0);
         gd.addNumericField("height", height, 0);
         gd.addNumericField("wait_time", wait_time, 0);
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
 
         gd.showDialog();
 
