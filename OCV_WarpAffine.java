@@ -87,7 +87,7 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener
     @Override
     public int setup(String arg0, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

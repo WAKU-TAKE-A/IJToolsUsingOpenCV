@@ -121,7 +121,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
     @Override
     public int setup(String arg0, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

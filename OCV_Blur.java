@@ -112,7 +112,7 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     @Override
     public int setup(String arg, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

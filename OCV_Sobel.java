@@ -104,6 +104,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         if(dx < 0) { IJ.showStatus("'0 <= dx' is necessary."); return false; }
         if(dy < 0) { IJ.showStatus("'0 <= dy' is necessary."); return false; }
+        if(dx <= 0 && dy <= 0) { IJ.showStatus("Either dx or dy is greater than zero."); return false; }
         if(ksize != 1 && ksize != 3 && ksize != 5 && ksize != 7) { IJ.showStatus("'ksize must be 1, 3, 5, or 7."); return false; }
         if(Double.isNaN(scale) || Double.isNaN(delta)) { IJ.showStatus("ERR : NaN"); return false; } 
         
@@ -120,7 +121,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     @Override
     public int setup(String arg, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

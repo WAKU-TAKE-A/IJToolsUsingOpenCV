@@ -129,7 +129,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     @Override
     public int setup(String arg, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

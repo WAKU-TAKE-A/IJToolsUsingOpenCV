@@ -150,7 +150,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
     @Override
     public int setup(String arg, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

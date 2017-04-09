@@ -1,4 +1,5 @@
 import ij.IJ;
+import ij.gui.GenericDialog;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.measure.ResultsTable;
@@ -39,10 +40,12 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.19.0";
+    private static final String VER = "0.9.19.1";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
-    public static boolean isLoad = false;
-
+        
+    private static boolean disposed = true;
+    
+    // ExtendedPlugInFilter
     @Override
     public void setNPasses(int arg0)
     {
@@ -52,37 +55,106 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        return NO_IMAGE_REQUIRED;
+        GenericDialog gd = new GenericDialog("Ver.  " + VER);
+        
+        if(!disposed)
+        {
+            gd.addMessage("Load already !");
+        }
+        else
+        {
+            gd.addMessage("Load " + Core.NATIVE_LIBRARY_NAME + ".dll");
+        }
+        
+        gd.addHelp(OCV__LoadLibrary.URL_HELP);
+        gd.showDialog();
+
+        if (gd.wasCanceled())
+        {
+            return DONE;
+        }
+        else
+        {
+            return NO_IMAGE_REQUIRED;
+        }
     }
 
     @Override
     public void run(ImageProcessor arg0)
     {
-        if(isLoad)
-        {
-            IJ.error("Load already !");
-            return;
-        }
-
         try
         {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            IJ.showMessage("Ver.  " + VER, "Load " + Core.NATIVE_LIBRARY_NAME + ".dll");
-
-            isLoad = true;
+            disposed = false;
         }
         catch(Exception ex)
         {
             IJ.error(ex.getMessage());
+            disposed = true;
         }
     }
 
     @Override
     public int setup(String arg0, ImagePlus imp)
     {
+        if(!disposed && isLoadOpenCV())
+        {
+            // do nothing
+        }
+        else
+        {
+            disposed = true;
+        }
+        
         return NO_IMAGE_REQUIRED;
     }
+    
+    // finalize
+    @Override
+    protected void finalize() throws Throwable
+    {
+        try
+        {
+            super.finalize();
+        }
+        finally
+        {
+            dispose();
+        }
+    }
+    
+    private void dispose()
+    {
+        if(isLoadOpenCV())
+        {
+            disposed = false;
+        }
+        else
+        {
+            disposed = true;
+        }
+    }
+    
+    // for check
+    private boolean isLoadOpenCV()
+    {
+        try
+        {
+            Mat mat = new Mat(); // for check
+            return true;
+         }
+        catch (Throwable e)
+        {
+            return false;
+        }
+    }
+    
+    public static boolean isLoad()
+    {
+        return !disposed;
+    }
 
+    // static method
     /**
      * a CV_8UC3 data of OpenCV -> a color data of ImageJ.
      * @param src_cv_8uc3 a CV_8UC3 data of OpenCV

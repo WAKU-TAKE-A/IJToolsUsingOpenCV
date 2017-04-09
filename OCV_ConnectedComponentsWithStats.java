@@ -86,7 +86,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
     @Override
     public int setup(String string, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;

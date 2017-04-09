@@ -96,7 +96,7 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     @Override
     public int setup(String arg, ImagePlus imp)
     {
-        if(!OCV__LoadLibrary.isLoad)
+        if(!OCV__LoadLibrary.isLoad())
         {
             IJ.error("Library is not loaded.");
             return DONE;
