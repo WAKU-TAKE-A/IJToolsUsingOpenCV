@@ -40,10 +40,11 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.19.1";
+    private static final String VER = "0.9.19.2";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
         
-    private static boolean disposed = true;
+    private static boolean disposed = true;    
+    private static Mat dummy = null;
     
     // ExtendedPlugInFilter
     @Override
@@ -87,9 +88,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
             disposed = false;
         }
-        catch(Exception ex)
+        catch(Throwable ex)
         {
-            IJ.error(ex.getMessage());
+            IJ.error("ERR : " + ex.getMessage() + "\nThe recovering method : Restart ImageJ, especially after 'Refresh Menus'");
             disposed = true;
         }
     }
@@ -97,13 +98,15 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     @Override
     public int setup(String arg0, ImagePlus imp)
     {
-        if(!disposed && isLoadOpenCV())
+        if(isLoadOpenCV())
         {
-            // do nothing
+            disposed = false;
+            //IJ.showMessage("disposed = " + String.valueOf(disposed));
         }
         else
         {
             disposed = true;
+            //IJ.showMessage("disposed = " + String.valueOf(disposed));
         }
         
         return NO_IMAGE_REQUIRED;
@@ -124,7 +127,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     }
     
     private void dispose()
-    {
+    {       
         if(isLoadOpenCV())
         {
             disposed = false;
@@ -140,11 +143,20 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     {
         try
         {
-            Mat mat = new Mat(); // for check
+            if(dummy != null)
+            {
+                //IJ.showMessage("dummy is release");
+                dummy.release();
+            }
+            
+            //IJ.error("dummy = new Mat()");
+            dummy = new Mat();
+            
             return true;
          }
-        catch (Throwable e)
+        catch(Throwable ex)
         {
+            //IJ.error("ERR : " + ex.getMessage());
             return false;
         }
     }
