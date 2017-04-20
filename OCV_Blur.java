@@ -47,9 +47,12 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     /*
      Various border types, image boundaries are denoted with '|'
 
+     * BORDER_ISOLATED:      can not use
      * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
      * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
+     * BORDER_WRAP:          can not use
+     * BORDER_TRANSPARENT    can not use
      */
     private static final int[] INT_BORDERTYPE = { Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_REPLICATE };
     private static final String[] STR_BORDERTYPE = { "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_REPLICATE" };
