@@ -6,11 +6,9 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
-import java.awt.Rectangle;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.core.Rect;
 
 /*
  * The MIT License
@@ -37,28 +35,22 @@ import org.opencv.core.Rect;
  */
 
 /**
- * grabCut (OpenCV3.1).
+ * watershed (OpenCV3.1).
  */
-public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 8-bit single-channel mask.
-    private final String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK" };
-    private final int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK };
-
+    private final int FLAGS = DOES_32 | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 32-bit single-channel map.
+    
     // static var.
     private static int ind_src = 0;
     private static int ind_msk = 1;
-    private static int ind_type = 0;
-    private static int iter = 3;
-    private static boolean enFgd = true;   
-        
+    
     // var.
     private ImagePlus imp_src = null;
-    private ImagePlus imp_msk = null;
-    private Rect rect = null;
+    private ImagePlus imp_map = null;
     private int[] lst_wnd;
-    private String[] titles_wnd;    
+    private String[] titles_wnd;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
@@ -67,9 +59,6 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
 
         gd.addChoice("src", titles_wnd, titles_wnd[ind_src]);
         gd.addChoice("mask", titles_wnd, titles_wnd[ind_msk]);
-        gd.addNumericField("iterCount", iter, 0);
-        gd.addChoice("mode", TYPE_STR, TYPE_STR[ind_type]);
-        gd.addCheckbox("enable_foreground_is_255", enFgd);
         gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -91,19 +80,16 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     {
         ind_src = (int)gd.getNextChoiceIndex();
         ind_msk = (int)gd.getNextChoiceIndex();
-        iter = (int)gd.getNextNumber();
-        ind_type = (int)gd.getNextChoiceIndex();
-        enFgd = (boolean)gd.getNextBoolean();   
         
         if(ind_src == ind_msk) { IJ.showStatus("The same image can not be selected."); return false; }
 
         imp_src = WindowManager.getImage(lst_wnd[ind_src]);
-        imp_msk = WindowManager.getImage(lst_wnd[ind_msk]);
+        imp_map = WindowManager.getImage(lst_wnd[ind_msk]);
 
-        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) { IJ.showStatus("The image should be RGB, and the mask should be 8bit gray."); return false; }
-        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) { IJ.showStatus("The size of src should be same as the size of mask."); return false; }
+        if(imp_src.getBitDepth() != 24 || imp_map.getBitDepth() != 32) { IJ.showStatus("The image should be RGB, and the mask should be 32bit."); return false; }
+        if(imp_src.getWidth() != imp_map.getWidth() || imp_src.getHeight() != imp_map.getHeight()) { IJ.showStatus("The size of src should be same as the size of mask."); return false; }
         
-        IJ.showStatus("OCV_GrabCut");
+        IJ.showStatus("OCV_Watershed");
         return true;
     }
     
@@ -145,20 +131,6 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
                 ImagePlus imp2 = WindowManager.getImage(lst_wnd[i]);
                 titles_wnd[i] = imp2 != null ? imp2.getTitle() : "";
             }
-            
-            // get the ROI
-            Rectangle rect_java;
-
-            if(imp.getRoi() != null)
-            {
-                rect_java = imp.getRoi().getBounds();
-            }
-            else
-            {
-                rect_java = new Rectangle(1, 1, imp.getWidth() - 2, imp.getHeight() - 2);
-            }
-            
-            rect = new Rect(rect_java.x , rect_java.y, rect_java.width, rect_java.height);
 
             return FLAGS;
         }
@@ -168,41 +140,26 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     public void run(ImageProcessor ip)
     {
         // src (RGB)
-        int[] src_arr = (int[])imp_src.getChannelProcessor().getPixels();
+        int[] arr_src_rgb = (int[])imp_src.getChannelProcessor().getPixels();
         int imw_src = imp_src.getWidth();
         int imh_src = imp_src.getHeight();
-        Mat mat_src = new Mat(imh_src, imw_src, CvType.CV_8UC3);
-        OCV__LoadLibrary.intarray2mat(src_arr, mat_src, imw_src, imh_src);
+        Mat mat_src_rgb = new Mat(imh_src, imw_src, CvType.CV_8UC3);
 
-        // tmp (Gray)
-        byte[] msk_arr = (byte[])imp_msk.getChannelProcessor().getPixels();
-        int imw_msk = imp_msk.getWidth();
-        int imh_msk = imp_msk.getHeight();
-        int numpix_msk = imw_msk * imh_msk;
-
-        // output
-        Mat mat_msk = new Mat(imh_msk, imw_msk, CvType.CV_8UC1);
-        Mat bgdModel = new Mat();
-        Mat fgdModel = new Mat();
+        // map (32bit)
+        float[] arr_map_32f = (float[])imp_map.getChannelProcessor().getPixels();
+        int imw_map = imp_map.getWidth();
+        int imh_map = imp_map.getHeight();
+        Mat mat_map_32f = new Mat(imh_map, imw_map, CvType.CV_32FC1);
+        Mat mat_map_32s = new Mat(imh_map, imw_map, CvType.CV_32SC1);
         
-        // run      
-        mat_msk.put(0, 0, msk_arr);
-        Imgproc.grabCut(mat_src, mat_msk, rect, bgdModel, fgdModel, iter, TYPE_VAL[ind_type]);        
-        mat_msk.get(0, 0, msk_arr);        
+        // run
+        OCV__LoadLibrary.intarray2mat(arr_src_rgb, mat_src_rgb, imw_src, imh_src);
+        mat_map_32f.put(0, 0, arr_map_32f);
+        mat_map_32f.convertTo(mat_map_32s, CvType.CV_32SC1);
         
-        if(enFgd)
-        {
-            for(int i = 0; i < numpix_msk; i++)
-            {
-                if(msk_arr[i] == Imgproc.GC_FGD || msk_arr[i] == Imgproc.GC_PR_FGD)
-                {
-                    msk_arr[i] = (byte)255;
-                }
-                else
-                {
-                    msk_arr[i] = (byte)0;
-                }
-            }
-        }  
+        Imgproc.watershed(mat_src_rgb, mat_map_32s);
+        
+        mat_map_32s.convertTo(mat_map_32f, CvType.CV_32FC1);
+        mat_map_32f.get(0, 0, arr_map_32f);         
     }
 }

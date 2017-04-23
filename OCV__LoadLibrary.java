@@ -40,7 +40,7 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.20.0";
+    private static final String VER = "0.9.21.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
         
     private static boolean disposed = true;    

@@ -110,11 +110,11 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         enAddRoi = gd.getNextBoolean();
         enOutputImg = gd.getNextBoolean();
 
-        if(rmin < 0) { IJ.showStatus("ERR : rmin < 0"); return false; }
-        if(rmax < 0) { IJ.showStatus("ERR : rmax < 0"); return false; }
-        if(rmax < rmin) { IJ.showStatus("ERR : rmax < rmin"); return false; }
-        if(minVotes < 0) { IJ.showStatus("ERR : minVotes < 0"); return false; }
-        if(rngSame < 0) { IJ.showStatus("ERR : rngSame < 0"); return false; }
+        if(rmin < 0) { IJ.showStatus("'0 <= rmin' is necessary."); return false; }
+        if(rmax < 0) { IJ.showStatus("'0 <= rmax' is necessary."); return false; }
+        if(rmax < rmin) { IJ.showStatus("'rmin <= rmax' is necessary."); return false; }
+        if(minVotes < 0) { IJ.showStatus("'0 <= minVotes' is necessary."); return false; }
+        if(rngSame < 0) { IJ.showStatus("'0 <= rngSame' is necessary."); return false; }
         
         IJ.showStatus("WK_HoughCircles");
         return true;

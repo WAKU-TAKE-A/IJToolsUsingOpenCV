@@ -114,7 +114,7 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
         
         if(Double.isNaN(max_distance)) { IJ.showStatus("ERR : NaN"); return false; }
         if(max_distance < 0) { IJ.showStatus("'0 <= MaxDistance' is necessary."); return false; }
-        if(ind_train == ind_query) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
+        if(ind_train == ind_query) { IJ.showStatus("The same image can not be selected."); return false; }
 
         imp_query = WindowManager.getImage(lst_wid[ind_query]);
         imp_train = WindowManager.getImage(lst_wid[ind_train]);

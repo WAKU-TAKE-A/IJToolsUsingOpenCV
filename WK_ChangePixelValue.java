@@ -36,7 +36,7 @@ import java.awt.Rectangle;
 public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private final int FLAGS = DOES_8G | DOES_16 | CONVERT_TO_FLOAT | KEEP_PREVIEW;
+    private final int FLAGS = DOES_8G | DOES_16 |CONVERT_TO_FLOAT | KEEP_PREVIEW;
     private static final int USHORT_MAX = 65535;
     private static final int UBYTE_MAX = 255;
     private static final String INNER = "inner";
@@ -89,7 +89,7 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         lower = (int)gd.getNextNumber();
         upper = (int)gd.getNextNumber();
 
-        if(upper < lower) { IJ.showStatus("ERR : upper < lower"); return false; }
+        if(upper < lower) { IJ.showStatus("'lower <= upper' is necessary."); return false; }
 
         lower = checkValue(lower, 0, valMax);
         upper = checkValue(upper, 0, valMax);

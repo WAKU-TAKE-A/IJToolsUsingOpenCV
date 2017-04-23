@@ -5,7 +5,6 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
@@ -132,14 +131,14 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
         float[] srcdst_floats = (float[])ip.getPixels();
 
         // mat
-        Mat src_32_mat = new Mat(imh, imw, CvType.CV_32F); 
-        Mat src_8u_mat = new Mat(imh, imw, CvType.CV_8U);
-        Mat dst_32_mat = new Mat(imh, imw, CvType.CV_32F);
+        Mat src_mat_32f = new Mat(imh, imw, CvType.CV_32FC1);
+        Mat src_mat_8u = new Mat(imh, imw, CvType.CV_8UC1);
+        Mat dst_mat_32f = new Mat(imh, imw, CvType.CV_32FC1);
 
         // run
-        src_32_mat.put(0, 0, srcdst_floats);
-        src_32_mat.convertTo(src_8u_mat, CvType.CV_8U);
-        Imgproc.distanceTransform(src_8u_mat, dst_32_mat, INT_DISTANCETYPE[indDistType], INT_DISTANCETRANSFORMMASKS[indMskSize]);
-        dst_32_mat.get(0, 0, srcdst_floats);  
+        src_mat_32f.put(0, 0, srcdst_floats);
+        src_mat_32f.convertTo(src_mat_8u, CvType.CV_8UC1);
+        Imgproc.distanceTransform(src_mat_8u, dst_mat_32f, INT_DISTANCETYPE[indDistType], INT_DISTANCETRANSFORMMASKS[indMskSize]);
+        dst_mat_32f.get(0, 0, srcdst_floats);         
     }
 }

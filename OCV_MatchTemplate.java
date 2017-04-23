@@ -102,7 +102,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         enSearchMax = (boolean)gd.getNextBoolean(); 
        
         if(Float.isNaN(thr_res)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(ind_src == ind_tmp) { IJ.showStatus("ERR : The same image can not be selected."); return false; }
+        if(ind_src == ind_tmp) { IJ.showStatus("The same image can not be selected."); return false; }
 
         imp_src = WindowManager.getImage(lst_wid[ind_src]);
         imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
