@@ -40,7 +40,7 @@ import org.opencv.core.Mat;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.21.0";
+    private static final String VER = "0.9.22.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
         
     private static boolean disposed = true;    
@@ -60,7 +60,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         
         if(!disposed)
         {
-            gd.addMessage("Load already !");
+            gd.addMessage("It is already loaded.");
         }
         else
         {
@@ -86,11 +86,12 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         try
         {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+            IJ.showStatus("Loading succeeded.");
             disposed = false;
         }
         catch(Throwable ex)
         {
-            IJ.error("ERR : " + ex.getMessage() + "\nThe recovering method : Restart ImageJ, especially after 'Refresh Menus'");
+            IJ.error("ERR : " + ex.getMessage() + "\nThe recovering method : Restart ImageJ, especially after 'Refresh Menus'.");
             disposed = true;
         }
     }

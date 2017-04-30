@@ -68,7 +68,6 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("min_angle", minDeg, 4);
         gd.addNumericField("max_angle", maxDeg, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addDialogListener(this);
 
         gd.showDialog();

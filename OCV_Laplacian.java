@@ -70,7 +70,6 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         gd.addNumericField("scale", scale, 4);
         gd.addNumericField("delta", delta, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

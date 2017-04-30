@@ -84,7 +84,6 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("range_to_judge_same", rngSame, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
         gd.addCheckbox("enable_output_hough_image", enOutputImg);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addDialogListener(this);
 
         gd.showDialog();

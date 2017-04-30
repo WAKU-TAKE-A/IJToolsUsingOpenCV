@@ -59,7 +59,6 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
         gd.addChoice("src", titles_wnd, titles_wnd[ind_src]);
         gd.addChoice("mask", titles_wnd, titles_wnd[ind_msk]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
         

@@ -52,7 +52,6 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     {
         GenericDialog gd = new GenericDialog(cmd + "...");
         gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.showDialog();
 
         if (gd.wasCanceled())

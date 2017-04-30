@@ -61,7 +61,6 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
     {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
         gd.addCheckbox("enable_refresh_data", enRefData);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.showDialog();
 
         if (gd.wasCanceled())

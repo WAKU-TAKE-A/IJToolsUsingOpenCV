@@ -24,7 +24,7 @@ public class WK_ErodeWhite implements ExtendedPlugInFilter, DialogListener
 
     public static final int UBYTE_MAX = 255;
 
-    private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT | DOES_STACKS | PARALLELIZE_STACKS;
+    private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT | DOES_STACKS | PARALLELIZE_STACKS | KEEP_PREVIEW;
 
     // staic var.
     private static int tap_x;
@@ -47,7 +47,6 @@ public class WK_ErodeWhite implements ExtendedPlugInFilter, DialogListener
         gd.addMessage("The values except 255 is dealt with with 0.");
         gd.addNumericField("tap_x", tap_x, 0);
         gd.addNumericField("tap_y", tap_y, 0);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

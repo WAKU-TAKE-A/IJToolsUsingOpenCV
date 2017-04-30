@@ -52,7 +52,6 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
         gd.addNumericField("ksize", ksize, 0);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

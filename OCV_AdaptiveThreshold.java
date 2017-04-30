@@ -62,7 +62,6 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         gd.addChoice("thresholdType", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
         gd.addNumericField("blockSize", blockSize, 0);
         gd.addNumericField("constSubtractedFromMean", subC, 4);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

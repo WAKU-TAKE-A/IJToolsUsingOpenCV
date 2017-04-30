@@ -62,7 +62,6 @@ public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("centery", rect.getY() + rect.getHeight() /2, 0);
         gd.addNumericField("max_radius", rmax, 0);
         gd.addChoice("color", TYPE_STR, TYPE_STR[type_ind]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

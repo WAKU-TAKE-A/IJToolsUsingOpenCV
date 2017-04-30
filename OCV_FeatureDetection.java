@@ -87,7 +87,6 @@ public class OCV_FeatureDetection implements ij.plugin.filter.ExtendedPlugInFilt
         gd.addChoice("DescriptorMatcher", TYPE_STR_MATCH, TYPE_STR_MATCH[ind_match]);
         gd.addNumericField("MaxDistance", max_distance, 4);
         gd.addCheckbox("DrawMatches", enDrawMatches);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addDialogListener(this);
 
         gd.showDialog();

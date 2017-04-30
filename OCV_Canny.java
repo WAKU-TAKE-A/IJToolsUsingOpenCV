@@ -58,7 +58,6 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         gd.addNumericField("threshold2", thr2, 4);
         gd.addChoice("apertureSize", SIZE_STR, SIZE_STR[ind_size]);
         gd.addCheckbox("L2gradient", l2grad);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

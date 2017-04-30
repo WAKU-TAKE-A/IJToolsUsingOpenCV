@@ -36,22 +36,23 @@ import java.awt.Rectangle;
 public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private final int FLAGS = DOES_8G | DOES_16 |CONVERT_TO_FLOAT | KEEP_PREVIEW;
-    private static final int USHORT_MAX = 65535;
-    private static final int UBYTE_MAX = 255;
+    private final int FLAGS = DOES_8G | DOES_16 | DOES_32 | CONVERT_TO_FLOAT | DOES_STACKS | PARALLELIZE_STACKS | KEEP_PREVIEW;
+    private static final float USHORT_MAX = 65535;
+    private static final float UBYTE_MAX = 255;
     private static final String INNER = "inner";
     private static final String OUTER = "outer";
     private static final String[] BYNARY_TYPE = { INNER, OUTER };
 
     // static var.
-    private static int lower = 0;
-    private static int upper = 0;
+    private static float lower = 0;
+    private static float upper = 0;
     private static String type = INNER;
-    private static int valTrue = 255;
-    private static int valFalse = 0;
+    private static float valTrue = 255;
+    private static float valFalse = 0;
 
     // var.
-    private int valMax = 0;
+    private float valMax = 0;
+    private int bitDepth = 0;
 
     @Override
     public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr)
@@ -62,12 +63,11 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addNumericField("lower", lower, 0);
-        gd.addNumericField("upper", upper, 0);
+        gd.addNumericField("lower", lower, 4);
+        gd.addNumericField("upper", upper, 4);
         gd.addChoice("range_of_true", BYNARY_TYPE, type);
-        gd.addNumericField("value_of_true", valTrue, 0);
-        gd.addNumericField("value_of_false", valFalse, 0);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
+        gd.addNumericField("value_of_true", valTrue, 4);
+        gd.addNumericField("value_of_false", valFalse, 4);
         gd.addPreviewCheckbox(pifr);
         gd.addDialogListener(this);
 
@@ -86,20 +86,27 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {
-        lower = (int)gd.getNextNumber();
-        upper = (int)gd.getNextNumber();
-
+        lower = (float)gd.getNextNumber();
+        upper = (float)gd.getNextNumber();
+        
         if(upper < lower) { IJ.showStatus("'lower <= upper' is necessary."); return false; }
 
-        lower = checkValue(lower, 0, valMax);
-        upper = checkValue(upper, 0, valMax);
-
+        if(bitDepth == 8 || bitDepth == 16)
+        {
+            lower = checkValue(lower, 0, valMax);
+            upper = checkValue(upper, 0, valMax);      
+        }
+        
         type = (String)BYNARY_TYPE[(int)gd.getNextChoiceIndex()];
 
-        valTrue = (int)gd.getNextNumber();
-        valFalse = (int)gd.getNextNumber();
-        valTrue = checkValue(valTrue, 0, valMax);
-        valFalse = checkValue(valFalse, 0, valMax);
+        valTrue = (float)gd.getNextNumber();
+        valFalse = (float)gd.getNextNumber();
+        
+        if(bitDepth == 8 || bitDepth == 16)
+        {        
+            valTrue = checkValue(valTrue, 0, valMax);
+            valFalse = checkValue(valFalse, 0, valMax);
+        }
         
         IJ.showStatus("WK_ChangePixelValue");
         return true;
@@ -121,13 +128,13 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         }
         else
         {
-            int bd = ip.getBitDepth();
+            bitDepth = ip.getBitDepth();
 
-            if(bd == 8)
+            if(bitDepth == 8)
             {
                 valMax = UBYTE_MAX;
             }
-            else if(bd == 16)
+            else if(bitDepth == 16)
             {
                 valMax = USHORT_MAX;
             }
@@ -143,32 +150,44 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         int numpix = imw * imh;
-        Rectangle rect;
-
-        if(ip.getRoi() != null)
+        Rectangle rect = ip.getRoi();       
+        
+        if(rect == null || (rect.width == imw && rect.height == imh))
+        {       
+            rect = null;          
+        }
+        else
         {
             rect = ip.getRoi().getBounds();
         }
+
+        if(bitDepth == 8 || bitDepth == 16)
+        {
+            float[] table = makeTable(lower, upper, type, valTrue, valFalse);
+
+            if(rect == null)
+            {
+                changePixelValueWithTable(srcdst, numpix, table);
+            }
+            else
+            {
+                changePixelValueWithTable(srcdst, imw, rect.x, rect.y, rect.width, rect.height, table);
+            }           
+        }
         else
         {
-            rect = null;
-        }
-
-        float[] table = makeTable(lower, upper, type, valTrue, valFalse);
-
-        if(rect == null)
-        {
-            changePixelValue(srcdst, numpix, table);
-        }
-        else
-        {
-            changePixelValue(srcdst, imw, rect.x, rect.y, rect.width, rect.height, table);
+            if(rect == null)
+            {
+                rect = new Rectangle(0, 0, imw, imh);
+            }
+            
+            changePixelValueForFloat(srcdst, lower, upper, type, valTrue, valFalse, imw, rect.x, rect.y, rect.width, rect.height);
         }
     }
    
-    private int checkValue(int src, int min, int max)
+    private float checkValue(float src, float min, float max)
     {
-        int dst = 0;
+        float dst = 0;
 
         if(src < min)
         {
@@ -186,9 +205,9 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         return dst;
     }
 
-    private float[] makeTable(int lower, int upper, String type, int val_tr, int val_fls)
+    private float[] makeTable(float lower, float upper, String type, float val_tr, float val_fls)
     {
-        float[] table_new = new float[valMax  + 1];
+        float[] table_new = new float[(int)valMax  + 1];
 
         for (int i = 0; i < lower; i++)
         {
@@ -202,7 +221,10 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
             }
         }
 
-        for (int i = lower; i < upper + 1; i++)
+        int lower_int = (int)lower;
+        int upper_int = (int)upper;
+        
+        for (int i = lower_int; i < upper_int + 1; i++)
         {
             if(type.equals(OUTER)) // false
             {
@@ -214,7 +236,9 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
             }
         }
 
-        for (int i = upper + 1; i < valMax + 1; i++)
+        int valMax_int = (int)valMax;
+        
+        for (int i = upper_int + 1; i < valMax_int + 1; i++)
         {
             if(type.equals(OUTER)) // true
             {
@@ -229,15 +253,15 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         return table_new;
     }
 
-    private void changePixelValue(float[] src, int num, float[] tbl)
+    private void changePixelValueWithTable(float[] srcdst, int num, float[] tbl)
     {
         for (int i = 0; i < num; i++)
         {
-            src[i] = tbl[(int)src[i]];
+            srcdst[i] = tbl[(int)srcdst[i]];
         }
     }
 
-    private void changePixelValue(float[] src, int str, int roix, int roiy, int roiw, int roih, float[] tbl)
+    private void changePixelValueWithTable(float[] srcdst, int str, int roix, int roiy, int roiw, int roih, float[] tbl)
     {
         int k = 0;
 
@@ -246,7 +270,64 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
             for (int x = 0; x < roiw; x++)
             {
                 k = x + roix + (str * (y + roiy));
-                src[k] = tbl[(int)src[k]];
+                srcdst[k] = tbl[(int)srcdst[k]];
+            }
+        }
+    }
+  
+    private void  changePixelValueForFloat(
+            float[] srcdst, 
+            float thr_low, float thr_high,
+            String type,
+            float val_tr, float val_fls,
+            int str, int roix, int roiy, int roiw, int roih)
+    {
+        int k = 0;
+        
+        if(type.equals(OUTER))
+        {
+            for (int y = 0; y < roih; y++)
+            {
+                for (int x = 0; x < roiw; x++)
+                {
+                    k = x + roix + (str * (y + roiy));
+
+                    if(srcdst[k] < thr_low)
+                    {
+                         srcdst[k] = val_tr;
+                    }
+                    else if (thr_low <= srcdst[k] && srcdst[k] <  thr_high)
+                    {
+                        srcdst[k] = val_fls;
+                    }
+                    else if(thr_high <= srcdst[k])
+                    {
+                        srcdst[k] = val_tr;
+                    }
+                }
+            }
+        }
+        else if(type.equals(INNER))
+        {
+            for (int y = 0; y < roih; y++)
+            {
+                for (int x = 0; x < roiw; x++)
+                {
+                    k = x + roix + (str * (y + roiy));
+
+                    if(srcdst[k] < thr_low)
+                    {
+                         srcdst[k] = val_fls;
+                    }
+                    else if (thr_low <= srcdst[k] && srcdst[k] <  thr_high)
+                    {
+                        srcdst[k] = val_tr;
+                    }
+                    else if(thr_high <= srcdst[k])
+                    {
+                        srcdst[k] = val_fls;
+                    }
+                }
             }
         }
     }

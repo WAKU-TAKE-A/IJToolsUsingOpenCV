@@ -101,10 +101,7 @@ public class WK_GetProperty implements ExtendedPlugInFilter
     public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
-
         gd.addChoice("key", LIST_KEYS, LIST_KEYS[ind_list]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
-
         gd.showDialog();
 
         if (gd.wasCanceled())

@@ -40,8 +40,8 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_32 | KEEP_PREVIEW;
-    private static final int[] INT_TYPE = { Imgproc.THRESH_BINARY, Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRUNC, Imgproc.THRESH_TOZERO, Imgproc.THRESH_TOZERO_INV, Imgproc.THRESH_OTSU, Imgproc.THRESH_TRIANGLE };
-    private static final String[] STR_TYPE = { "THRESH_BINARY", "THRESH_BINARY_INV", "THRESH_TRUNC", "THRESH_TOZERO", "THRESH_TOZERO_INV" , "THRESH_OTSU", "THRESH_TRIANGLE"};
+    private static final int[] INT_TYPE = { Imgproc.THRESH_BINARY, Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRUNC, Imgproc.THRESH_TOZERO, Imgproc.THRESH_TOZERO_INV, Imgproc.THRESH_OTSU, Imgproc.THRESH_OTSU + Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRIANGLE };
+    private static final String[] STR_TYPE = { "THRESH_BINARY", "THRESH_BINARY_INV", "THRESH_TRUNC", "THRESH_TOZERO", "THRESH_TOZERO_INV" , "THRESH_OTSU", "THRESH_OTSU_INV", "THRESH_TRIANGLE"};
 
     // staic var.
     private static double thresh = 125;
@@ -56,7 +56,6 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         gd.addNumericField("thresh", thresh, 4);
         gd.addNumericField("maxval", maxVal, 4);
         gd.addChoice("adaptiveMethod", STR_TYPE, STR_TYPE[idxType]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

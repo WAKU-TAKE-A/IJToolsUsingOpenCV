@@ -76,7 +76,6 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
         gd.addNumericField("sigma_x", sigma_x, 4);
         gd.addNumericField("sigma_y", sigma_y, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

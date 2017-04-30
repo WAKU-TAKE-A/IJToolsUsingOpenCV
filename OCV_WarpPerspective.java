@@ -55,7 +55,6 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addChoice("interpolation_method", FLAGS_STR, FLAGS_STR[flags_ind]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

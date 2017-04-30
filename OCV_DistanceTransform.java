@@ -70,7 +70,6 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
         
         gd.addChoice("distanceType", STR_DISTANCETYPE, STR_DISTANCETYPE[indDistType]);
         gd.addChoice("maskSize", STR_DISTANCETRANSFORMMASKS, STR_DISTANCETRANSFORMMASKS[indMskSize]);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 

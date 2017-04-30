@@ -64,7 +64,6 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
         gd.addNumericField("center_y", center_y, 4);
         gd.addNumericField("angle", angle, 4);
         gd.addNumericField("scale", scale, 4);
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.addDialogListener(this);
 
         gd.showDialog();
