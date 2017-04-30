@@ -2,12 +2,9 @@ import ij.*;
 import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import ij.plugin.Macro_Runner;
 import ij.plugin.filter.PlugInFilterRunner;
-import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
-import java.awt.Frame;
 
 /*
  * The MIT License
@@ -121,21 +118,21 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
         String type_cond = TYPE_COND[ind_cond];
         String type_math = TYPE_MATH[ind_math];
         
-        switch (type_math) {
-            case ADD:
-                math_add(srcdst_floats, imw, imh, value, type_cond);
-                break;
-            case SUB:
-                math_sub(srcdst_floats, imw, imh, value, type_cond);
-                break;
-            case MUL:
-                math_mul(srcdst_floats, imw, imh, value, type_cond);
-                break;
-            case SET:
-                math_set(srcdst_floats, imw, imh, value, type_cond);
-                break;
-            default:
-                break;
+        if (type_math.equals(ADD)) 
+        {
+            math_add(srcdst_floats, imw, imh, value, type_cond);
+        }
+        else if (type_math.equals(SUB))
+        {
+            math_sub(srcdst_floats, imw, imh, value, type_cond);
+        }
+        else if (type_math.equals(MUL))
+        {
+            math_mul(srcdst_floats, imw, imh, value, type_cond);
+        }
+        else if (type_math.equals(SET))
+        {
+            math_set(srcdst_floats, imw, imh, value, type_cond);
         }
     }
     
@@ -143,44 +140,46 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
     {
         int k = 0;
         
-        switch (type) {
-            case ALL:
-                for (int y = 0; y < imh; y++)
+        if (type.equals(ALL))
+        {
+             for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
                 {
-                    for (int x = 0; x < imw; x++)
+                    k = x + imw * y;
+                    srcdst[k] = srcdst[k] + value;
+                }
+            }
+        }
+        else if (type.equals(EQUAL_ZERO))
+        {
+            for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
+                {
+                    k = x + imw * y;
+
+                    if(srcdst[k] == 0)
                     {
-                        k = x + imw * y;
                         srcdst[k] = srcdst[k] + value;
                     }
-                }   break;
-            case EQUAL_ZERO:
-                for (int y = 0; y < imh; y++)
+                }
+            }
+        }
+        else if (type.equals(NOT_ZERO))
+        {
+               for (int y = 0; y < imh; y++)  
+            {
+                for (int x = 0; x < imw; x++)
                 {
-                    for (int x = 0; x < imw; x++)
+                    k = x + imw * y;
+
+                    if(srcdst[k] != 0)
                     {
-                        k = x + imw * y;
-                        
-                        if(srcdst[k] == 0)
-                        {
-                            srcdst[k] = srcdst[k] + value;
-                        }
+                        srcdst[k] = srcdst[k] + value;
                     }
-                }   break;
-            case NOT_ZERO:
-                for (int y = 0; y < imh; y++)  
-                {
-                    for (int x = 0; x < imw; x++)
-                    {
-                        k = x + imw * y;
-                        
-                        if(srcdst[k] != 0)
-                        {
-                            srcdst[k] = srcdst[k] + value;
-                        }
-                    }
-                }   break;
-            default:
-                break;
+                }
+            }         
         }
     }
     
@@ -188,53 +187,55 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
     {
         int k = 0;
         
-        switch (type) {
-            case ALL:
-                for (int y = 0; y < imh; y++)
+         if (type.equals(ALL))
+        {
+            for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
                 {
-                    for (int x = 0; x < imw; x++)
+                    k = x + imw * y;
+                    srcdst[k] = srcdst[k] - value;
+                }
+            }
+        }
+        else if (type.equals(EQUAL_ZERO))
+        {
+            for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
+                {
+                    k = x + imw * y;
+
+                    if(srcdst[k] == 0)
                     {
-                        k = x + imw * y;
                         srcdst[k] = srcdst[k] - value;
                     }
-                }   break;
-            case EQUAL_ZERO:
-                for (int y = 0; y < imh; y++)
+                }
+            }
+        }
+        else if (type.equals(NOT_ZERO))
+        {
+            for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
                 {
-                    for (int x = 0; x < imw; x++)
+                    k = x + imw * y;
+
+                    if(srcdst[k] != 0)
                     {
-                        k = x + imw * y;
-                        
-                        if(srcdst[k] == 0)
-                        {
-                            srcdst[k] = srcdst[k] - value;
-                        }
+                        srcdst[k] = srcdst[k] - value;
                     }
-                }   break;
-            case NOT_ZERO:
-                for (int y = 0; y < imh; y++)
-                {
-                    for (int x = 0; x < imw; x++)
-                    {
-                        k = x + imw * y;
-                        
-                        if(srcdst[k] != 0)
-                        {
-                            srcdst[k] = srcdst[k] - value;
-                        }
-                    }
-                }   break;
-            default:
-                break;
+                }
+            }
         }
     }
     
     private void math_mul(float[] srcdst, int imw, int imh, float value, String type)
     {
-        int k = 0;
+        int k = 0;        
         
-        switch (type) {
-            case ALL:
+        if (type.equals(ALL))
+        {
                 for (int y = 0; y < imh; y++)
                 {
                     for (int x = 0; x < imw; x++)
@@ -242,9 +243,11 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
                         k = x + imw * y;
                         srcdst[k] = srcdst[k] * value;
                     }
-                }   break;
-            case EQUAL_ZERO:
-                for (int y = 0; y < imh; y++)
+                }
+        }
+        else if (type.equals(EQUAL_ZERO))
+        {
+                 for (int y = 0; y < imh; y++)
                 {
                     for (int x = 0; x < imw; x++)
                     {
@@ -255,8 +258,10 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
                             srcdst[k] = srcdst[k] * value;
                         }
                     }
-                }   break;
-            case NOT_ZERO:
+                } 
+        }
+        else if (type.equals(NOT_ZERO))
+        {
                 for (int y = 0; y < imh; y++)
                 {
                     for (int x = 0; x < imw; x++)
@@ -268,9 +273,7 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
                             srcdst[k] = srcdst[k] * value;
                         }
                     }
-                }   break;
-            default:
-                break;
+                }
         }
     }
     
@@ -278,30 +281,34 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
     {
         int k = 0;
         
-        switch (type) {
-            case ALL:
-                for (int y = 0; y < imh; y++)
+        if (type.equals(ALL))
+        {
+            for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
                 {
-                    for (int x = 0; x < imw; x++)
+                    k = x + imw * y;
+                    srcdst[k] = value;
+                }
+            }
+        }
+        else if (type.equals(EQUAL_ZERO))
+        {
+            for (int y = 0; y < imh; y++)
+            {
+                for (int x = 0; x < imw; x++)
+                {
+                    k = x + imw * y;
+
+                    if(srcdst[k] == 0)
                     {
-                        k = x + imw * y;
                         srcdst[k] = value;
                     }
-                }   break;
-            case EQUAL_ZERO:
-                for (int y = 0; y < imh; y++)
-                {
-                    for (int x = 0; x < imw; x++)
-                    {
-                        k = x + imw * y;
-                        
-                        if(srcdst[k] == 0)
-                        {
-                            srcdst[k] = value;
-                        }
-                    }
-                }   break;
-            case NOT_ZERO:
+                }
+            } 
+        }
+        else if (type.equals(NOT_ZERO))
+        {
                 for (int y = 0; y < imh; y++)
                 {
                     for (int x = 0; x < imw; x++)
@@ -313,9 +320,7 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
                             srcdst[k] = value;
                         }
                     }
-                }   break;
-            default:
-                break;
+                } 
         }
     }
 }
