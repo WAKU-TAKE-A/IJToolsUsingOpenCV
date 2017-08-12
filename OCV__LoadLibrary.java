@@ -44,7 +44,7 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.23.0";
+    private static final String VER = "0.9.24.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
         
     private static boolean disposed = true;    

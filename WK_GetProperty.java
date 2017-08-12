@@ -1,10 +1,7 @@
 import ij.*;
-import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.process.*;
 import ij.plugin.filter.*;
-import java.awt.AWTEvent;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.datatransfer.Clipboard;
 import java.awt.datatransfer.StringSelection;
