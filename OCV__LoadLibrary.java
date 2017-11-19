@@ -13,6 +13,7 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
+import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Point;
 
 /*
@@ -44,11 +45,16 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.24.0";
+    private static final String VER = "0.9.25.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
         
     private static boolean disposed = true;    
     private static Mat dummy = null;
+    
+    public static Mat QueryMat = null;
+    public static MatOfKeyPoint QueryKeys = null;
+    public static Mat QueryDesc = null;
+    public static String FeatDetType = null;
     
     // ExtendedPlugInFilter
     @Override

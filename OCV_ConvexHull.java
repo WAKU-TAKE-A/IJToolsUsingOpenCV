@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * convexHull (OpenCV3.1).
+ * convexHull (OpenCV3.3.1).
  */
 public class OCV_ConvexHull implements ExtendedPlugInFilter
 {
@@ -148,5 +148,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
         roiMan.addRoi(proi);
+         int num_roiMan = roiMan.getCount();
+        roiMan.select(num_roiMan - 1);
     }
 }

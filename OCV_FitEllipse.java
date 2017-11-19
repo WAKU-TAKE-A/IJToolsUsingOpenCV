@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * fitEllipse (OpenCV3.1).
+ * fitEllipse (OpenCV3.3.1).
  */
 public class OCV_FitEllipse implements ExtendedPlugInFilter
 {
@@ -70,13 +70,6 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
         else
         {
             enRefData = (boolean)gd.getNextBoolean();
-            
-            if(enRefData)
-            {
-                rt.reset();
-                roiMan.reset();
-            }
-
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
     }
@@ -110,7 +103,20 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
 
         pts.fromList(lstPt);
         RotatedRect rect =  Imgproc.fitEllipse(pts);
-        showData(rect, num_slice);
+        
+         if(rect != null)
+        {
+            rt = OCV__LoadLibrary.GetResultsTable(false);
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+            
+             if(enRefData)
+            {
+                rt.reset();
+                roiMan.reset();
+            }
+             
+            showData(rect, num_slice);
+        }
     }
 
     @Override
@@ -130,8 +136,6 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
         else
         {
             impSrc = imp;
-            rt = OCV__LoadLibrary.GetResultsTable(false);
-            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             return DOES_8G;
         }
     }
@@ -167,5 +171,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
         impSrc.setSlice(num_slice);
         EllipseRoi eroi = new EllipseRoi(xPoints[0], yPoints[0], xPoints[1], yPoints[1], ratio);
         roiMan.addRoi(eroi);
+        int num_roiMan = roiMan.getCount();
+        roiMan.select(num_roiMan - 1);
     }
 }

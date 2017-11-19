@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * boundingRect (OpenCV3.1).
+ * boundingRect (OpenCV3.3.1).
  */
 public class OCV_BoundingRect implements ExtendedPlugInFilter
 {
@@ -70,20 +70,13 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
         else
         {
             enRefData = (boolean)gd.getNextBoolean();
-            
-            if(enRefData)
-            {
-                rt.reset();
-                roiMan.reset();
-            }
-            
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
     }
 
     @Override
     public void run(ImageProcessor ip)
-    {
+    {      
         byte[] byteArray = (byte[])ip.getPixels();
         int w = ip.getWidth();
         int h = ip.getHeight();
@@ -110,7 +103,20 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
 
         pts.fromList(lstPt);
         Rect rect = Imgproc.boundingRect(pts);
-        showData(rect, num_slice);
+        
+        if(rect != null)
+        {
+            rt = OCV__LoadLibrary.GetResultsTable(false);
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+            
+             if(enRefData)
+            {
+                rt.reset();
+                roiMan.reset();
+            }
+             
+            showData(rect, num_slice);
+        }
     }
 
     @Override
@@ -130,8 +136,6 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
         else
         {
             impSrc = imp;
-            rt = OCV__LoadLibrary.GetResultsTable(false);
-            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             return DOES_8G;
         }
     }
@@ -150,5 +154,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
         impSrc.setSlice(num_slice);
         Roi roi = new Roi(rect.x, rect.y, rect.width, rect.height);
         roiMan.addRoi(roi);
+        int num_roiMan = roiMan.getCount();
+        roiMan.select(num_roiMan - 1);
     }
 }

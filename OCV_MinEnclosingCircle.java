@@ -37,7 +37,7 @@ import java.util.ArrayList;
  */
 
 /**
- * minEnclosingCircle (OpenCV3.1).
+ * minEnclosingCircle (OpenCV3.3.1).
  */
 public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
 {
@@ -72,13 +72,6 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         else
         {
             enRefData = (boolean)gd.getNextBoolean();
-            
-            if(enRefData)
-            {
-                rt.reset();
-                roiMan.reset();
-            }
-
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
     }
@@ -114,7 +107,17 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         float[] radius = new float[1];
         Point center = new Point();
         Imgproc.minEnclosingCircle(pts, center, radius);
-        showData(center.x, center.y, (double)radius[0], num_slice);
+        
+        rt = OCV__LoadLibrary.GetResultsTable(false);
+        roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+
+         if(enRefData)
+        {
+            rt.reset();
+            roiMan.reset();
+        }
+
+        showData(center.x, center.y, (double)radius[0], num_slice);   
     }
 
     @Override
@@ -134,8 +137,6 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         else
         {
             impSrc = imp;
-            rt = OCV__LoadLibrary.GetResultsTable(false);
-            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             return DOES_8G;
         }
     }
@@ -154,6 +155,8 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         impSrc.setSlice(num_slice);
         OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
         roiMan.addRoi(roi);
+         int num_roiMan = roiMan.getCount();
+        roiMan.select(num_roiMan - 1);
     }
 }
 
