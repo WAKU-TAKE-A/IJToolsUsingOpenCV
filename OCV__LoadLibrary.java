@@ -317,4 +317,26 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         
         return rm;
     }
+    
+     /**
+     * Wait
+     * @param wt wait time(ms)
+     */
+    public static void Wait(int wt)
+    {
+        try
+        {
+            if(wt == 0)
+            {
+                // do nothing
+            }
+            else
+            {
+                Thread.sleep(wt);
+            }
+        } catch (InterruptedException e)
+        {
+            // do nothing
+        }
+    }
 }

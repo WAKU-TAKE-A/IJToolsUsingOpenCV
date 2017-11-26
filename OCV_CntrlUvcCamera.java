@@ -154,11 +154,8 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         height = (int) src_cap.get(CV_CAP_PROP_FRAME_HEIGHT);
 
         ImagePlus  impDsp = IJ.createImage(title, width, height, 1, 24);
-
         int[] impdsp_intarray = (int[])impDsp.getChannelProcessor().getPixels();
-
         impDsp.show();
-        impDsp.setRoi(0, 0, impDsp.getWidth(), impDsp.getHeight());
         
         // show stop dialog
         diag_free.setVisible(true);
@@ -202,10 +199,18 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                 break;
             }
 
+            if(!impDsp.isVisible())
+            {
+                impDsp = null;
+                impDsp = IJ.createImage(title, width, height, 1, 24);
+                impdsp_intarray = (int[])impDsp.getChannelProcessor().getPixels();
+                impDsp.show();
+            }
+            
             impDsp.draw();
 
             // wait
-            wait(wait_time);
+            OCV__LoadLibrary.Wait(wait_time);
         }
 
         diag_free.dispose();
@@ -213,24 +218,6 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         if(src_cap.isOpened())
         {
             src_cap.release();
-        }
-    }
-
-    private void wait(int wt){
-
-        try
-        {
-            if(wt == 0)
-            {
-                // do nothing
-            }
-            else
-            {
-                Thread.sleep(wt);
-            }
-        } catch (InterruptedException e)
-        {
-            // do nothing
         }
     }
 }

@@ -259,7 +259,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
              {
                  createNewMask();
              }
-
+             
             OCV__LoadLibrary.Wait(100);
         }
     }
