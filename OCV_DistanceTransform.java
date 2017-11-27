@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * distanceTransform (OpenCV3.1).
+ * distanceTransform (OpenCV3.3.1).
  */
 public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -54,7 +54,7 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     DIST_HUBER : distance = |x|<c ? x^2/2 : c(|x|-c/2), c=1.345
     */
     private static final int[] INT_DISTANCETYPE = { Imgproc.CV_DIST_L1, Imgproc.CV_DIST_L2, Imgproc.CV_DIST_C, Imgproc.CV_DIST_L12, Imgproc.DIST_FAIR, Imgproc.DIST_WELSCH, Imgproc.DIST_HUBER };
-    private static final String[] STR_DISTANCETYPE = { "CV_DIST_L1", "CV_DIST_L2", "CV_DIST_C", "CV_DIST_L12", "DIST_FAIR", "DIST_WELSCH", "DIST_HUBER" };
+    private static final String[] STR_DISTANCETYPE = { "CV_DIST_L1", "CV_DIST_L2", "CV_DIST_C" };
     
     private static final int[] INT_DISTANCETRANSFORMMASKS = { Imgproc.CV_DIST_MASK_3, Imgproc.CV_DIST_MASK_5, Imgproc.CV_DIST_MASK_PRECISE  };
     private static final String[] STR_DISTANCETRANSFORMMASKS = { "CV_DIST_MASK_3", "CV_DIST_MASK_5", "CV_DIST_MASK_PRECISE" };
