@@ -73,24 +73,6 @@ public class WK_Wait implements ExtendedPlugInFilter
     @Override
     public void run(ImageProcessor ip)
     {
-        wait(wtime);
-    }
-    
-    private void wait(int wt){
-
-        try
-        {
-            if(wt == 0)
-            {
-                // do nothing
-            }
-            else
-            {
-                Thread.sleep(wt);
-            }
-        } catch (InterruptedException e)
-        {
-            // do nothing
-        }
+        OCV__LoadLibrary.Wait(wtime);
     }
 }

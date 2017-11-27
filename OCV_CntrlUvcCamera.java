@@ -153,9 +153,9 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         width = (int) src_cap.get(CV_CAP_PROP_FRAME_WIDTH);
         height = (int) src_cap.get(CV_CAP_PROP_FRAME_HEIGHT);
 
-        ImagePlus  impDsp = IJ.createImage(title, width, height, 1, 24);
-        int[] impdsp_intarray = (int[])impDsp.getChannelProcessor().getPixels();
-        impDsp.show();
+        ImagePlus  imp_dsp = IJ.createImage(title, width, height, 1, 24);
+        int[] impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
+        imp_dsp.show();
         
         // show stop dialog
         diag_free.setVisible(true);
@@ -169,9 +169,9 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             }
 
             // grab
-            impDsp.startTiming();
+            imp_dsp.startTiming();
             bret = src_cap.read(src_mat);
-            IJ.showTime(impDsp, impDsp.getStartTime(), title + " : ");
+            IJ.showTime(imp_dsp, imp_dsp.getStartTime(), title + " : ");
             
             if(!bret)
             {
@@ -188,6 +188,14 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             }
             
             // display
+            if(!imp_dsp.isVisible())
+            {
+                imp_dsp = null;
+                imp_dsp = IJ.createImage(title, width, height, 1, 24);
+                impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
+                imp_dsp.show();
+            }
+            
             if(src_mat.type() == CvType.CV_8UC3)
             {
                 OCV__LoadLibrary.mat2intarray(src_mat, impdsp_intarray, width, height);
@@ -199,15 +207,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                 break;
             }
 
-            if(!impDsp.isVisible())
-            {
-                impDsp = null;
-                impDsp = IJ.createImage(title, width, height, 1, 24);
-                impdsp_intarray = (int[])impDsp.getChannelProcessor().getPixels();
-                impDsp.show();
-            }
-            
-            impDsp.draw();
+            imp_dsp.draw();
 
             // wait
             OCV__LoadLibrary.Wait(wait_time);

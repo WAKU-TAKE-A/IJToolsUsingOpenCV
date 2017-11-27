@@ -56,6 +56,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     // static var.
     private static int iter = 3;
     private static double opacity = 30;
+    private static boolean enRepMskWithOut = false;
 
     // var.
     private String title_cmd = null;
@@ -63,11 +64,12 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     private ImagePlus imp_src = null;
     private ImagePlus imp_ov = null;
     private Mat mat_src_org  = null;
-    private int imw =0;
-    private int imh = 0;
+    private int imw_src =0;
+    private int imh_src = 0;
     private String title_src = "";
 
     private ImagePlus imp_msk = null;
+    private Mat mat_msk = null;
     private String title_msk = "";
 
     private Roi roi = null;
@@ -88,6 +90,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
 
         gd.addNumericField("iterCount", iter, 0);
         gd.addNumericField("opacity", opacity, 1);
+        gd.addCheckbox("enable_replace_mask_with_output", enRepMskWithOut);
 
         gd.showDialog();
 
@@ -100,6 +103,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         {
             iter = (int)gd.getNextNumber();
             opacity = (int)gd.getNextNumber();
+            enRepMskWithOut = gd.getNextBoolean();
             return FLAGS;
         }
     }
@@ -132,8 +136,8 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         }
 
         imp_src = imp;
-        imw = imp_src.getWidth();
-        imh = imp_src.getHeight();
+        imw_src = imp_src.getWidth();
+        imh_src = imp_src.getHeight();
         title_src = imp.getTitle();
         roi = imp.getRoi();
         imp.killRoi();
@@ -210,6 +214,8 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         // ----- End of dialog -----
 
         //  Create a new mask
+        IJ.showStatus("Create new mask. (GC_INIT_WITH_RECT)");
+        
         mat_src_org = convertRgbImage(imp_src);
         createNewMask();
 
@@ -217,27 +223,34 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         diag_free.setVisible(true);
 
         // Edit mask
+        IJ.showStatus("Start editing mask.");
+        
          for(;;)
         {
             if(flag_fin_loop)
             {
+                copyMat2Imp_Gray(mat_msk, imp_msk);
+                imp_msk.repaintWindow();
                 break;
             }
 
             if(flag_fgcol)
             {
                 MR.runMacro("setForegroundColor(253, 253, 253);", "");
+                IJ.showStatus("Set foreground color(253).");
                 flag_fgcol = false;
             }
             
             if(flag_bgcol)
             {
-                MR.runMacro("setForegroundColor(96, 96, 96);", "");
+                MR.runMacro("setForegroundColor(60, 60, 60);", "");
+                IJ.showStatus("Set background color(60).");
                 flag_bgcol = false;
             }
 
              if(flag_run && imp_src.isVisible() && imp_msk.isVisible())
             {
+                IJ.showStatus("Do GrabCut with mask.");
                 doGrabCut_WithMask();
                 flag_run = false;
             }
@@ -245,21 +258,24 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
              if(flag_cancel)
              {
                  int[] arr_src = (int[])imp_src.getProcessor().getPixels();
-                 OCV__LoadLibrary.mat2intarray(mat_src_org, arr_src, imw, imh);
+                 OCV__LoadLibrary.mat2intarray(mat_src_org, arr_src, imw_src, imh_src);
+                 imp_src.setRoi(roi);
                  imp_src.repaintWindow();
                  break;
              }
 
              if(!imp_src.isVisible())
              {
+                 IJ.showStatus("Restore " + title_src + ".");
                  restoreSrc();
              }
 
              if(!imp_msk.isVisible())
              {
+                 IJ.showStatus("Restore " + title_msk + ".");
                  createNewMask();
              }
-             
+
             OCV__LoadLibrary.Wait(100);
         }
     }
@@ -268,9 +284,9 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     {
         imp_msk = null;
         title_msk = WindowManager.getUniqueName("GrabCut_Mask");
-        imp_msk = IJ.createImage(title_msk, imw, imh, 1, 8);
+        imp_msk = IJ.createImage(title_msk, imw_src, imh_src, 1, 8);
         byte[] arr_msk = (byte[])imp_msk.getProcessor().getPixels();
-        Mat mat_msk = new Mat(imh, imw, CvType.CV_8UC1);
+        mat_msk = new Mat(imh_src, imw_src, CvType.CV_8UC1);
 
         Mat bgdModel = new Mat();
         Mat fgdModel = new Mat();
@@ -287,7 +303,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
 
     private void doGrabCut_WithMask()
     {
-        Mat mat_msk = convertMask(imp_msk);
+        mat_msk = convertMask(imp_msk);
 
         Mat bgdModel = new Mat();
         Mat fgdModel = new Mat();
@@ -303,14 +319,14 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     private void restoreSrc()
     {
         imp_src = null;
-        imp_src = IJ.createImage(title_src, imw, imh, 1, 24);
+        imp_src = IJ.createImage(title_src, imw_src, imh_src, 1, 24);
         imp_src.show();
 
         doGrabCut_WithMask();
     }
 
     //  "0000 0001(1)", "0000 00011(3)" and  "1111 1101(253)" are 0xffffffff.
-    // Mask 0x1.
+    // Mask 0000 0000(0x1) and multiply 0xffffffff.
     private void AND(ImagePlus srcColor, Mat msk)
     {
         int w = srcColor.getWidth();
@@ -340,11 +356,11 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         return mat_dst;
     }
 
-    // "0000 0000(0)" and  "0110 0000(96)" are 0.
+    // "0000 0000(0)" and  "0011 1100(60)" are 0.
     // "0000 0001(1)" and  "1111 1101(253)" are 1.
     // "0000 0010(2)"  is 2.
     // "0000 0011(3)"  is 3.
-    // Mask 0x3.
+    // Mask 0000 0011(x3).
     private Mat convertMask(ImagePlus src)
     {
         int w = src.getWidth();
@@ -369,5 +385,11 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         int h = dst.getHeight();
         int[] arrDst = (int[])dst.getProcessor().getPixels();
         OCV__LoadLibrary.mat2intarray(src, arrDst, w, h);
+    }
+    
+    private void copyMat2Imp_Gray(Mat src, ImagePlus dst)
+    {
+        byte[] arrDst = (byte[])dst.getProcessor().getPixels();
+        src.get(0, 0, arrDst);
     }
 }
