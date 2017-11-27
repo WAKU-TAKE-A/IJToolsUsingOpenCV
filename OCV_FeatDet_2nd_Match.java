@@ -78,8 +78,6 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
 
     // var.
     private String fname = "";
-    private ImagePlus imp_train = null;
-    //private FeatureDetector detector = FeatureDetector.create(FeatureDetector.AKAZE);
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
@@ -102,7 +100,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         }
         else
         {
-            return FLAGS;
+            return IJ.setupDialog(imp, FLAGS);
         }
     }
 
@@ -153,10 +151,6 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             IJ.noImage();
             return DONE;
         }
-        else
-        {
-            imp_train = imp;
-        }
 
         for(int i = 0; i < TYPE_STR_DET.length; i++)
         {
@@ -180,9 +174,9 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     public void run(ImageProcessor ip)
     {
         // TrainImage
-        int[] arr_train = (int[])imp_train.getChannelProcessor().getPixels();
-        int imw_train = imp_train.getWidth();
-        int imh_train = imp_train.getHeight();
+        int[] arr_train = (int[])ip.getPixels();
+        int imw_train = ip.getWidth();
+        int imh_train = ip.getHeight();
         Mat mat_train = new Mat(imh_train, imw_train, CvType.CV_8UC3);
         OCV__LoadLibrary.intarray2mat(arr_train, mat_train, imw_train, imh_train);
 
@@ -388,6 +382,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             (float)corner_detected_mat.get(3, 0)[0],
             (float)corner_detected_mat.get(0, 0)[0],
         };
+        
         float[] pnts_y = {
             (float)corner_detected_mat.get(0, 0)[1],
             (float)corner_detected_mat.get(1, 0)[1],
@@ -395,10 +390,11 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             (float)corner_detected_mat.get(3, 0)[1],
             (float)corner_detected_mat.get(0, 0)[1],
         };
+        
         PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYLINE);
-
         roiMan.addRoi(roi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
+        roi.setPosition(-1);
     }
 }

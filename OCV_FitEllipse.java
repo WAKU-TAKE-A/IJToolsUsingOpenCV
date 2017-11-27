@@ -173,5 +173,6 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
         roiMan.addRoi(eroi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
+        eroi.setPosition(-1);
     }
 }

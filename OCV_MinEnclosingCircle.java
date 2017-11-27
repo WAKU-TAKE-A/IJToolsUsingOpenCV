@@ -157,6 +157,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         roiMan.addRoi(roi);
          int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
+        roi.setPosition(-1);
     }
 }
 

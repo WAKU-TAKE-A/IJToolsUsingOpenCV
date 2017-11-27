@@ -177,5 +177,6 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         roiMan.addRoi(proi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
+        proi.setPosition(-1);
     }
 }
