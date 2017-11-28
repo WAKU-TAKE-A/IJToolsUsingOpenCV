@@ -173,6 +173,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
         mr.runMacro("setBatchMode(false);", "");
         rsTbl.show("Results");
+        roiMan.runCommand("show all");
     }
     
     /**

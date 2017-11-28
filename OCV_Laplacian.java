@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Laplacian (OpenCV3.1).
+ * Laplacian (OpenCV3.3.1).
  */
 public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

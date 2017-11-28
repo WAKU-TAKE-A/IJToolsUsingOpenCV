@@ -49,6 +49,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
     private ImagePlus impSrc = null;
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
+    private int countNPass = 0;
 
     @Override
     public void setNPasses(int arg0)
@@ -153,9 +154,11 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter
         // set the ROI Manager
         impSrc.setSlice(num_slice);
         Roi roi = new Roi(rect.x, rect.y, rect.width, rect.height);
+        roi.setPosition(countNPass + 1); // Start from one.
+        countNPass++;
+        
         roiMan.addRoi(roi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
-        roi.setPosition(-1);
     }
 }

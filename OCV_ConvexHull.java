@@ -45,6 +45,9 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
 {
     // static var.
     private static boolean enCW = true;
+    
+    // var.
+    private int countNPass = 0;
 
     @Override
     public void setNPasses(int arg0)
@@ -147,6 +150,9 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         // set the ROI
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
+        proi.setPosition(countNPass + 1); // Start from one.
+        countNPass++;
+        
         roiMan.addRoi(proi);
          int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);

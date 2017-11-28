@@ -37,7 +37,7 @@ import org.opencv.core.Rect;
  */
 
 /**
- * grabCut (OpenCV3.1).
+ * grabCut (OpenCV3.3.1).
  */
 public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

@@ -48,6 +48,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
     private ImagePlus impSrc = null;
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
+    private int countNPass = 0;
 
     /*
      * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
@@ -154,10 +155,12 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter
         double diameter = (double)(radius * 2);
         impSrc.setSlice(num_slice);
         OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
+        roi.setPosition(countNPass + 1); // Start from one.
+        countNPass++;
+        
         roiMan.addRoi(roi);
          int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
-        roi.setPosition(-1);
     }
 }
 

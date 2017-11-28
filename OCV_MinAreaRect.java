@@ -50,6 +50,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
     private ImagePlus impSrc = null;
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
+    private int countNPass = 0;
 
     @Override
     public void setNPasses(int arg0)
@@ -174,9 +175,11 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
 
         impSrc.setSlice(num_slice);
         PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
+        proi.setPosition(countNPass + 1); // Start from one.
+        countNPass++;
+        
         roiMan.addRoi(proi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
-        proi.setPosition(-1);
     }
 }

@@ -63,12 +63,12 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB"};
     private final int[] TYPE_VAL_DET = new int[] { FeatureDetector.AKAZE, FeatureDetector.BRISK, FeatureDetector.ORB };
     private final int[] TYPE_VAL_EXT = new int[] { DescriptorExtractor.AKAZE, DescriptorExtractor.BRISK, DescriptorExtractor.ORB };
-    private final String[] TYPE_STR_MATCH = new String[] { "BRUTEFORCE", "BRUTEFORCE_HAMMING", "BRUTEFORCE_HAMMINGLUT", "BRUTEFORCE_L1", "BRUTEFORCE_SL2" };
-    private final int[] TYPE_VAL_MATCH = new int[] { DescriptorMatcher.BRUTEFORCE, DescriptorMatcher.BRUTEFORCE_HAMMING, DescriptorMatcher.BRUTEFORCE_HAMMINGLUT, DescriptorMatcher.BRUTEFORCE_L1, DescriptorMatcher.BRUTEFORCE_SL2 };
+    private final String[] TYPE_STR_MATCH = new String[] { "BRUTEFORCE_HAMMING", "BRUTEFORCE_HAMMINGLUT" };
+    private final int[] TYPE_VAL_MATCH = new int[] { DescriptorMatcher.BRUTEFORCE_HAMMING, DescriptorMatcher.BRUTEFORCE_HAMMINGLUT  };
 
     // static var.
     private static int ind_det = -1;
-    private static int ind_match = 1;
+    private static int ind_match = 0;
     private static int type_det = -1;
     private static int type_ext = -1;
     private static double max_dist = 100;
@@ -78,6 +78,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
 
     // var.
     private String fname = "";
+    private int countNPass = 0;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
@@ -392,9 +393,11 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         };
         
         PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYLINE);
+        roi.setPosition(countNPass + 1); // Start from one.
+        countNPass++;
+        
         roiMan.addRoi(roi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
-        roi.setPosition(-1);
     }
 }

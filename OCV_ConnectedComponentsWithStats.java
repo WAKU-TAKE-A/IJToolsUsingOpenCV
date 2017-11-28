@@ -167,6 +167,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         for(int i = 1; i < output_con; i++)
         {
             rt.incrementCounter();
+            rt.addValue("No", i);
             rt.addValue("Area", areas[i]);
             rt.addValue("BX", rects[i].x);
             rt.addValue("BY", rects[i].y);
@@ -182,23 +183,32 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
 
-        int[] tbl = new int[num_lab + 1];
-        int val = 0;
+        // doWand
+        int[] chk = new int[num_lab + 1];
+        int[] x_doWand = new int[num_lab + 1];
+        int[] y_doWand = new int[num_lab + 1];
         String type = TYPE_STR[type_ind];
-
+        
         for(int y = 0; y < imh; y++)
         {
             for(int x = 0; x < imw; x++)
             {
-                val = (int)dst_arr[x + y * imw];
+                int val = (int)dst_arr[x + y * imw];
 
-                if(val != 0 && tbl[val] == 0)
+                if(val != 0 && chk[val] == 0)
                 {
-                    mr.runMacro("doWand(" + String.valueOf(x) + ", " + String.valueOf(y) + ", 0.0, \"" + type + "\");", "");
-                    roiManager.runCommand("add");
-                    tbl[val] = 1;
+                    chk[val] = 1;
+                    x_doWand[val] = x;
+                    y_doWand[val] = y;
                 }
             }
+        }
+        
+        for(int i = 1; i < num_lab + 1; i++)
+        {
+            mr.runMacro("doWand(" + String.valueOf(x_doWand[i]) + ", " + String.valueOf(y_doWand[i]) + ", 0.0, \"" + type + "\");", "");
+            roiManager.runCommand("add");
+            roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
         }
 
         mr.runMacro("setBatchMode(false);", "");

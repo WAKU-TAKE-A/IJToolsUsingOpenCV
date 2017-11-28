@@ -49,6 +49,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
     private ImagePlus impSrc = null;
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
+    private int countNPass = 0;
 
     @Override
     public void setNPasses(int arg0)
@@ -170,9 +171,11 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter
 
         impSrc.setSlice(num_slice);
         EllipseRoi eroi = new EllipseRoi(xPoints[0], yPoints[0], xPoints[1], yPoints[1], ratio);
+        eroi.setPosition(countNPass + 1); // Start from one.
+        countNPass++;
+        
         roiMan.addRoi(eroi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
-        eroi.setPosition(-1);
     }
 }
