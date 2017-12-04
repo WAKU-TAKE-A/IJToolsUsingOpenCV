@@ -35,12 +35,12 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * linearPolar (OpenCV3.1).
+ * linearPolar (OpenCV3.3.1).
  */
 public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
 {
     // const var.
-    private final int FLAGS = DOES_8G | KEEP_PREVIEW;
+    private final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
     private static final int[] TYPE_INT = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
     private static final String[] TYPE_STR = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "WARP_INVERSE_MAP" };
 
@@ -134,18 +134,73 @@ public class OCV_LinearPolar implements ExtendedPlugInFilter, DialogListener
     @Override
     public void run(ImageProcessor ip)
     {
-        // srcdst
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        byte[] srcdst_ar = (byte[])ip.getPixels();
-        
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);      
-
-        // run
-        src_mat.put(0, 0, srcdst_ar);
-        Imgproc.linearPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
-        dst_mat.get(0, 0, srcdst_ar);
+        if(ip.getBitDepth() == 8)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            byte[] srcdst_bytes = (byte[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            
+            // run
+            src_mat.put(0, 0, srcdst_bytes);
+            Imgproc.linearPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
+            dst_mat.get(0, 0, srcdst_bytes);
+        }
+        else if(ip.getBitDepth() == 16)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            short[] srcdst_shorts = (short[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
+            
+            // run
+            src_mat.put(0, 0, srcdst_shorts);
+            Imgproc.linearPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
+            dst_mat.get(0, 0, srcdst_shorts);        
+        }
+        else if(ip.getBitDepth() == 24)
+        {
+            // dst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            int[] srcdst_ints = (int[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
+         
+            // run
+            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
+            Imgproc.linearPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
+            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
+        }
+        else if(ip.getBitDepth() == 32)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            float[] srcdst_floats = (float[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
+            
+            // run
+            src_mat.put(0, 0, srcdst_floats);
+            Imgproc.linearPolar(src_mat, dst_mat, new Point(cx, cy), (double)rmax, TYPE_INT[type_ind]);
+            dst_mat.get(0, 0, srcdst_floats);        
+        }
+        else
+        {
+            IJ.error("Wrong image format");
+        }
     }
 }

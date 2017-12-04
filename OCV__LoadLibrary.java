@@ -198,9 +198,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             {
                 byte[] dst_cv_8uc3_ele = new byte[3];
                 src_cv_8uc3.get(y, x, dst_cv_8uc3_ele);
-                int b = (int)dst_cv_8uc3_ele[0];
-                int g = (int)dst_cv_8uc3_ele[1] << 8;
-                int r = (int)dst_cv_8uc3_ele[2] << 16;
+                int b = dst_cv_8uc3_ele[0] & 0x000000ff;
+                int g = (dst_cv_8uc3_ele[1] << 8) & 0x0000ff00;
+                int r = (dst_cv_8uc3_ele[2] << 16) & 0x00ff0000;
                 int a = 0xff000000;
                 dst_ar[x + imw * y] = b + g + r + a;
             }
@@ -318,8 +318,12 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         return rm;
     }
     
-        public static void Wait(int wt){
-
+    /**
+     * Wait.
+     * @param wt wait time (ms).
+     */
+    public static void Wait(int wt)
+    {
         try
         {
             if(wt == 0)
@@ -330,7 +334,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             {
                 Thread.sleep(wt);
             }
-        } catch (InterruptedException e)
+        } 
+        catch (InterruptedException e)
         {
             // do nothing
         }

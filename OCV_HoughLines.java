@@ -36,7 +36,7 @@ import java.awt.AWTEvent;
  */
 
 /**
- * houghLines (OpenCV3.1).
+ * houghLines (OpenCV3.3.1).
  */
 public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
 {
@@ -63,10 +63,11 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         gd.addMessage("angle_resolution = CV_PI / angle_resolution_factor");
         gd.addNumericField("angle_resolution_factor", resAngFact, 4);
         gd.addNumericField("min_votes", minVotes, 0);
-        gd.addNumericField("divisor_distance", divDist, 4);
-        gd.addNumericField("devisor_angle", divAng, 4);
         gd.addNumericField("min_angle", minDeg, 4);
         gd.addNumericField("max_angle", maxDeg, 4);
+        gd.addMessage("If both srn=0 and stn=0 , the classical Hough transform is used.\nOtherwise, the multi-scale Hough transform is used.");
+        gd.addNumericField("srn", divDist, 4);
+        gd.addNumericField("stn", divAng, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
         gd.addDialogListener(this);
 
@@ -88,10 +89,10 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         resDist = (double)gd.getNextNumber();
         resAngFact = (double)gd.getNextNumber();
         minVotes = (int)gd.getNextNumber();
-        divDist = (double)gd.getNextNumber();
-        divAng = (double)gd.getNextNumber();
         minDeg = (double)gd.getNextNumber();
         maxDeg = (double)gd.getNextNumber();
+        divDist = (double)gd.getNextNumber();
+        divAng = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
         
         if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(divDist) || Double.isNaN(divAng) || Double.isNaN(minDeg) || Double.isNaN(maxDeg)) { IJ.showStatus("ERR : NaN"); return false; }
@@ -195,9 +196,9 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
             double y2 = y0 - z * (a);
             
             rt.incrementCounter();
-            rt.addValue("rho", rho);
-            rt.addValue("theta", theta);
-            rt.addValue("z", z);
+            //rt.addValue("rho", rho);
+            //rt.addValue("theta", theta);
+            //rt.addValue("z", z);
             rt.addValue("x1", x1);
             rt.addValue("y1", y1);
             rt.addValue("x2", x2);
