@@ -48,8 +48,8 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
     private static double resDist = 1;
     private static double resAngFact = 180;
     private static int minVotes = 1;
-    private static double divDist = 0;
-    private static double divAng = 0;
+    private static double srn = 0;
+    private static double stn = 0;
     private static double minDeg = 0;
     private static double maxDeg = 360;
     private static boolean enAddRoi = true;
@@ -66,8 +66,8 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("min_angle", minDeg, 4);
         gd.addNumericField("max_angle", maxDeg, 4);
         gd.addMessage("If both srn=0 and stn=0 , the classical Hough transform is used.\nOtherwise, the multi-scale Hough transform is used.");
-        gd.addNumericField("srn", divDist, 4);
-        gd.addNumericField("stn", divAng, 4);
+        gd.addNumericField("srn", srn, 4);
+        gd.addNumericField("stn", stn, 4);
         gd.addCheckbox("enable_add_roi", enAddRoi);
         gd.addDialogListener(this);
 
@@ -91,16 +91,16 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         minVotes = (int)gd.getNextNumber();
         minDeg = (double)gd.getNextNumber();
         maxDeg = (double)gd.getNextNumber();
-        divDist = (double)gd.getNextNumber();
-        divAng = (double)gd.getNextNumber();
+        srn = (double)gd.getNextNumber();
+        stn = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
         
-        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(divDist) || Double.isNaN(divAng) || Double.isNaN(minDeg) || Double.isNaN(maxDeg)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(srn) || Double.isNaN(stn) || Double.isNaN(minDeg) || Double.isNaN(maxDeg)) { IJ.showStatus("ERR : NaN"); return false; }
         if(resDist < 0) { IJ.showStatus("'0 <= distance_resolution' is necessary."); return false; }
         if(resAngFact < 0) { IJ.showStatus("'0 <= angle_resolution_factor' is necessary."); return false; }
         if(minVotes < 0) { IJ.showStatus("'0 <= min_votes' is necessary."); return false; }
-        if(divDist < 0) { IJ.showStatus("'0 <= divisor_distance' is necessary."); return false; }
-        if(divAng < 0) { IJ.showStatus("'0 <= devisor_angle' is necessary."); return false; }
+        if(srn < 0) { IJ.showStatus("'0 <= divisor_distance' is necessary."); return false; }
+        if(stn < 0) { IJ.showStatus("'0 <= devisor_angle' is necessary."); return false; }
         if(minDeg < 0) { IJ.showStatus("'0 <= min_angle' is necessary."); return false; }
         if(maxDeg < 0) { IJ.showStatus("'0 <= max_angle' is necessary."); return false; }
         if(360 < minDeg) { IJ.showStatus("'min_angle <= 360' is necessary."); return false; }
@@ -155,7 +155,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         double resAng = CV_PI / resAngFact;
         double minTheta = CV_PI / 360.0 * minDeg;
         double maxTheta = CV_PI / 360.0 * maxDeg;
-        Imgproc.HoughLines(src_mat, dst_lines, resDist, resAng, minVotes, divDist, divAng, minTheta, maxTheta);
+        Imgproc.HoughLines(src_mat, dst_lines, resDist, resAng, minVotes, srn, stn, minTheta, maxTheta);
 
         // fin
         showData(dst_lines, imw, imh);
@@ -196,9 +196,8 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
             double y2 = y0 - z * (a);
             
             rt.incrementCounter();
-            //rt.addValue("rho", rho);
-            //rt.addValue("theta", theta);
-            //rt.addValue("z", z);
+            rt.addValue("No", i + 1);
+            rt.addValue("theta", (double)theta / CV_PI * 180);
             rt.addValue("x1", x1);
             rt.addValue("y1", y1);
             rt.addValue("x2", x2);
@@ -208,6 +207,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
             {
                 Line roi = new Line(x1, y1, x2, y2);
                 roiMan.addRoi(roi);
+                roiMan.rename(i, "no" + String.valueOf(i + 1));
             }
         }
 

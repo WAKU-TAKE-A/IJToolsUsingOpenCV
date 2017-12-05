@@ -36,7 +36,7 @@ import java.awt.AWTEvent;
  */
 
 /**
- * houghLinesP (OpenCV3.1).
+ * houghLinesP (OpenCV3.3.1).
  */
 public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
 {
@@ -173,6 +173,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
             int y2 = line[3];
             
             rt.incrementCounter();
+            rt.addValue("No", i + 1);
             rt.addValue("x1", x1);
             rt.addValue("y1", y1);
             rt.addValue("x2", x2);
@@ -182,6 +183,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
             {
                 Line roi = new Line(x1, y1, x2, y2);
                 roiMan.addRoi(roi);
+                roiMan.rename(i, "no" + String.valueOf(i + 1));
             }
         }
 

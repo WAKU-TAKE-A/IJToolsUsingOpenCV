@@ -39,6 +39,7 @@ import org.opencv.core.Point;
 
 /**
  * The selected roi is displayed in the center.
+ * If there is not a selected roi, the center of image is displayed in the center.
  */
 public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
 {
@@ -48,7 +49,6 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
     // var.
     private ImagePlus impSrc = null;
     private RoiManager roiMan = null;
-    private int[] selectedIndexes = null;
 
     @Override
     public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr)
@@ -77,21 +77,6 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
 
             // get the ROI Manager
             roiMan = getRoiManager(false, true);
-            int num_roi = roiMan.getCount();
-
-            if(num_roi == 0)
-            {
-                IJ.error("ROI is vacant.");
-                return DONE;
-            }
-            
-            // get the selected rois
-            selectedIndexes = roiMan.getSelectedIndexes();
-            
-            if(selectedIndexes == null || selectedIndexes.length == 0)
-            {
-                selectedIndexes = new int[] { 0 };
-            }
 
             return FLAGS;
         }
@@ -100,36 +85,66 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
     @Override
     public void run(ImageProcessor ip)
     {       
-        int num_slctd = selectedIndexes.length;        
-        int num_all = 0;
-        double sx = 0;
-        double sy = 0;
-        ArrayList<Point> lstPt = new ArrayList<Point>();
-
-        for(int i = 0; i < num_slctd; i++)
-        {
-            Roi roi = roiMan.getRoi(selectedIndexes[i]);
-            getCoordinates(roi, lstPt);           
-        }
-        
-        num_all = lstPt.size();
-        
-        for(int i = 0; i < num_all; i++)
-        {
-            double x = lstPt.get(i).x;
-            double y = lstPt.get(i).y;            
-           
-            sx += x;
-            sy += y;
-        }
-        
+        int num_roi = roiMan.getCount();
+        int[] selectedIndexes = roiMan.getSelectedIndexes();
+        int num_slctd = selectedIndexes == null ? 0 : selectedIndexes.length;
         Macro_Runner mr = new Macro_Runner();
         ImageCanvas ic = impSrc.getCanvas();
-        int cx = (int)(sx / (double)num_all + 0.5);      
-        int cy = (int)(sy / (double)num_all + 0.5);
-        int zm = (int)(ic.getMagnification() * 100);
-        
-        mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
+        int cx;
+        int cy;
+        int zm;
+
+        if(num_roi == 0 || num_slctd == 0)
+        {
+            Rectangle roi = ip.getRoi();
+            
+            if(roi == null)
+            {
+                cx = (int)((double)ip.getWidth() / 2 + 0.5);
+                cy = (int)((double)ip.getHeight() / 2 + 0.5);
+                zm = (int)(ic.getMagnification() * 100);
+                
+                mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");      
+            }
+            else
+            {
+                cx = (int)((double)roi.getX() + (double)roi.getWidth() / 2 + 0.5);
+                cy = (int)((double)roi.getY() + (double)roi.getHeight() / 2 + 0.5);
+                zm = (int)(ic.getMagnification() * 100);
+                
+                mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
+            }
+        }
+        else
+        {
+            int num_all = 0;
+            double sx = 0;
+            double sy = 0;
+            ArrayList<Point> lstPt = new ArrayList<Point>();
+
+            for(int i = 0; i < num_slctd; i++)
+            {
+                Roi roi = roiMan.getRoi(selectedIndexes[i]);
+                getCoordinates(roi, lstPt);           
+            }
+
+            num_all = lstPt.size();
+
+            for(int i = 0; i < num_all; i++)
+            {
+                double x = lstPt.get(i).x;
+                double y = lstPt.get(i).y;            
+
+                sx += x;
+                sy += y;
+            }
+
+            cx = (int)(sx / (double)num_all + 0.5);      
+            cy = (int)(sy / (double)num_all + 0.5);
+            zm = (int)(ic.getMagnification() * 100);
+            
+            mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
+        }
     }
     
     /**

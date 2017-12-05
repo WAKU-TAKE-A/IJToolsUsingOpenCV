@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * floodFill (OpenCV3.1).
+ * floodFill (OpenCV3.3.1).
  */
 public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -62,7 +62,6 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static int indFlags = 1;
     
     // var.
-    private ImagePlus impSrc = null;
     private RoiManager roiMan = null;
     private int[] selectedIndexes = null;
     private Scalar newVal = null;
@@ -74,17 +73,17 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
        
-        gd.addNumericField("newVal_0", newVal_0, 3);
-        gd.addNumericField("newVal_1", newVal_1, 3);
-        gd.addNumericField("newVal_2", newVal_2, 3);
-        gd.addNumericField("loDiff_0", loDiff_0, 3);
-        gd.addNumericField("loDiff_1", loDiff_1, 3);
-        gd.addNumericField("loDiff_2", loDiff_2, 3);
-        gd.addNumericField("upDiff_0", upDiff_0, 3);
-        gd.addNumericField("upDiff_1", upDiff_1, 3);
-        gd.addNumericField("upDiff_2", upDiff_2, 3);
+        gd.addNumericField("newVal_B", newVal_0, 3);
+        gd.addNumericField("newVal_G", newVal_1, 3);
+        gd.addNumericField("newVal_R", newVal_2, 3);
+        gd.addNumericField("loDiff_B", loDiff_0, 3);
+        gd.addNumericField("loDiff_G", loDiff_1, 3);
+        gd.addNumericField("loDiff_R", loDiff_2, 3);
+        gd.addNumericField("upDiff_B", upDiff_0, 3);
+        gd.addNumericField("upDiff_G", upDiff_1, 3);
+        gd.addNumericField("upDiff_R", upDiff_2, 3);
         gd.addChoice("adaptiveMethod", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indFlags]);
-        gd.addMessage("If the image is 8-bit or 32-bit,\nonly use the value written as 0.\nIf the image is RGB,\n0 is red, 1 is blue, 2 is green.");
+        gd.addMessage("If the image is 8-bit or 32-bit,\nonly use the value written as *_B.");
 
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -147,6 +146,12 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     @Override
     public int setup(String string, ImagePlus imp)
     {
+        if(!OCV__LoadLibrary.isLoad())
+        {
+            IJ.error("Library is not loaded.");
+            return DONE;
+        }
+        
         if (imp == null)
         {
             IJ.noImage();
@@ -154,9 +159,6 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         }
         else
         {
-            // get the ImagePlus
-            impSrc = imp;
-            
             // get the ROI Manager
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             int num_roi = roiMan.getCount();
@@ -212,7 +214,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         
             for(int i = 0; i < num; i++)
             {
-                Mat msk_mat = new Mat(imh + 2, imw + 2, CvType.CV_8UC1);
+                Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
                 Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
 
                 Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);            
@@ -234,7 +236,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         
             for(int i = 0; i < num; i++)
             {
-                Mat msk_mat = new Mat(imh + 2, imw + 2, CvType.CV_8UC1);
+                Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
                 Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
 
                 Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);            
@@ -256,7 +258,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         
             for(int i = 0; i < num; i++)
             {
-                Mat msk_mat = new Mat(imh + 2, imw + 2, CvType.CV_8UC1);
+                Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
                 Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
 
                 Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);            
