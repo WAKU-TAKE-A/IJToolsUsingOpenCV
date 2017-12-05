@@ -154,7 +154,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter
         countNPass++;
         
         roiMan.addRoi(proi);
-         int num_roiMan = roiMan.getCount();
+        int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);
     }
 }
