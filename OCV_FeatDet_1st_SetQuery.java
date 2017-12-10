@@ -153,10 +153,22 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
         MatOfKeyPoint key_query = new MatOfKeyPoint();
         detector.detect(mat_query, key_query);
         
+        if(key_query.rows() == 0)
+        {
+            IJ.error("KeyPoint is empty.");
+            return;
+        }
+        
         // Descriptor of QueryImage
         DescriptorExtractor extractor = DescriptorExtractor.create(type_ext);
         Mat desc_query = new Mat();
         extractor.compute(mat_query, key_query, desc_query);
+        
+        if(desc_query.rows() == 0)
+        {
+            IJ.error("Descriptor is empty.");
+            return;
+        }
         
         // Set data
         if(OCV__LoadLibrary.QueryMat != null) { OCV__LoadLibrary.QueryMat.release(); }

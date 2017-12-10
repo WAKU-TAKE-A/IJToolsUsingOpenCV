@@ -1,6 +1,6 @@
 # Release v0.9.23.0
 
-Latest update: December 6th 2017
+Latest update: December 10th 2017
 
 ## New Features
 

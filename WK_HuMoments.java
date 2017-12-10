@@ -288,7 +288,10 @@ public class WK_HuMoments implements ExtendedPlugInFilter
             results[8] = results[8] - RES_INI[8];
         }
 
+        int num_rt = rt.getCounter();
+        
         rt.incrementCounter();
+        rt.addValue("No", num_rt);
         rt.addValue("Hu0", String.valueOf(results[0]));
         rt.addValue("Hu1", String.valueOf(results[1]));
         rt.addValue("Hu2", String.valueOf(results[2]));

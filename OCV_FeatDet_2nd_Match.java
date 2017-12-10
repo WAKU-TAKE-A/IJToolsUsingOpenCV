@@ -12,6 +12,7 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import java.io.File;
+import org.opencv.core.CvException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
@@ -141,9 +142,9 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             return DONE;
         }
 
-        if(OCV__LoadLibrary.QueryMat == null || OCV__LoadLibrary.QueryKeys == null || OCV__LoadLibrary.QueryDesc == null || OCV__LoadLibrary.FeatDetType == null)
+        if(OCV__LoadLibrary.QueryMat == null || OCV__LoadLibrary.QueryKeys == null || OCV__LoadLibrary.QueryKeys.rows() == 0 || OCV__LoadLibrary.QueryDesc == null || OCV__LoadLibrary.QueryDesc.rows() == 0 || OCV__LoadLibrary.FeatDetType == null)
         {
-            IJ.error("No query.");
+            IJ.error("Query is empty.");
             return DONE;
         }
 
@@ -196,13 +197,31 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         
         MatOfKeyPoint key_train = new MatOfKeyPoint();
         detector.detect(mat_train, key_train);
+        
+        if(key_train.rows() == 0)
+        {
+            return;
+        }
 
         // Descriptor of TrainImage
         DescriptorExtractor extractor = DescriptorExtractor.create(type_ext);
         Mat desc_train = new Mat();
-        extractor.compute(mat_train, key_train, desc_train);
+        
+        try
+        {
+            extractor.compute(mat_train, key_train, desc_train);
+        }
+        catch (CvException ex)
+        {
+            return; // Not suitable, but to prevent "Unknown error".
+        }
+        
+        if(desc_train.rows() == 0)
+        {
+            return;
+        }
 
-        // Match
+        // Match   
         DescriptorMatcher matcher = DescriptorMatcher.create(TYPE_VAL_MATCH[ind_match]);
         MatOfDMatch matchQt = new MatOfDMatch();
         MatOfDMatch matchTq = new MatOfDMatch();
@@ -356,9 +375,10 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             Mat mskOfRansac)
     {
         Size size_query = mat_query.size();
-        int num = pnts_query.rows();
+        int num_query = pnts_query.rows();
+        int num_train = pnts_train.rows();        
 
-        if(num < 4)
+        if(num_query < 4 || num_train < 4)
         {
             return;
         }
@@ -372,6 +392,12 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         MatOfPoint2f corner_detected_mat = new MatOfPoint2f();
         
         Mat hg = Calib3d.findHomography(pnts_query, pnts_train, Calib3d.RANSAC, ransacReprojThreshold, mskOfRansac, 2000, 0.995); // "maxIters = 2000" and "confidence = 0.995" is default value.
+
+        if(hg == null || hg.rows() == 0)
+        {
+            return;
+        }
+
         Core.perspectiveTransform(corner_query_mat, corner_detected_mat, hg);
         
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(false, true);

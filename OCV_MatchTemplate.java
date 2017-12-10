@@ -250,14 +250,15 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             roiMan.addRoi(roi);
             int idx_last = roiMan.getCount() - 1;
             roiMan.select(idx_last);
-            roiMan.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
+            roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
             
             rt.incrementCounter();
+            rt.addValue("No", i + 1);
             rt.addValue("BX", bx);
             rt.addValue("BY", by);
             rt.addValue("Width", imw_tmp);
             rt.addValue("Height", imh_tmp);
-            rt.addValue("Match", match);
+            rt.addValue("Match", String.valueOf(match));
             rt.show("Results");            
         }
         
@@ -337,14 +338,15 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             roiMan.addRoi(roi);
             int idx_last = roiMan.getCount() - 1;
             roiMan.select(idx_last);
-            roiMan.runCommand("Rename", String.valueOf(i + 1) + "_" + "Match" + "_" + String.valueOf(match));
+            roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
             
             rt.incrementCounter();
+            rt.addValue("No", i + 1);
             rt.addValue("BX", bx);
             rt.addValue("BY", by);
             rt.addValue("Width", imw_tmp);
             rt.addValue("Height", imh_tmp);
-            rt.addValue("Match", match);
+            rt.addValue("Match", String.valueOf(match));
             rt.show("Results");            
         }
         
