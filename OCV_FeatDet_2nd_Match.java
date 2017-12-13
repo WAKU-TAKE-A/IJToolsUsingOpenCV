@@ -12,7 +12,7 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import java.io.File;
-import org.opencv.core.CvException;
+import java.lang.Exception;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
@@ -175,102 +175,101 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     @Override
     public void run(ImageProcessor ip)
     {
-        // TrainImage
-        int[] arr_train = (int[])ip.getPixels();
-        int imw_train = ip.getWidth();
-        int imh_train = ip.getHeight();
-        Mat mat_train = new Mat(imh_train, imw_train, CvType.CV_8UC3);
-        OCV__LoadLibrary.intarray2mat(arr_train, mat_train, imw_train, imh_train);
-
-        // KeyPoint of TrainImage
-        FeatureDetector detector = FeatureDetector.create(type_det);
-        File file = new File(fname);
-
-        if(file.exists())
-        {
-            detector.read(fname);
-        }
-        else
-        {
-            detector.write(fname);
-        }
-        
-        MatOfKeyPoint key_train = new MatOfKeyPoint();
-        detector.detect(mat_train, key_train);
-        
-        if(key_train.rows() == 0)
-        {
-            return;
-        }
-
-        // Descriptor of TrainImage
-        DescriptorExtractor extractor = DescriptorExtractor.create(type_ext);
-        Mat desc_train = new Mat();
-        
         try
         {
-            extractor.compute(mat_train, key_train, desc_train);
-        }
-        catch (CvException ex)
-        {
-            return; // Not suitable, but to prevent "Unknown error".
-        }
-        
-        if(desc_train.rows() == 0)
-        {
-            return;
-        }
+            // TrainImage
+            int[] arr_train = (int[])ip.getPixels();
+            int imw_train = ip.getWidth();
+            int imh_train = ip.getHeight();
+            Mat mat_train = new Mat(imh_train, imw_train, CvType.CV_8UC3);
+            OCV__LoadLibrary.intarray2mat(arr_train, mat_train, imw_train, imh_train);
 
-        // Match   
-        DescriptorMatcher matcher = DescriptorMatcher.create(TYPE_VAL_MATCH[ind_match]);
-        MatOfDMatch matchQt = new MatOfDMatch();
-        MatOfDMatch matchTq = new MatOfDMatch();
-        matcher.match(OCV__LoadLibrary.QueryDesc, desc_train, matchQt);
-        matcher.match(desc_train, OCV__LoadLibrary.QueryDesc, matchTq);
+            // KeyPoint of TrainImage
+            FeatureDetector detector = FeatureDetector.create(type_det);
+            File file = new File(fname);
 
-        // Cross check
-        // [0]:queryIdx, [1]trainIdx, [2]imgIdx, [3]distance
-        int num_matchQt = matchQt.rows();
-        int num_matchTq = matchTq.rows();
-        int num_max = num_matchQt < num_matchTq ? num_matchTq : num_matchQt;
-        MatOfDMatch cross_match = new MatOfDMatch();
-        MatOfPoint2f pnts_query = new MatOfPoint2f();
-        MatOfPoint2f pnts_train = new MatOfPoint2f();
-        boolean[] chk = new boolean[num_max];
-
-        for(int i = 0; i < num_matchTq; i++)
-        {
-            int tq_trainIdx = (int)getElementOfDMatch(matchTq, i)[1];
-
-            for(int di = 0; di < num_matchQt; di++)
+            if(file.exists())
             {
-                int qt_queryIdx = (int)getElementOfDMatch(matchQt, di)[0];
-                int qt_trainIdx = (int)getElementOfDMatch(matchQt, di)[1];
-                int qt_distance = (int)getElementOfDMatch(matchQt, di)[3];
+                detector.read(fname);
+            }
+            else
+            {
+                detector.write(fname);
+            }
 
-                if(!chk[qt_queryIdx] && qt_distance <= max_dist && qt_queryIdx == tq_trainIdx)
+            MatOfKeyPoint key_train = new MatOfKeyPoint();
+            detector.detect(mat_train, key_train);
+
+            if(key_train.rows() == 0)
+            {
+                throw new Exception("key_train.rows() == 0");
+            }
+
+            // Descriptor of TrainImage
+            DescriptorExtractor extractor = DescriptorExtractor.create(type_ext);
+            Mat desc_train = new Mat();
+            extractor.compute(mat_train, key_train, desc_train);
+
+            if(desc_train.rows() == 0)
+            {
+                throw new Exception("desc_train.rows() == 0");
+            }
+
+            // Match   
+            DescriptorMatcher matcher = DescriptorMatcher.create(TYPE_VAL_MATCH[ind_match]);
+            MatOfDMatch matchQt = new MatOfDMatch();
+            MatOfDMatch matchTq = new MatOfDMatch();
+            matcher.match(OCV__LoadLibrary.QueryDesc, desc_train, matchQt);
+            matcher.match(desc_train, OCV__LoadLibrary.QueryDesc, matchTq);
+
+            // Cross check
+            // [0]:queryIdx, [1]trainIdx, [2]imgIdx, [3]distance
+            int num_matchQt = matchQt.rows();
+            int num_matchTq = matchTq.rows();
+            int num_max = num_matchQt < num_matchTq ? num_matchTq : num_matchQt;
+            MatOfDMatch cross_match = new MatOfDMatch();
+            MatOfPoint2f pnts_query = new MatOfPoint2f();
+            MatOfPoint2f pnts_train = new MatOfPoint2f();
+            boolean[] chk = new boolean[num_max];
+
+            for(int i = 0; i < num_matchTq; i++)
+            {
+                int tq_trainIdx = (int)getElementOfDMatch(matchTq, i)[1];
+
+                for(int di = 0; di < num_matchQt; di++)
                 {
-                    chk[qt_queryIdx] = true;
-                    cross_match.push_back(matchQt.row(di));
-                    pnts_query.push_back(getPointOfKeyPoint(OCV__LoadLibrary.QueryKeys, qt_queryIdx));
-                    pnts_train.push_back(getPointOfKeyPoint(key_train, qt_trainIdx));
-                    break;
+                    int qt_queryIdx = (int)getElementOfDMatch(matchQt, di)[0];
+                    int qt_trainIdx = (int)getElementOfDMatch(matchQt, di)[1];
+                    int qt_distance = (int)getElementOfDMatch(matchQt, di)[3];
+
+                    if(!chk[qt_queryIdx] && qt_distance <= max_dist && qt_queryIdx == tq_trainIdx)
+                    {
+                        chk[qt_queryIdx] = true;
+                        cross_match.push_back(matchQt.row(di));
+                        pnts_query.push_back(getPointOfKeyPoint(OCV__LoadLibrary.QueryKeys, qt_queryIdx));
+                        pnts_train.push_back(getPointOfKeyPoint(key_train, qt_trainIdx));
+                        break;
+                    }
                 }
             }
-        }
 
-        // Output result
-        Mat mskOfRansac = new Mat();
-        
-         if(enDetectQuery)
-        {
-            drawDetectedCorner(OCV__LoadLibrary.QueryMat, pnts_query, pnts_train, mskOfRansac);
-        }
+            // Output result
+            Mat mskOfRansac = new Mat();
 
-        if(enDrawMatches)
+             if(enDetectQuery)
+            {
+                drawDetectedCorner(OCV__LoadLibrary.QueryMat, pnts_query, pnts_train, mskOfRansac);
+            }
+
+            if(enDrawMatches)
+            {
+                showData(OCV__LoadLibrary.QueryKeys, key_train, cross_match, mskOfRansac);
+                drawMatches(OCV__LoadLibrary.QueryMat, OCV__LoadLibrary.QueryKeys, mat_train, key_train, cross_match);
+            }
+        }
+        catch (Exception ex)
         {
-            showData(OCV__LoadLibrary.QueryKeys, key_train, cross_match, mskOfRansac);
-            drawMatches(OCV__LoadLibrary.QueryMat, OCV__LoadLibrary.QueryKeys, mat_train, key_train, cross_match);
+             IJ.showStatus("Can not calculation. ( " +  ex.getMessage() + " )"); // Not suitable, but to prevent "Unknown error".
         }
     }
 

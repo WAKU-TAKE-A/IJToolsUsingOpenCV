@@ -1,4 +1,12 @@
-# Release v0.9.23.0
+# Release v0.9.26.0
+
+Latest update: December 13th 2017
+
+## Bug Fixes
+
+* In OCV_FeatDet_2nd_Match, "Unknown error" prevents new window from being displayed, only to be displayed in status.
+
+# Release v0.9.25.0
 
 Latest update: December 10th 2017
 
