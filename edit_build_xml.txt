@@ -1,4 +1,4 @@
-Please add the following to <target name="-post-compile"> （以下を追加する）
+Please add the following to <target name="-post-compile"> 
 
         <move todir="plugins">
             <fileset dir="${build.classes.dir}" includes="OCV_*.class"/>
@@ -19,6 +19,5 @@ Please add the following to <target name="-post-compile"> （以下を追加する）
             </manifest>
         </jar>
 
-※
+Remarks:
 When a Java platform is changed, it is disappeared, so I take notes.
-（Javaプラットフォームを切り替えると消えてしまうので、メモしておきます。）

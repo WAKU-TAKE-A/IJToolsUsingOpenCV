@@ -1,5 +1,6 @@
 import ij.*;
 import ij.gui.GenericDialog;
+import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.Macro_Runner;
 import ij.plugin.filter.*;
@@ -49,6 +50,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
     // static var.
     private static int type_ind = 1;
     private static boolean enOutImg = false;
+    private static boolean enWand = false;
 
     // var.
     private ImagePlus impSrc = null;
@@ -60,6 +62,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         gd.addChoice("connectivity", TYPE_STR, TYPE_STR[type_ind]);
         gd.addCheckbox("enable_output_labeled_image", enOutImg);
+        gd.addCheckbox("enable_select_roi_by_dowand", enWand);               
 
         gd.showDialog();
 
@@ -71,6 +74,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         {
             type_ind = (int)gd.getNextChoiceIndex();
             enOutImg = (boolean)gd.getNextBoolean();
+            enWand = (boolean)gd.getNextBoolean();
 
             return FLAGS;
         }
@@ -147,8 +151,6 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
     private void showData(float[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat)
     {
         int num_lab = output_con - 1;
-
-        // get stats
         Rectangle[] rects = new Rectangle[output_con];
         int[] areas = new int[output_con];
         double[] cens = new double[output_con * 2];
@@ -161,9 +163,12 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
             areas[i] = (int)(stats_mat.get(i, 4)[0]);
         }
 
-        // set the ResultsTable
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-
+        RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
+        Macro_Runner mr = new Macro_Runner();
+        
+        mr.runMacro("setBatchMode(true);", "");
+        
         for(int i = 1; i < output_con; i++)
         {
             rt.incrementCounter();
@@ -173,45 +178,47 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
             rt.addValue("BY", rects[i].y);
             rt.addValue("Width", rects[i].width);
             rt.addValue("Height", rects[i].height);
-        }
-
-        rt.show("Results");
-
-        // set the ROI Manager
-        RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
-
-        Macro_Runner mr = new Macro_Runner();
-        mr.runMacro("setBatchMode(true);", "");
-
-        // doWand
-        int[] chk = new int[num_lab + 1];
-        int[] x_doWand = new int[num_lab + 1];
-        int[] y_doWand = new int[num_lab + 1];
-        String type = TYPE_STR[type_ind];
-        
-        for(int y = 0; y < imh; y++)
-        {
-            for(int x = 0; x < imw; x++)
+            
+            if(!enWand)
             {
-                int val = (int)dst_arr[x + y * imw];
-
-                if(val != 0 && chk[val] == 0)
-                {
-                    chk[val] = 1;
-                    x_doWand[val] = x;
-                    y_doWand[val] = y;
-                }
+                Roi roi = new Roi(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
+                roiManager.addRoi(roi);
             }
         }
         
-        for(int i = 1; i < num_lab + 1; i++)
+        if(enWand)
         {
-            mr.runMacro("doWand(" + String.valueOf(x_doWand[i]) + ", " + String.valueOf(y_doWand[i]) + ", 0.0, \"" + type + "\");", "");
-            roiManager.runCommand("add");
-            roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
-        }
+            int[] chk = new int[num_lab + 1];
+            int[] x_doWand = new int[num_lab + 1];
+            int[] y_doWand = new int[num_lab + 1];
+            String type = TYPE_STR[type_ind];
 
+            for(int y = 0; y < imh; y++)
+            {
+                for(int x = 0; x < imw; x++)
+                {
+                    int val = (int)dst_arr[x + y * imw];
+
+                    if(val != 0 && chk[val] == 0)
+                    {
+                        chk[val] = 1;
+                        x_doWand[val] = x;
+                        y_doWand[val] = y;
+                    }
+                }
+            }
+
+            for(int i = 1; i < num_lab + 1; i++)
+            {
+                mr.runMacro("doWand(" + String.valueOf(x_doWand[i]) + ", " + String.valueOf(y_doWand[i]) + ", 0.0, \"" + type + "\");", "");
+                roiManager.runCommand("add");
+                roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
+            }
+        }
+        
         mr.runMacro("setBatchMode(false);", "");
+        
+        rt.show("Results"); 
         roiManager.runCommand("show all");
     }
 }

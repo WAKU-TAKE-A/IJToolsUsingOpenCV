@@ -1,3 +1,11 @@
+# Release v0.9.27.0
+
+Latest update: December 18th 2017
+
+## New Features
+
+* In OCV_ConnectedComponentsWithStats, it is now possible to select ROI selection by the Wand tool or rectangular selection by Bx / By / Width / Height.
+
 # Release v0.9.26.0
 
 Latest update: December 13th 2017

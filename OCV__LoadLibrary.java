@@ -45,7 +45,7 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    private static final String VER = "0.9.26.0";
+    public static final String VERSION = "0.9.27.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
         
     private static boolean disposed = true;    
@@ -66,7 +66,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        GenericDialog gd = new GenericDialog("Ver.  " + VER);
+        GenericDialog gd = new GenericDialog("Ver.  " + VERSION);
         
         if(!disposed)
         {
