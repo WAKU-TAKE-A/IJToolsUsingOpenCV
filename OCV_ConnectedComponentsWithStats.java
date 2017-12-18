@@ -183,6 +183,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
             {
                 Roi roi = new Roi(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
                 roiManager.addRoi(roi);
+                roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
             }
         }
         
