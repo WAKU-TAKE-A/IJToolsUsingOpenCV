@@ -10,7 +10,7 @@ I have made plugins for ImageJ that uses a part of OpenCV's functions.
 ## Purpose
 
 * For using OpenCV functions easily or for checking the result of the processing eassily.
-* For adding a function not included in ImageJ.
+* For adding functions not included in ImageJ.
 
 The processing speed is not pursued. We prioritize the code to be easy to understand.
 
