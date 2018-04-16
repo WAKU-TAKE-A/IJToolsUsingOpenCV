@@ -14,11 +14,15 @@ I have made plugins for ImageJ that uses a part of OpenCV's functions.
 
 The processing speed is not pursued. We prioritize the code to be easy to understand.
 
-## Installation
+## How to build
+
+It can be build with NetBeans. Please refer to [this site](https://waku-take-a.github.io/NetBeans%25E3%2581%25AB%25E3%2582%2588%25E3%2582%258BPlugin%25E4%25BD%259C%25E6%2588%2590.html).
+
+## Binaries
 
 There are the binaries (jar files) of the created plugins in [here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases). Please try using it.
 
-## Demo video of installation method
+## Demo video to install binaries
 
 The demo video of the installation method is located at the following link.
 
@@ -35,11 +39,15 @@ OpenCVの関数の一部を利用するImageJ用プラグインを作りまし�
 
 処理速度は追及していません。コードが分かりやすくなるのを優先しています。
 
-## インストール
+## ビルド方法
+
+NetBeansでビルドできます。[こちら](https://waku-take-a.github.io/NetBeans%25E3%2581%25AB%25E3%2582%2588%25E3%2582%258BPlugin%25E4%25BD%259C%25E6%2588%2590.html)のサイトを参考にしてください。
+
+## バイナリー
 
 作成したプラグインのバイナリー(classファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
 
-## __インストール方法のデモ動画__
+## バイナリーのインストールのデモ動画
 
 インストール方法についてデモ動画が以下のリンク先にあります。
 
