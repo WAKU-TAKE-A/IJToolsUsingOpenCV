@@ -22,12 +22,6 @@ It can be build with NetBeans. Please refer to [this site](https://waku-take-a.g
 
 There are the binaries (jar files) of the created plugins in [here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases). Please try using it.
 
-## Demo video to install binaries
-
-The demo video of the installation method is located at the following link.
-
-[![Install IJToolsUsingOpenCV](http://img.youtube.com/vi/bDPm80DlXzw/0.jpg)](https://www.youtube.com/watch?v=bDPm80DlXzw)
-
 ## 日本語
 
 OpenCVの関数の一部を利用するImageJ用プラグインを作りました。
@@ -46,9 +40,3 @@ NetBeansでビルドできます。[こちら](https://waku-take-a.github.io/Net
 ## バイナリー
 
 作成したプラグインのバイナリー(classファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
-
-## バイナリーのインストールのデモ動画
-
-インストール方法についてデモ動画が以下のリンク先にあります。
-
-[![Install IJToolsUsingOpenCV](http://img.youtube.com/vi/bDPm80DlXzw/0.jpg)](https://www.youtube.com/watch?v=bDPm80DlXzw)
