@@ -16,7 +16,7 @@ The processing speed is not pursued. We prioritize the code to be easy to unders
 
 ## How to build
 
-It can be build with NetBeans. Please refer to [this site](https://waku-take-a.github.io/NetBeans%25E3%2581%25AB%25E3%2582%2588%25E3%2582%258BPlugin%25E4%25BD%259C%25E6%2588%2590.html).
+It can be build with NetBeans. Please refer to [this site](https://waku-take-a.github.io/How%2520to%2520use%2520OpenCV%2520from%2520ImageJ.html).
 
 ## Binaries
 
