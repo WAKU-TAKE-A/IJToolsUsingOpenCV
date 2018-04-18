@@ -9,14 +9,15 @@ I have made plugins for ImageJ that uses a part of OpenCV's functions.
 
 ## Purpose
 
-* For using OpenCV functions easily or for checking the result of the processing eassily.
+* For using OpenCV functions easily.
+* For checking the result of the processing eassily.
 * For adding functions not included in ImageJ.
 
 The processing speed is not pursued. We prioritize the code to be easy to understand.
 
 ## How to build
 
-It can be build with NetBeans. Please refer to [this site](https://waku-take-a.github.io/How%2520to%2520use%2520OpenCV%2520from%2520ImageJ.html).
+The above files can be built with NetBeans. Please refer to [this site](https://waku-take-a.github.io/How%2520to%2520use%2520OpenCV%2520from%2520ImageJ.html).
 
 ## Binaries
 
@@ -28,14 +29,13 @@ OpenCVの関数の一部を利用するImageJ用プラグインを作りまし�
 
 ## 目的
 
-* 手軽にOpenCVの関数を利用したり、その処理の結果を確認したりしたい
+* 手軽にOpenCVの関数を利用したい
+* OpenCVの関数の処理の結果を簡単に確認したい
 * ImageJにない機能を追加したい
-
-処理速度は追及していません。コードが分かりやすくなるのを優先しています。
 
 ## ビルド方法
 
-NetBeansでビルドできます。[こちら](https://waku-take-a.github.io/NetBeans%25E3%2581%25AB%25E3%2582%2588%25E3%2582%258BPlugin%25E4%25BD%259C%25E6%2588%2590.html)のサイトを参考にしてください。
+上のファイルはNetBeansでビルドできます。[こちら](https://waku-take-a.github.io/NetBeans%25E3%2581%25AB%25E3%2582%2588%25E3%2582%258BPlugin%25E4%25BD%259C%25E6%2588%2590.html)のサイトを参考にしてください。
 
 ## バイナリー
 
