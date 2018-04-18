@@ -13,8 +13,6 @@ I have made plugins for ImageJ that uses a part of OpenCV's functions.
 * For checking the result of the processing eassily.
 * For adding functions not included in ImageJ.
 
-The processing speed is not pursued. We prioritize the code to be easy to understand.
-
 ## How to build
 
 The above files can be built with NetBeans. Please refer to [this site](https://waku-take-a.github.io/How%2520to%2520use%2520OpenCV%2520from%2520ImageJ.html).
