@@ -37,4 +37,4 @@ OpenCVの関数の一部を利用するImageJ用プラグインを作りまし�
 
 ## バイナリー
 
-作成したプラグインのバイナリー(classファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
+作成したプラグインのバイナリー(jarファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
