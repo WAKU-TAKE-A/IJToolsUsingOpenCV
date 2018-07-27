@@ -40,27 +40,30 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Sobel (OpenCV3.3.1).
+ * Sobel (OpenCV3.4.2).
  */
 public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | KEEP_PREVIEW;
     
+
+    private static final int[] INT_KSIZE = { 1, 3, 5, 7};
+    private static final String[] STR_KSIZE = { "1" , "3", "5", "7" };
+    
     /*
      Various border types, image boundaries are denoted with '|'
 
-     * BORDER_ISOLATED:      can not use
+     * BORDER_CONSTANT:      iiiiii|abcdefgh|iiiiiii with some specified i
+     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
      * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
-     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
-     * BORDER_WRAP:          can not use
-     * BORDER_TRANSPARENT    can not use
+     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg (Error occurred)
+     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno (Error occurred)
+     * BORDER_ISOLATED:      do not look outside of ROI
      */
-    private static final int[] INT_KSIZE = { 1, 3, 5, 7};
-    private static final String[] STR_KSIZE = { "1" , "3", "5", "7" };
-    private static final int[] INT_BORDERTYPE = { Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_REPLICATE };
-    private static final String[] STR_BORDERTYPE = { "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_REPLICATE" };
+    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
+    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
 
     // staic var.
     private static int dx = 1; // order of the derivative x.
@@ -68,7 +71,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     private static int indKsize = 1; // size of the extended Sobel kernel; it must be 1, 3, 5, or 7.
     private static double scale = 1; // optional scale factor for the computed derivative values.
     private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst.
-    private static int indBorderType = 1; // border types
+    private static int indBorderType = 2; // border type
  
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)

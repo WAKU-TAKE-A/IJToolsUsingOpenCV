@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * floodFill (OpenCV3.3.1).
+ * floodFill (OpenCV3.4.2).
  */
 public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

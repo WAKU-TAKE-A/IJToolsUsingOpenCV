@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * logPolar (OpenCV3.3.1).
+ * logPolar (OpenCV3.4.2).
  */
 public class OCV_LogPolar implements ExtendedPlugInFilter, DialogListener
 {

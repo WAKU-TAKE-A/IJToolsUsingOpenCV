@@ -41,7 +41,7 @@ import org.opencv.features2d.Features2d;
  */
 
 /**
- * Setting a query in FeatureDetection (OpenCV3.3.1).
+ * Setting a query in FeatureDetection (OpenCV3.4.2).
  * 
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB

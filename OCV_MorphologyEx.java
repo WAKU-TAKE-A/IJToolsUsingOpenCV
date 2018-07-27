@@ -5,11 +5,10 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
-import org.opencv.core.Core;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.imgproc.Imgproc;
 import org.opencv.core.Point;
+import org.opencv.imgproc.Imgproc;
 import org.opencv.core.Size;
 
 /*
@@ -37,43 +36,60 @@ import org.opencv.core.Size;
  */
 
 /**
- * blur (OpenCV3.4.2).
+ * morphologyEx (OpenCV3.4.2).
  */
-public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | DOES_RGB | KEEP_PREVIEW;
     
     /*
-     Various border types, image boundaries are denoted with '|'
+     type of morphological operation
 
-     * BORDER_CONSTANT:      iiiiii|abcdefgh|iiiiiii with some specified i
-     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
-     * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
-     * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
-     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg (Error occurred)
-     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno (Error occurred)
-     * BORDER_ISOLATED:      do not look outside of ROI
+     * MORPH_ERODE:      erode
+     * MORPH_DILATE:     dilate
+     * MORPH_OPEN:       dst=dilate(erode(src,element))
+     * MORPH_CLOSE:      dst=erode(dilate(src,element))
+     * MORPH_GRADIENT:   dst=dilate(src,element)−erode(src,element)
+     * MORPH_TOPHAT:     dst=src−open(src,element)
+     * MORPH_BLACKHAT:   dst=close(src,element)−src
+     * MORPH_HITMISS:    Only supported for CV_8UC1 binary images. A tutorial can be found in the documentation (I did not implement it because I could not understand it well.)
      */
-    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
-    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
+    private static final int[] INT_OPERATION = { Imgproc.MORPH_ERODE, Imgproc.MORPH_DILATE, Imgproc.MORPH_OPEN, Imgproc.MORPH_CLOSE, Imgproc.MORPH_GRADIENT, Imgproc.MORPH_TOPHAT, Imgproc.MORPH_BLACKHAT };
+    private static final String[] STR_OPERATION = { "MORPH_ERODE", "MORPH_DILATE", "MORPH_OPEN", "MORPH_CLOSE", "MORPH_GRADIENT", "MORPH_TOPHAT", "MORPH_BLACKHAT" };
+
+    /*
+     shape of the structuring element
+
+     * MORPH_RECT:      a rectangular structuring element
+     * MORPH_CROSS:     a cross-shaped structuring element:
+     * MORPH_ELLIPSE:   an elliptic structuring element, that is, a filled ellipse inscribed into the rectangle Rect(0, 0, esize.width, 0.esize.height)
+     */
+    private static final int[] INT_SHAPERTYPE = { Imgproc.MORPH_RECT, Imgproc.MORPH_CROSS, Imgproc.MORPH_ELLIPSE };
+    private static final String[] STR_SHAPERTYPE = { "MORPH_RECT", "MORPH_CROSS", "MORPH_ELLIPSE" };
+    
 
     // staic var.
-    private static double ksize_x = 3; // Blurring kernel size of x
-    private static double ksize_y = 3; // Blurring kernel size of y
-    private static int indBorderType = 2; // Border type
+    private static int ksize_x = 3; // kernel size of x
+    private static int ksize_y = 3; // kernel size of y
+    private static int iterations  = 1; // Number of times erosion and dilation are applied.
+    private static int indOperation = 0; // operation
+    private static int indShapeType = 0; // shape type
     
     // var.
-    private Size ksize = null;
+    private Mat kernel = null;
+    private Point anchor = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addNumericField("ksize_x", ksize_x, 4);
-        gd.addNumericField("ksize_y", ksize_y, 4);
-        gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
+        gd.addChoice("", STR_OPERATION, STR_OPERATION[indOperation]);
+        gd.addNumericField("ksize_x", ksize_x, 0);
+        gd.addNumericField("ksize_y", ksize_y, 0);
+        gd.addChoice("", STR_SHAPERTYPE, STR_SHAPERTYPE[indShapeType]);
+        gd.addNumericField("iterations", iterations, 0);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -92,17 +108,22 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {        
-        ksize_x = (double)gd.getNextNumber();
-        ksize_y = (double)gd.getNextNumber();
-        indBorderType = (int)gd.getNextChoiceIndex();
+        indOperation = (int)gd.getNextChoiceIndex();
+        ksize_x = (int)gd.getNextNumber();
+        ksize_y = (int)gd.getNextNumber();
+        indShapeType = (int)gd.getNextChoiceIndex();
+        iterations = (int)gd.getNextNumber();
 
-        if(Double.isNaN(ksize_x) || Double.isNaN(ksize_y)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(ksize_x <= 0) { IJ.showStatus("'0 < ksize_x' is necessary."); return false; }
-        if(ksize_y <= 0) { IJ.showStatus("'0 < ksize_y' is necessary."); return false; }
+        if(ksize_x < 0 || ksize_y < 0) { IJ.showStatus("'0 <= ksize_*' is necessary."); return false; }
+        if(ksize_x % 2 == 0 || ksize_y % 2 == 0) { IJ.showStatus("'ksize_* is odd."); return false; }
+        if(iterations < 1) { IJ.showStatus("'1 <= iterations' is necessary."); return false; }
         
-        ksize = new Size(ksize_x, ksize_y);
+        Size ksize = new Size(ksize_x, ksize_y);
+        kernel = Imgproc.getStructuringElement(INT_SHAPERTYPE[indShapeType], ksize);
         
-        IJ.showStatus("OCV_Blur");
+        anchor = new Point(-1,-1);
+        
+        IJ.showStatus("OCV_MorphologyEx");
         return true;
     }
     
@@ -148,7 +169,7 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 16)
@@ -164,24 +185,8 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             
             // run
             src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
             dst_mat.get(0, 0, srcdst_shorts);        
-        }
-        else if(ip.getBitDepth() == 24)
-        {
-            // dst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            int[] srcdst_ints = (int[])ip.getPixels();
-            
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-         
-            // run
-            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
-            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
         }
         else if(ip.getBitDepth() == 32)
         {
@@ -196,8 +201,24 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
             
             // run
             src_mat.put(0, 0, srcdst_floats);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
             dst_mat.get(0, 0, srcdst_floats);        
+        }
+        else if(ip.getBitDepth() == 24)
+        {
+            // dst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            int[] srcdst_ints = (int[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
+         
+            // run
+            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
+            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
+            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
         }
         else
         {

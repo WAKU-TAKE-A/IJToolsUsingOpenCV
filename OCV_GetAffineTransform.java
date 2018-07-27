@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * getAffineTransform (OpenCV3.3.1).
+ * getAffineTransform (OpenCV3.4.2).
  */
 public class OCV_GetAffineTransform implements ExtendedPlugInFilter
 {

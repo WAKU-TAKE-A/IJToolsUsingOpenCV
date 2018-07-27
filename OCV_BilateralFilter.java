@@ -35,30 +35,32 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * bilateralFilter (OpenCV3.3.1).
+ * bilateralFilter (OpenCV3.4.2).
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | KEEP_PREVIEW; // 8-bit or floating-point, 1-channel or 3-channel image.
+    
     /*
      Various border types, image boundaries are denoted with '|'
 
-     * BORDER_ISOLATED:      can not use
+     * BORDER_CONSTANT:      iiiiii|abcdefgh|iiiiiii with some specified i
+     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
      * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
-     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
-     * BORDER_WRAP:          can not use
-     * BORDER_TRANSPARENT    can not use
+     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg
+     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno (Error occurred)
+     * BORDER_ISOLATED:      do not look outside of ROI
      */
-    private static final int[] INT_BORDERTYPE = { Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_REPLICATE };
-    private static final String[] STR_BORDERTYPE = { "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_REPLICATE" };
+    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_WRAP, /*Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
+    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_WRAP", /*"BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
 
     // staic var.
     private static int diameter = 5; // Diameter of each pixel neighborhood that is used during filtering.
     private static double sigmaColor  = 15; // Filter sigma in the color space.
     private static double sigmaSpace  = 8; // Filter sigma in the coordinate space.
-    private static int indBorderType = 1; // Border types.
+    private static int indBorderType = 2; // Border type.
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)

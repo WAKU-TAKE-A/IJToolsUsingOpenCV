@@ -36,7 +36,7 @@ import org.opencv.core.Size;
  */
 
 /**
- * GaussianBlur (OpenCV3.3.1).
+ * GaussianBlur (OpenCV3.4.2).
  */
 public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -46,22 +46,23 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
     /*
      Various border types, image boundaries are denoted with '|'
 
-     * BORDER_ISOLATED:      can not use
+     * BORDER_CONSTANT:      iiiiii|abcdefgh|iiiiiii with some specified i
+     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
      * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
-     * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
-     * BORDER_WRAP:          can not use
-     * BORDER_TRANSPARENT    can not use
+     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg (Error occurred)
+     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno (Error occurred)
+     * BORDER_ISOLATED:      do not look outside of ROI
      */
-    private static final int[] INT_BORDERTYPE = { Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_REPLICATE };
-    private static final String[] STR_BORDERTYPE = { "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_REPLICATE" };
+    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
+    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
 
     // staic var.
     private static int ksize_x = 3; // kernel size of x
     private static int ksize_y = 3; // kernel size of y
     private static double sigma_x = 0; // Gaussian kernel standard deviation in x direction
     private static double sigma_y = 0; // Gaussian kernel standard deviation in y direction
-    private static int indBorderType = 1; // border types
+    private static int indBorderType = 2; // border type
     
     // var.
     private Size ksize = null;
