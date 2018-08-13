@@ -12,15 +12,12 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import java.io.File;
-import java.lang.Exception;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfDMatch;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.Size;
-import org.opencv.features2d.DescriptorExtractor;
 import org.opencv.features2d.DescriptorMatcher;
-import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Core;
@@ -62,16 +59,12 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     // constant var.
     private final int FLAGS = DOES_RGB;
     private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB"};
-    private final int[] TYPE_VAL_DET = new int[] { FeatureDetector.AKAZE, FeatureDetector.BRISK, FeatureDetector.ORB };
-    private final int[] TYPE_VAL_EXT = new int[] { DescriptorExtractor.AKAZE, DescriptorExtractor.BRISK, DescriptorExtractor.ORB };
     private final String[] TYPE_STR_MATCH = new String[] { "BRUTEFORCE_HAMMING", "BRUTEFORCE_HAMMINGLUT" };
     private final int[] TYPE_VAL_MATCH = new int[] { DescriptorMatcher.BRUTEFORCE_HAMMING, DescriptorMatcher.BRUTEFORCE_HAMMINGLUT  };
 
     // static var.
     private static int ind_det = -1;
     private static int ind_match = 0;
-    private static int type_det = -1;
-    private static int type_ext = -1;
     private static double max_dist = 100;
     private static boolean enDrawMatches = true;
     private static boolean enDetectQuery = true;
@@ -115,9 +108,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         enDetectQuery = (boolean)gd.getNextBoolean();
         ransacReprojThreshold = (double)gd.getNextNumber();
 
-        type_det = TYPE_VAL_DET[ind_det];
-        type_ext = TYPE_VAL_EXT[ind_det];
-        fname = TYPE_STR_DET[ind_det] + ".yaml";
+        fname = TYPE_STR_DET[ind_det] + ".xml";
         
         if(Double.isNaN(max_dist)  || Double.isNaN(ransacReprojThreshold)) { IJ.showStatus("ERR : NaN"); return false; }        
         if(max_dist <= 0) { IJ.showStatus("'0 < max_dist' is necessary."); return false; }
@@ -185,16 +176,17 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             OCV__LoadLibrary.intarray2mat(arr_train, mat_train, imw_train, imh_train);
 
             // KeyPoint of TrainImage
-            FeatureDetector detector = FeatureDetector.create(type_det);
+            MyFeatureDetector detector = new MyFeatureDetector(TYPE_STR_DET[ind_det]);
+            detector.create();
             File file = new File(fname);
 
             if(file.exists())
             {
-                detector.read(fname);
+                detector.readParam(fname);
             }
             else
             {
-                detector.write(fname);
+                detector.writeDefalutParam(fname);
             }
 
             MatOfKeyPoint key_train = new MatOfKeyPoint();
@@ -206,7 +198,8 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             }
 
             // Descriptor of TrainImage
-            DescriptorExtractor extractor = DescriptorExtractor.create(type_ext);
+            MyFeatureDetector extractor = new MyFeatureDetector(TYPE_STR_DET[ind_det]);
+            extractor.create();
             Mat desc_train = new Mat();
             extractor.compute(mat_train, key_train, desc_train);
 

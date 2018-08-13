@@ -1,3 +1,14 @@
+# Release v0.9.31.0
+
+Latest update: August 13th 2018
+
+## New Features
+
+* Add OCV_WarpPolar plugin.
+* OCV_LinearPolar.java and OCV_LogPolar.java are deleted.
+* FeatureDetector and DescriptorExtractor are not used.
+* The binary for Java 1.8 (64bit) only is released.
+
 # Release v0.9.29.0
 
 Latest update: July 28th 2018
