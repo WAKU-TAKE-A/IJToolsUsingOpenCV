@@ -9,12 +9,14 @@ import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import java.io.File;
+import java.io.IOException;
+import javax.xml.parsers.ParserConfigurationException;
+import javax.xml.transform.TransformerException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
-import org.opencv.features2d.DescriptorExtractor;
-import org.opencv.features2d.FeatureDetector;
 import org.opencv.features2d.Features2d;
+import org.xml.sax.SAXException;
 
 /*
  * The MIT License
@@ -51,14 +53,11 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
     // constant var.
     private final int FLAGS = DOES_RGB;
     private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB"};
-    private final int[] TYPE_VAL_DET = new int[] { FeatureDetector.AKAZE, FeatureDetector.BRISK, FeatureDetector.ORB };    
-    private final int[] TYPE_VAL_EXT = new int[] { DescriptorExtractor.AKAZE, DescriptorExtractor.BRISK, DescriptorExtractor.ORB };
     
     // static var.
     private static int ind_det = 0;
-    private static int type_det = FeatureDetector.AKAZE;
-    private static int type_ext = DescriptorExtractor.AKAZE;
     private static boolean enDrawKeys = false;
+    private static MyFeatureDetector detector = null;
 
     // var.
     private String fname = "";
@@ -91,9 +90,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
         ind_det = (int)gd.getNextChoiceIndex();
         enDrawKeys = (boolean)gd.getNextBoolean();
 
-        type_det = TYPE_VAL_DET[ind_det];
-        type_ext = TYPE_VAL_EXT[ind_det];
-        fname = TYPE_STR_DET[ind_det] + ".yaml";
+        fname = TYPE_STR_DET[ind_det] + ".xml";
         
         IJ.showStatus("OCV_FeatDet_1st_SetQuery");
         return true;
@@ -138,16 +135,28 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
         OCV__LoadLibrary.intarray2mat(arr_query, mat_query, imw_query, imh_query);
        
         // KeyPoint of QueryImage
-        FeatureDetector detector = FeatureDetector.create(type_det);
+        if(detector == null || !detector.getDetectorType().equals(TYPE_STR_DET[ind_det]))
+        {
+            detector = new MyFeatureDetector(TYPE_STR_DET[ind_det]);
+            detector.create();
+        }
+
         File file = new File(fname);
 
-        if(file.exists())
+        try
         {
-            detector.read(fname);
+            if(file.exists())
+           {
+               detector.readParam(fname);
+           }
+           else
+           {
+               detector.writeDefalutParam(fname);
+           }
         }
-        else
+        catch (SAXException | IOException | ParserConfigurationException | TransformerException ex)
         {
-            detector.write(fname);
+            IJ.error(ex.getMessage());
         }
         
         MatOfKeyPoint key_query = new MatOfKeyPoint();
@@ -160,9 +169,8 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
         }
         
         // Descriptor of QueryImage
-        DescriptorExtractor extractor = DescriptorExtractor.create(type_ext);
         Mat desc_query = new Mat();
-        extractor.compute(mat_query, key_query, desc_query);
+        detector.compute(mat_query, key_query, desc_query);
         
         if(desc_query.rows() == 0)
         {
