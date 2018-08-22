@@ -1,6 +1,6 @@
-# Release v0.9.31.0
+# Release v0.9.31.2
 
-Latest update: August 13th 2018
+Latest update: August 22th 2018
 
 ## New Features
 
