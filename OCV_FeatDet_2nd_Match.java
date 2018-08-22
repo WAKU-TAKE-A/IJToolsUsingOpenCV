@@ -198,10 +198,8 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             }
 
             // Descriptor of TrainImage
-            MyFeatureDetector extractor = new MyFeatureDetector(TYPE_STR_DET[ind_det]);
-            extractor.create();
             Mat desc_train = new Mat();
-            extractor.compute(mat_train, key_train, desc_train);
+            detector.compute(mat_train, key_train, desc_train);
 
             if(desc_train.rows() == 0)
             {
