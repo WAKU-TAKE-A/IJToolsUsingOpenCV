@@ -42,13 +42,10 @@ import org.opencv.imgproc.Imgproc;
 /**
  * Sobel (OpenCV3.4.2).
  */
-public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | KEEP_PREVIEW;
-
-    private static final int[] INT_KSIZE = { 1, 3, 5, 7};
-    private static final String[] STR_KSIZE = { "1" , "3", "5", "7" };
     
     /*
      Various border types, image boundaries are denoted with '|'
@@ -66,8 +63,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
     // staic var.
     private static int dx = 1; // order of the derivative x.
-    private static int dy = 1; // order of the derivative y.
-    private static int indKsize = 1; // size of the extended Sobel kernel; it must be 1, 3, 5, or 7.
+    private static int dy = 0; // order of the derivative y.
     private static double scale = 1; // optional scale factor for the computed derivative values.
     private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst.
     private static int indBorderType = 2; // border type
@@ -79,7 +75,6 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         
         gd.addNumericField("dx", dx, 0);
         gd.addNumericField("dy", dy, 0);
-        gd.addChoice("ksize", STR_KSIZE, STR_KSIZE[indKsize]);
         gd.addNumericField("scale", scale, 4);
         gd.addNumericField("delta", delta, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
@@ -103,14 +98,11 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     {    
         dx = (int)gd.getNextNumber();
         dy = (int)gd.getNextNumber();
-        indKsize = (int)gd.getNextChoiceIndex();
         scale = (double)gd.getNextNumber();
         delta = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(dx < 0) { IJ.showStatus("'0 <= dx' is necessary."); return false; }
-        if(dy < 0) { IJ.showStatus("'0 <= dy' is necessary."); return false; }
-        if(dx <= 0 && dy <= 0) { IJ.showStatus("Either dx or dy is greater than zero."); return false; }
+        if(!(dx >= 0 && dy >= 0 && dx+dy == 1)) { IJ.showStatus("'dx >= 0 && dy >= 0 && dx+dy == 1' is necessary."); return false; }
         if(Double.isNaN(scale) || Double.isNaN(delta)) { IJ.showStatus("ERR : NaN"); return false; } 
         
         IJ.showStatus("OCV_Sobel");
@@ -159,7 +151,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
             
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, INT_KSIZE[indKsize], scale, delta, INT_BORDERTYPE[indBorderType]);
+            Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 16)
@@ -175,7 +167,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
             
             // run
             src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, INT_KSIZE[indKsize], scale, delta, INT_BORDERTYPE[indBorderType]);
+            Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_shorts);        
         }
           else if(ip.getBitDepth() == 32)
@@ -191,7 +183,7 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
             
             // run
             src_mat.put(0, 0, srcdst_floats);
-            Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, INT_KSIZE[indKsize], scale, delta, INT_BORDERTYPE[indBorderType]);
+            Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_floats);        
         }
         else
