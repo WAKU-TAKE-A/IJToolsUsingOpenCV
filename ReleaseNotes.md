@@ -1,4 +1,4 @@
-# Release v0.9.32.0
+# Release v0.9.32.1
 
 Latest update: September 7th 2018
 
