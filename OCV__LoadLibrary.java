@@ -45,17 +45,17 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    public static final String VERSION = "0.9.31.2";
+    public static final String VERSION = "0.9.32.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
-        
-    private static boolean disposed = true;    
+
+    private static boolean disposed = true;
     private static Mat dummy = null;
-    
+
     public static Mat QueryMat = null;
     public static MatOfKeyPoint QueryKeys = null;
     public static Mat QueryDesc = null;
     public static String FeatDetType = null;
-    
+
     // ExtendedPlugInFilter
     @Override
     public void setNPasses(int arg0)
@@ -67,7 +67,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
         GenericDialog gd = new GenericDialog("Ver.  " + VERSION);
-        
+
         if(!disposed)
         {
             gd.addMessage("It is already loaded.");
@@ -76,7 +76,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         {
             gd.addMessage("Load " + Core.NATIVE_LIBRARY_NAME + ".dll");
         }
-        
+
         gd.addHelp(OCV__LoadLibrary.URL_HELP);
         gd.showDialog();
 
@@ -119,10 +119,10 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             disposed = true;
             //IJ.showMessage("disposed = " + String.valueOf(disposed));
         }
-        
+
         return NO_IMAGE_REQUIRED;
     }
-    
+
     // finalize
     @Override
     protected void finalize() throws Throwable
@@ -136,9 +136,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             dispose();
         }
     }
-    
+
     private void dispose()
-    {       
+    {
         if(isLoadOpenCV())
         {
             disposed = false;
@@ -148,7 +148,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             disposed = true;
         }
     }
-    
+
     // for check
     private boolean isLoadOpenCV()
     {
@@ -159,10 +159,10 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
                 //IJ.showMessage("dummy is release");
                 dummy.release();
             }
-            
+
             //IJ.error("dummy = new Mat()");
             dummy = new Mat();
-            
+
             return true;
          }
         catch(Throwable ex)
@@ -171,7 +171,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             return false;
         }
     }
-    
+
     public static boolean isLoad()
     {
         return !disposed;
@@ -233,11 +233,11 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             }
         }
     }
-    
+
     /**
      * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
      * @param roi
-     * @param lstPt 
+     * @param lstPt
      */
     public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt)
     {
@@ -259,7 +259,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             }
         }
     }
-    
+
     /**
      * get the ResultsTable or create a new ResultsTable
      * @param enReset reset or not
@@ -267,23 +267,23 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      */
     public static ResultsTable GetResultsTable(boolean enReset)
     {
-        ResultsTable rt = ResultsTable.getResultsTable();        
+        ResultsTable rt = ResultsTable.getResultsTable();
 
         if(rt == null || rt.getCounter() == 0)
         {
             rt = new ResultsTable();
         }
-        
+
         if(enReset)
         {
             rt.reset();
         }
-        
+
         rt.show("Results");
-        
+
         return rt;
     }
-    
+
     /**
      * get the RoiManager or create a new RoiManager
      * @param enReset reset or not
@@ -293,8 +293,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;        
-        
+        RoiManager rm = null;
+
         if (frame == null)
         {
             rm = new RoiManager();
@@ -302,22 +302,22 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         }
         else
         {
-            rm = (RoiManager)frame;       
+            rm = (RoiManager)frame;
         }
-        
+
         if(enReset)
         {
             rm.reset();
         }
-        
+
         if(enShowNone)
         {
             rm.runCommand("Show None");
         }
-        
+
         return rm;
     }
-    
+
     /**
      * Wait.
      * @param wt wait time (ms).
@@ -334,7 +334,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
             {
                 Thread.sleep(wt);
             }
-        } 
+        }
         catch (InterruptedException e)
         {
             // do nothing

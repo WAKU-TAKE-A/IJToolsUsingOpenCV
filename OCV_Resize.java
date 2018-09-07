@@ -4,10 +4,8 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.*;
 import ij.process.*;
 import java.awt.AWTEvent;
-import java.awt.Rectangle;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.Point;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
 
@@ -36,22 +34,13 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * warpPolar (OpenCV3.4.2).
+ * resize (OpenCV3.4.2).
  */
-public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
+public class OCV_Resize implements ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32;
-    
-    /*
-    Specify the polar mapping mode.
-    
-    * WARP_POLAR_LINEAR :	Remaps an image to/from polar space.
-    * WARP_POLAR_LOG   :	Remaps an image to/from polar space.
-    */
-    private static final int[] INT_MODE = { Imgproc.WARP_POLAR_LINEAR, Imgproc.WARP_POLAR_LOG };
-    private static final String[] STR_MODE = { "WARP_POLAR_LINEAR", "WARP_POLAR_LOG" };
-    
+  
     /*
     interpolation algorithm
 
@@ -60,53 +49,40 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
     * INTER_CUBIC     :	bicubic interpolation
     * INTER_AREA      :	resampling using pixel area relation
     * INTER_LANCZOS4  :	Lanczos interpolation over 8x8 neighborhood
-    * INTER_LINEAR_EXACT:	Bit exact bilinear interpolation(Error occurred)
+    * INTER_LINEAR_EXACT:	Bit exact bilinear interpolation
     * INTER_MAX       :	mask for interpolation codes(Error occurred)
-    * WARP_FILL_OUTLIERS:	flag, fills all of the destination image pixels
+    * WARP_FILL_OUTLIERS:	flag, fills all of the destination image pixels(Error occurred)
     */
-    private static final int[] INT_INTERPOLATION = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4/*, Imgproc.INTER_LINEAR_EXACT,  Imgproc.INTER_MAX*/,  Imgproc.WARP_FILL_OUTLIERS };
-    private static final String[] STR_INTERPOLATION = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4"/*, "INTER_LINEAR_EXACT", "INTER_MAX"*/, "WARP_FILL_OUTLIERS" };
+    private static final int[] INT_INTERPOLATION = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.INTER_LINEAR_EXACT/*,  Imgproc.INTER_MAX,  Imgproc.WARP_FILL_OUTLIERS*/ };
+    private static final String[] STR_INTERPOLATION = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "INTER_LINEAR_EXACT"/*, "INTER_MAX", "WARP_FILL_OUTLIERS"*/ };
     
     // static var.
-    private static Rectangle rect = new Rectangle(0, 0, 0, 0);
-    private static int cx = 0;
-    private static int cy = 0;
-    private static int dest_w = 0;
-    private static int dest_h = 0;
-    private static int rmax = 0;
-    private static int indMode = 0;
+    private static double dsize_w = 0;
+    private static double dsize_h = 0;
+    private static double scale_w = 0;
+    private static double scale_h = 0;
     private static int indInterpolation = 0;
-    private static boolean enInverse = false;
     
     // var
     private String titleSrc = "";
+    private ImagePlus impSrc = null;
     
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
-        rect = imp.getRoi().getBounds();
-        
-        if(rmax == 0)
+    {      
+        if(scale_w == 0 || scale_h == 0)
         {
-            rmax = (int)(rect.getWidth() / 2 < rect.getHeight() /2 ? rect.getWidth() / 2 : rect.getHeight() /2);
-        }
-
-        if(dest_w == 0 || dest_h == 0)
-        {
-            dest_w = imp.getWidth();
-            dest_h = imp.getHeight();
+            dsize_w = imp.getWidth();
+            dsize_h = imp.getHeight();
         }
         
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addNumericField("center_x", rect.getX() + rect.getWidth() / 2, 0);
-        gd.addNumericField("center_y", rect.getY() + rect.getHeight() /2, 0);
-        gd.addNumericField("destination_width", dest_w, 0);
-        gd.addNumericField("destination_height", dest_h, 0);
-        gd.addNumericField("max_radius", rmax, 0);
-        gd.addChoice("mode", STR_MODE, STR_MODE[indMode]);
+        gd.addNumericField("dsize_w", dsize_w, 0);
+        gd.addNumericField("dsize_h", dsize_h, 0);
+        gd.addNumericField("scale_factor_x", scale_w, 4);
+        gd.addNumericField("scale_factor_y", scale_h, 4);
         gd.addChoice("interpolation", STR_INTERPOLATION, STR_INTERPOLATION[indInterpolation]);
-        gd.addCheckbox("enable_inverse", enInverse);
 
         gd.showDialog();
 
@@ -115,33 +91,41 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
             return DONE;
         }
         else
-        {          
+        {            
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+   
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) 
     {
-        cx = (int)gd.getNextNumber();
-        cy = (int)gd.getNextNumber();
-        dest_w = (int)gd.getNextNumber();
-        dest_h = (int)gd.getNextNumber();
-        rmax = (int)gd.getNextNumber();
-        indMode = (int)gd.getNextChoiceIndex();
+        dsize_w = (double)gd.getNextNumber();
+        dsize_h = (double)gd.getNextNumber();
+        scale_w = (double)gd.getNextNumber();
+        scale_h = (double)gd.getNextNumber();
         indInterpolation = (int)gd.getNextChoiceIndex();
-        enInverse = (boolean)gd.getNextBoolean();
 
-        if(cx < 0) { IJ.showStatus("'0 <= center_x' is necessary."); return false; }
-        if(cy < 0) { IJ.showStatus("'0 <= center_y' is necessary."); return false; }
-        if(dest_w <= 0) { IJ.showStatus("'0 < destination_width' is necessary."); return false; }
-        if(dest_h <= 0) { IJ.showStatus("'0 < destination_height' is necessary."); return false; }
-        if(rmax <= 0) { IJ.showStatus("'0 < max_radius' is necessary."); return false; }
+        if(dsize_w < 0) { IJ.showStatus("'0 <= dsize_w' is necessary."); return false; }
+        if(dsize_h < 0) { IJ.showStatus("'0 <= dsize_h' is necessary."); return false; }
+        if(scale_w < 0) { IJ.showStatus("'0 <= scale_w' is necessary."); return false; }
+        if(scale_h < 0) { IJ.showStatus("'0 <= scale_h' is necessary."); return false; }
+        if(Double.isNaN(dsize_w) || Double.isNaN(dsize_h) || Double.isNaN(scale_w) || Double.isNaN(scale_h)) {IJ.showStatus("ERR : NaN"); return false;}
 
-        IJ.showStatus("OCV_WarpPolar");
+        if(0 < scale_w && 0 < scale_h)
+        {
+            dsize_w = ((double)impSrc.getWidth()) * scale_w;
+            dsize_h = ((double)impSrc.getHeight()) * scale_h;
+        }
+
+        if(dsize_w == 0 || dsize_h == 0)
+        {
+            IJ.showStatus("'The output height and width values should not be 0."); return true;
+        }
+        
+        IJ.showStatus("OCV_Resize");
         return true;
     }
-   
+    
     @Override
     public void setNPasses(int arg0)
     {
@@ -165,19 +149,7 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
         else
         {
             titleSrc = imp.getTitle();
-            
-            if(imp.getRoi() != null)
-            {
-                rect = imp.getRoi().getBounds();
-            }
-            else
-            {
-                rect = new Rectangle(0, 0, imp.getWidth(), imp.getHeight());
-            }
-
-            imp.setRoi(0, 0, imp.getWidth(), imp.getHeight());
-            imp.setRoi(rect);
-
+            impSrc = imp;
             return FLAGS;
         }
     }
@@ -185,6 +157,8 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
     @Override
     public void run(ImageProcessor ip)
     {        
+        Size dsize = new Size(dsize_w, dsize_h);
+        
         if(ip.getBitDepth() == 8)
         {
             // src
@@ -193,20 +167,20 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
             byte[] src_byte = (byte[])ip.getPixels();
             
             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_WarpPolar");
-            ImagePlus impDst = new ImagePlus (titleDst, new ByteProcessor(dest_w, dest_h));
+            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
+            ImagePlus impDst = new ImagePlus (titleDst, new ByteProcessor((int)dsize.width, (int)dsize.height));
             byte[] dst_byte = (byte[]) impDst.getChannelProcessor().getPixels();
             
             // mat
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_8UC1);
+            Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_8UC1);
             
             // flag
-            int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP: 0);
+            int flags = INT_INTERPOLATION[indInterpolation];
             
             // run
             src_mat.put(0, 0, src_byte);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
+            Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             dst_mat.get(0, 0, dst_byte);
             
             // show
@@ -220,20 +194,20 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
             short[] src_short = (short[])ip.getPixels();
             
             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_WarpPolar");
-            ImagePlus impDst = new ImagePlus (titleDst, new ShortProcessor(dest_w, dest_h));
+            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
+            ImagePlus impDst = new ImagePlus (titleDst, new ShortProcessor((int)dsize.width, (int)dsize.height));
             short[] dst_short = (short[]) impDst.getChannelProcessor().getPixels();            
             
             // mat
             Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_16S);
+            Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_16S);
             
             // flag
-             int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP: 0);
+             int flags = INT_INTERPOLATION[indInterpolation];
             
             // run
             src_mat.put(0, 0, src_short);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
+            Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             dst_mat.get(0, 0, dst_short);
             
             // show
@@ -247,21 +221,21 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
             int[] src_int = (int[])ip.getPixels();
             
             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_WarpPolar");
-            ImagePlus  impDst = IJ.createImage(titleDst, dest_w, dest_h, 1, 24);
+            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
+            ImagePlus  impDst = IJ.createImage(titleDst, (int)dsize.width, (int)dsize.height, 1, 24);
             int[] dst_int = (int[])impDst.getChannelProcessor().getPixels();
             
             // mat
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_8UC3);
+            Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_8UC3);
          
              // flag
-             int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP: 0);
+             int flags = INT_INTERPOLATION[indInterpolation];
  
             // run
             OCV__LoadLibrary.intarray2mat(src_int, src_mat, imw, imh);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
-            OCV__LoadLibrary.mat2intarray(dst_mat, dst_int, dest_w, dest_h);
+            Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
+            OCV__LoadLibrary.mat2intarray(dst_mat, dst_int, (int)dsize.width, (int)dsize.height);
             
             // show
             impDst.show();
@@ -274,20 +248,20 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
             float[] src_float = (float[])ip.getPixels();
             
              // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_WarpPolar");
-            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(dest_w, dest_h));
+            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
+            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor((int)dsize.width, (int)dsize.height));
             float[] dst_float = (float[]) impDst.getChannelProcessor().getPixels();  
             
              // flag
-             int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP: 0);
+             int flags = INT_INTERPOLATION[indInterpolation];
             
             // mat
             Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_32F);
+            Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_32F);
             
             // run
             src_mat.put(0, 0, src_float);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
+            Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             dst_mat.get(0, 0, dst_float);
             
             // show
