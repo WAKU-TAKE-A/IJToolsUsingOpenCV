@@ -1,3 +1,15 @@
+# Release v0.9.32.0
+
+Latest update: September 7th 2018
+
+## New Features
+
+* Add plugins of OCV_CornerHarris, OCV_Resize and OCV_Scharr.
+
+## Bug Fixes
+
+* Fixed a bug that a interpolation did not switch properly in OCV_WarpPolar plugin.
+
 # Release v0.9.31.2
 
 Latest update: August 22th 2018

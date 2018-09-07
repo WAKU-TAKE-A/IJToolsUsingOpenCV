@@ -2,12 +2,8 @@ import ij.*;
 import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import static ij.plugin.filter.ExtendedPlugInFilter.KEEP_PREVIEW;
-import static ij.plugin.filter.PlugInFilter.DOES_16;
-import static ij.plugin.filter.PlugInFilter.DOES_32;
-import static ij.plugin.filter.PlugInFilter.DOES_8G;
-import static ij.plugin.filter.PlugInFilter.DONE;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import org.opencv.core.Core;
@@ -40,12 +36,12 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Scharr (OpenCV3.4.2).
+ *  cornerHarris (OpenCV3.4.2).
  */
-public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
+public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | DOES_32 | KEEP_PREVIEW;
     
     /*
      Various border types, image boundaries are denoted with '|'
@@ -54,31 +50,31 @@ public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, Dialog
      * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
      * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
-     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg (Error occurred)
-     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno (Error occurred)
+     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg
+     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno
      * BORDER_ISOLATED:      do not look outside of ROI
      */
-    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
-    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
+    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_WRAP, Core.BORDER_TRANSPARENT, Core.BORDER_ISOLATED };
+    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_WRAP", "BORDER_TRANSPARENT", "BORDER_ISOLATED" };
 
     // staic var.
-    private static int dx = 1; // order of the derivative x.
-    private static int dy = 0; // order of the derivative y.
-    private static double scale = 1; // optional scale factor for the computed derivative values.
-    private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst.
-    private static int indBorderType = 2; // border type
- 
+    private static int blockSize = 2; // Neighborhood size.
+    private static int ksize = 3; // Aperture parameter for the Sobel operator.
+    private static double k = 0.04; // Harris detector free parameter.
+    private static int indBorderType = 2; // Border type
+
+    // var
+    private final String titleSrc = "";
+    
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addNumericField("dx", dx, 0);
-        gd.addNumericField("dy", dy, 0);
-        gd.addNumericField("scale", scale, 4);
-        gd.addNumericField("delta", delta, 4);
+        gd.addNumericField("blockSize", blockSize, 0);
+        gd.addNumericField("ksize", ksize, 0);
+        gd.addNumericField("free_parame", k, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
-        gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -95,17 +91,17 @@ public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, Dialog
     
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {    
-        dx = (int)gd.getNextNumber();
-        dy = (int)gd.getNextNumber();
-        scale = (double)gd.getNextNumber();
-        delta = (double)gd.getNextNumber();
+    {        
+        blockSize = (int)gd.getNextNumber();
+        ksize = (int)gd.getNextNumber();
+        k = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(!(dx >= 0 && dy >= 0 && dx+dy == 1)) { IJ.showStatus("'dx >= 0 && dy >= 0 && dx+dy == 1' is necessary."); return false; }
-        if(Double.isNaN(scale) || Double.isNaN(delta)) { IJ.showStatus("ERR : NaN"); return false; } 
+        if(blockSize <= 0) { IJ.showStatus("'0 < ksize_x' is necessary."); return false; }
+        if(ksize <= 0) { IJ.showStatus("'0 < ksize_y' is necessary."); return false; }
+        if(Double.isNaN(k)) { IJ.showStatus("ERR : NaN"); return false; }
         
-        IJ.showStatus("OCV_Scharr");
+        IJ.showStatus("OCV_ CornerHarris");
         return true;
     }
     
@@ -140,51 +136,51 @@ public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, Dialog
     {        
         if(ip.getBitDepth() == 8)
         {
-            // srcdst
+            // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
-            byte[] srcdst_bytes = (byte[])ip.getPixels();
+            byte[] src_bytes = (byte[])ip.getPixels();
+            
+             // dst
+            String titleDst = WindowManager.getUniqueName(titleSrc+ "_CornerHarris");
+            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(imw, imh));
+            float[] dst_floats = (float[]) impDst.getChannelProcessor().getPixels(); 
             
             // mat
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
             
             // run
-            src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_bytes);
+            src_mat.put(0, 0, src_bytes);
+            Imgproc.cornerHarris(src_mat, dst_mat, blockSize, ksize, k, INT_BORDERTYPE[indBorderType]);
+            dst_mat.get(0, 0, dst_floats);
+            
+            // show
+            impDst.show();
         }
-        else if(ip.getBitDepth() == 16)
+        else if(ip.getBitDepth() == 32)
         {
-            // srcdst
+            // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
-            short[] srcdst_shorts = (short[])ip.getPixels();
+            float[] src_floats = (float[])ip.getPixels();
             
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-            
-            // run
-            src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_shorts);        
-        }
-          else if(ip.getBitDepth() == 32)
-        {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            float[] srcdst_floats = (float[])ip.getPixels();
+             // dst
+            String titleDst = WindowManager.getUniqueName(titleSrc+ "_CornerHarris");
+            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(imw, imh));
+            float[] dst_floats = (float[]) impDst.getChannelProcessor().getPixels();  
             
             // mat
             Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
             
             // run
-            src_mat.put(0, 0, srcdst_floats);
-            Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_floats);        
+            src_mat.put(0, 0, src_floats);
+            Imgproc.cornerHarris(src_mat, dst_mat, blockSize, ksize, k, INT_BORDERTYPE[indBorderType]);
+            dst_mat.get(0, 0, dst_floats);
+            
+            // show
+            impDst.show();
         }
         else
         {
