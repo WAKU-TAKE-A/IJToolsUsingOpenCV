@@ -83,6 +83,7 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener
         gd.addNumericField("scale_factor_x", scale_w, 4);
         gd.addNumericField("scale_factor_y", scale_h, 4);
         gd.addChoice("interpolation", STR_INTERPOLATION, STR_INTERPOLATION[indInterpolation]);
+        gd.addDialogListener(this);
 
         gd.showDialog();
 
