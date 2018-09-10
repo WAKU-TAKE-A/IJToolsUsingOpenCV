@@ -61,10 +61,30 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         upper = 0 < ip.getProcessor().getMaxThreshold() ? (int)(ip.getProcessor().getMaxThreshold()) : upper;
         type = type == null ? INNER : type;
 
+        double min_val = 0;
+        double max_val = 0;
+        
+        if(bitDepth == 8)
+        {
+            min_val = 0;
+            max_val = UBYTE_MAX;
+        }
+        else if(bitDepth == 16)
+        {
+            min_val = 0;
+            max_val = USHORT_MAX;   
+        }
+        else
+        {
+            ImageStatistics stat =  ip.getStatistics();
+            min_val = stat.min - 1;
+            max_val = stat.max + 1;
+        }
+        
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addNumericField("lower", lower, 4);
-        gd.addNumericField("upper", upper, 4);
+        gd.addSlider("lower", min_val, max_val, lower);
+        gd.addSlider("upper", min_val, max_val, upper);
         gd.addChoice("range_of_true", BYNARY_TYPE, type);
         gd.addNumericField("value_of_true", valTrue, 4);
         gd.addNumericField("value_of_false", valFalse, 4);
