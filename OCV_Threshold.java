@@ -4,6 +4,7 @@ import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 import java.awt.AWTEvent;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
@@ -42,18 +43,37 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static final int FLAGS = DOES_8G | DOES_32 | KEEP_PREVIEW;
     private static final int[] INT_TYPE = { Imgproc.THRESH_BINARY, Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRUNC, Imgproc.THRESH_TOZERO, Imgproc.THRESH_TOZERO_INV, Imgproc.THRESH_OTSU, Imgproc.THRESH_OTSU + Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRIANGLE };
     private static final String[] STR_TYPE = { "THRESH_BINARY", "THRESH_BINARY_INV", "THRESH_TRUNC", "THRESH_TOZERO", "THRESH_TOZERO_INV" , "THRESH_OTSU", "THRESH_OTSU_INV", "THRESH_TRIANGLE"};
-
+    private static final float UBYTE_MAX = 255;
+    
     // staic var.
     private static double thresh = 125;
     private static double maxVal  = 255.0;
     private static int idxType = 0;
+    
+    // var.
+    private int bitDepth = 0;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
+        double min_val = 0;
+        double max_val = 0;
+        
+        if(bitDepth == 8)
+        {
+            min_val = 0;
+            max_val = UBYTE_MAX;
+        }
+        else
+        {
+            ImageStatistics stat =  imp.getStatistics();
+            min_val = stat.min - 1;
+            max_val = stat.max + 1;
+        }
+        
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addNumericField("thresh", thresh, 4);
+        gd.addSlider("lower", min_val, max_val, thresh);
         gd.addNumericField("maxval", maxVal, 4);
         gd.addChoice("adaptiveMethod", STR_TYPE, STR_TYPE[idxType]);
         gd.addPreviewCheckbox(pfr);
@@ -79,8 +99,8 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         idxType = (int)gd.getNextChoiceIndex();
 
         if(Double.isNaN(thresh) || Double.isNaN(maxVal)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(thresh < 0) { IJ.showStatus("'0 <= thresh' is necessary."); return false; }
-        if(maxVal <= 0) { IJ.showStatus("'0 < maxValue' is necessary."); return false; }
+        if(bitDepth == 8 && (thresh < 0 || 255 < thresh)) { IJ.showStatus("'0 <= thresh & thresh <= 255' is necessary."); return false; }
+        if(bitDepth == 8 && maxVal < 0) { IJ.showStatus("'0 <= maxValue' is necessary."); return false; }
         
         IJ.showStatus("OCV_Threshold");
         return true;
@@ -108,6 +128,7 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         }
         else
         {
+            bitDepth = imp.getBitDepth();
             return FLAGS;
         }
     }
