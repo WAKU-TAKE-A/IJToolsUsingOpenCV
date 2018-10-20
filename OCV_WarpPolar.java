@@ -107,6 +107,7 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener
         gd.addChoice("mode", STR_MODE, STR_MODE[indMode]);
         gd.addChoice("interpolation", STR_INTERPOLATION, STR_INTERPOLATION[indInterpolation]);
         gd.addCheckbox("enable_inverse", enInverse);
+        gd.addDialogListener(this);
 
         gd.showDialog();
 
