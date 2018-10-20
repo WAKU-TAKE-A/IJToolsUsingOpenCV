@@ -44,7 +44,7 @@ import org.opencv.core.Point;
 public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
 {
     // const var.
-    private static final int FLAGS = DOES_ALL;
+    private static final int FLAGS = DOES_8G | DOES_16 | DOES_32;
 
     // static var.
     private static int num_run = 0;
@@ -314,26 +314,63 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter
     }
     
     /**
-     * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
+     * get the coordinates in the roi.
      * @param roi
      * @param lstPt 
      */
     private void getCoordinates(Roi roi, ArrayList<Point> lstPt)
     {
-        ImageProcessor mask = roi.getMask();
-        Rectangle r = roi.getBounds();
         int pos_x = 0;
         int pos_y = 0;
-
-        for(int y = 0; y < r.height; y++)
+        Rectangle rect = roi.getBounds();
+        int le = rect.x;
+        int to = rect.y;
+        int ri = rect.x + rect.width - 1;
+        int bo = rect.y + rect.height - 1;
+        int imw = impSrc.getWidth();
+        
+        if(impSrc.getBitDepth() == 8)
         {
-            for(int x = 0; x < r.width; x++)
+            byte[] data = (byte[])impSrc.getProcessor().getPixels();
+            
+            for(int y = to; y <= bo; y++)
             {
-                if (mask == null || mask.getPixel(x, y) != 0)
+                for(int x = le; x <= ri; x++)
                 {
-                    pos_x = r.x + x;
-                    pos_y = r.y + y;
-                    lstPt.add(new Point(pos_x, pos_y));
+                    if (data[x + y * imw] != 0)
+                    {
+                        lstPt.add(new Point(x, y));
+                    }
+                }
+            }
+        }
+        else if(impSrc.getBitDepth() == 16)
+        {
+            short[] data = (short[])impSrc.getProcessor().getPixels();
+            
+            for(int y = to; y <= bo; y++)
+            {
+                for(int x = le; x <= ri; x++)
+                {
+                    if (data[x + y * imw] != 0)
+                    {
+                        lstPt.add(new Point(x, y));
+                    }
+                }
+            }
+        }
+        else if(impSrc.getBitDepth() == 32)
+        {
+            float[] data = (float[])impSrc.getProcessor().getPixels();
+            
+            for(int y = to; y <= bo; y++)
+            {
+                for(int x = le; x <= ri; x++)
+                {
+                    if (data[x + y * imw] != 0)
+                    {
+                        lstPt.add(new Point(x, y));
+                    }
                 }
             }
         }
