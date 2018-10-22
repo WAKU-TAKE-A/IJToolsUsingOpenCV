@@ -1,12 +1,11 @@
-# Release v0.9.33.1
+# Release v0.9.33.2
 
-Latest update: October 20th 2018
+Latest update: October 22th 2018
 
 ## Bug Fixes
 
 * Fixed the wrong name of the binary threshold in "OCV_Threshold" dialog (lower-> thresh). Since the contents of the macro change, attention is necessary.
 * Fixed the omission of "gd.addDialogListener (this);" in "OCV_Resize" and "OCV_WarpPolar".
-* In "WK_RoiMan_LinearFitting", the method for extracting coordinates became abnormal, so I created it.
 
 # Release v0.9.32.0
 
