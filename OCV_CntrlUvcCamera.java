@@ -39,7 +39,7 @@ import org.opencv.videoio.VideoCapture;
  */
 
 /**
- * Control UVC camera using VideoCapture function (OpenCV3.4.2).
+ * Control UVC camera using VideoCapture function (OpenCV4.2.0).
  */
 public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 {
@@ -48,11 +48,24 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     // from /sources/modules/videoio/include/opencv2/videoio/videoio_c.h
     private final int CV_CAP_PROP_FRAME_WIDTH = 3;
     private final int CV_CAP_PROP_FRAME_HEIGHT = 4;
-
+    /*
+    VideoCapture API backends identifier.
+    
+    * CAP_ANY : Auto detect.
+    * CAP_DSHOW  : DirectShow (via videoInput).
+    * CAP_MSMF : Microsoft Media Foundation (via videoInput).
+    */
+    private final int CV_CAP_ANY = 0;
+    private final int CV_CAP_DSHOW = 700;
+    private final int  CV_CAP_MSMF = 1400;    
+    private final int[] INT_CAP_APIS = { CV_CAP_ANY, CV_CAP_DSHOW, CV_CAP_MSMF};
+    private final String[] STR_CAP_APIS = { "Auto", "DirectShow", "MicrosoftMediaFoundation" };
+    
     // static var.
     private static int device = 0;
     private static int width = 640;
     private static int height = 480;
+    private static int indCapApi = 0;
     private static int wait_time = 100;
 
     // var.
@@ -69,6 +82,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         gd.addNumericField("device", device, 0);
         gd.addNumericField("width", width, 0);
         gd.addNumericField("height", height, 0);
+        gd.addChoice("capture_api", STR_CAP_APIS, STR_CAP_APIS[indCapApi]);
         gd.addNumericField("wait_time", wait_time, 0);
 
         gd.showDialog();
@@ -82,6 +96,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             device = (int)gd.getNextNumber();
             width = (int)gd.getNextNumber();
             height = (int)gd.getNextNumber();
+            indCapApi = (int)gd.getNextChoiceIndex();
             wait_time = (int)gd.getNextNumber();
 
             return FLAGS;
@@ -135,9 +150,8 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         // ----- end of stop dialog -----
 
         // initialize camera
-        VideoCapture src_cap =new VideoCapture();
+        VideoCapture src_cap =new VideoCapture(device, INT_CAP_APIS[indCapApi]);
         Mat src_mat = new Mat();
-        bret = src_cap.open(device);
 
         if(!bret)
         {

@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * watershed (OpenCV3.4.2).
+ * watershed (OpenCV4.2.0).
  */
 public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

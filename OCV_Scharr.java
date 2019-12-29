@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Scharr (OpenCV3.4.2).
+ * Scharr (OpenCV4.2.0).
  */
 public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

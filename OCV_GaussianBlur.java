@@ -36,7 +36,7 @@ import org.opencv.core.Size;
  */
 
 /**
- * GaussianBlur (OpenCV3.4.2).
+ * GaussianBlur (OpenCV4.2.0).
  */
 public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
