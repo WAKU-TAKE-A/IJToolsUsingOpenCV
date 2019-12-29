@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * minAreaRect (OpenCV3.4.2).
+ * minAreaRect (OpenCV4.2.0).
  */
 public class OCV_MinAreaRect implements ExtendedPlugInFilter
 {

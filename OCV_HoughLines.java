@@ -36,7 +36,7 @@ import java.awt.AWTEvent;
  */
 
 /**
- * houghLines (OpenCV3.4.2).
+ * houghLines (OpenCV4.2.0).
  */
 public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
 {

@@ -33,7 +33,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * getRotationMatrix2D (OpenCV3.4.2).
+ * getRotationMatrix2D (OpenCV4.2.0).
  */
 public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
 {

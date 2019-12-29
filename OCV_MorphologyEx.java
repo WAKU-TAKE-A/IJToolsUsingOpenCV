@@ -36,7 +36,7 @@ import org.opencv.core.Size;
  */
 
 /**
- * morphologyEx (OpenCV3.4.2).
+ * morphologyEx (OpenCV4.2.0).
  */
 public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -50,9 +50,9 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
      * MORPH_DILATE:     dilate
      * MORPH_OPEN:       dst=dilate(erode(src,element))
      * MORPH_CLOSE:      dst=erode(dilate(src,element))
-     * MORPH_GRADIENT:   dst=dilate(src,element)−erode(src,element)
-     * MORPH_TOPHAT:     dst=src−open(src,element)
-     * MORPH_BLACKHAT:   dst=close(src,element)−src
+     * MORPH_GRADIENT:   dst=dilate(src,element)?erode(src,element)
+     * MORPH_TOPHAT:     dst=src?open(src,element)
+     * MORPH_BLACKHAT:   dst=close(src,element)?src
      * MORPH_HITMISS:    Only supported for CV_8UC1 binary images. A tutorial can be found in the documentation (I did not implement it because I could not understand it well.)
      */
     private static final int[] INT_OPERATION = { Imgproc.MORPH_ERODE, Imgproc.MORPH_DILATE, Imgproc.MORPH_OPEN, Imgproc.MORPH_CLOSE, Imgproc.MORPH_GRADIENT, Imgproc.MORPH_TOPHAT, Imgproc.MORPH_BLACKHAT };

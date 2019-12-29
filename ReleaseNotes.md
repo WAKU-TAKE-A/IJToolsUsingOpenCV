@@ -36,7 +36,7 @@ Latest update: July 28th 2018
 
 ## New Features
 
-* Create and debug plugins in OpenCV 3.4.2.
+* Create and debug plugins in OpenCV 4.1.0.
 * Add OCV_MorphologyEx plugin.
 * In OCV_BilateralFilter / OCV_Blur / OCV_GaussianBlur / OCV_Laplacian / OCV_Sobel, confirm border types again.
 * WK_DilateWhite and WK_ErodeWhite is abolished.

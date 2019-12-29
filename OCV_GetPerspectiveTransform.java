@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * getPerspectiveTransform (OpenCV3.4.2).
+ * getPerspectiveTransform (OpenCV4.2.0).
  */
 public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter
 {
