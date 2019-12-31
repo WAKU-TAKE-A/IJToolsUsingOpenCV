@@ -1,3 +1,9 @@
+# Release v0.9.33.3
+
+Latest update: Janualy 1st 2019
+
+Confirmed with OpenCV4.2.0.
+
 # Release v0.9.33.2
 
 Latest update: October 22th 2018
