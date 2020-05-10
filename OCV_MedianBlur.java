@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * medianBlur (OpenCV4.2.0).
+ * medianBlur (OpenCV4.3.0).
  */
 public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

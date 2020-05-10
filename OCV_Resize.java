@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * resize (OpenCV4.2.0).
+ * resize (OpenCV4.3.0).
  */
 public class OCV_Resize implements ExtendedPlugInFilter, DialogListener
 {

@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * threshold (OpenCV4.2.0).
+ * threshold (OpenCV4.3.0).
  */
 public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

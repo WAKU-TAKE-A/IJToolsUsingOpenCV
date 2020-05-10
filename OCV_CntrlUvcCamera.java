@@ -39,7 +39,7 @@ import org.opencv.videoio.VideoCapture;
  */
 
 /**
- * Control UVC camera using VideoCapture function (OpenCV4.2.0).
+ * Control UVC camera using VideoCapture function (OpenCV4.3.0).
  */
 public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 {
@@ -150,7 +150,8 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         // ----- end of stop dialog -----
 
         // initialize camera
-        VideoCapture src_cap =new VideoCapture(device, INT_CAP_APIS[indCapApi]);
+        VideoCapture src_cap =new VideoCapture();
+        src_cap.open(device, INT_CAP_APIS[indCapApi]);
         Mat src_mat = new Mat();
 
         if(!bret)

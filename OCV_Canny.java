@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Cany (OpenCV4.2.0).
+ * Cany (OpenCV4.3.0).
  */
 public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
