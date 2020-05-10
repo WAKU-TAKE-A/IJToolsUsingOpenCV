@@ -1,3 +1,17 @@
+# Release v0.9.35.0
+
+Latest update: May 10th 2020
+
+Confirmed with OpenCV4.3.0.
+
+## Changes
+
+Since the argument of the constructor of VideoCapture was changed, fix it.
+
+# Release v0.9.33.2
+
+Latest update: October 22th 2018
+
 # Release v0.9.33.3
 
 Latest update: Janualy 1st 2019

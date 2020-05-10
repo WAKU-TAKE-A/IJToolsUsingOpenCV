@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * warpPerspective (OpenCV4.2.0).
+ * warpPerspective (OpenCV4.3.0).
  */
 public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
 {

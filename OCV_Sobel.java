@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Sobel (OpenCV4.2.0).
+ * Sobel (OpenCV4.3.0).
  */
 public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

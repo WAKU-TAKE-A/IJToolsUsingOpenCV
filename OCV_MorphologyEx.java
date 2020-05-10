@@ -36,7 +36,7 @@ import org.opencv.core.Size;
  */
 
 /**
- * morphologyEx (OpenCV4.2.0).
+ * morphologyEx (OpenCV4.3.0).
  */
 public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
