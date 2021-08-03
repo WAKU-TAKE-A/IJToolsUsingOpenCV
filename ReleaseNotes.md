@@ -1,3 +1,19 @@
+# Release v0.9.36.0
+
+Latest update: August 22th 2021
+
+Confirmed with ImageJ 1.53K + OpenCV4.5.3.
+
+## Changes
+
+* The dialog is no longer displayed when OCV__LoadLibrary is executed.(display in the status bar)
+* Fix the bug of OCV_MatchTemplate.
+* Fix the bug of OCV_MorphologyEx.
+* Added functionality to OCV_VideoCapture. (view statistics, view profile)
+* Changed the maxValue setting of OCV_AdaptiveThreshold to a slider.
+
+etc.
+
 # Release v0.9.35.0
 
 Latest update: May 10th 2020
