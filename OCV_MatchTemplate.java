@@ -41,7 +41,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * matchTemplate (OpenCV4.3.0).
+ * matchTemplate (OpenCV4.5.3).
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -75,7 +75,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         gd.addChoice("method", TYPE_STR, TYPE_STR[ind_type]);
         gd.addNumericField("threshold_of_results", thr_res, 4);
         gd.addCheckbox("enable_results_table", enResult);
-        gd.addCheckbox("enable_search_max_point", enSearchMax);        
+        gd.addCheckbox("enable_search_max_point_in_blob", enSearchMax);        
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -196,14 +196,14 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             substracted_from_one(arr_dst);
         }
         
-        IJ.run(imp_dst, "Enhance Contrast", "saturated=0.35");
+        //IJ.run(imp_dst, "Enhance Contrast", "saturated=0.35");
 
         // show data
         if(enResult)
         {
             if(enSearchMax)
             {
-                showData_enSearchMaxPoint(imp_dst, thr_res, imw_tmp, imh_tmp);
+                showData_enSearchMaxPoint(imp_dst, arr_dst, thr_res, imw_tmp, imh_tmp);
             }
             else
             {
@@ -266,8 +266,10 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         roiMan.runCommand("Show All");
     }
     
-    private void showData_enSearchMaxPoint(ImagePlus imp_dst, float thr, int imw_tmp, int imh_tmp)
+    private void showData_enSearchMaxPoint(ImagePlus imp_dst, float[] arr_dst, float thr, int imw_tmp, int imh_tmp)
     {
+        int imw = imp_dst.getWidth();
+        
         ImagePlus imp_bin = imp_dst.duplicate();
         imp_bin.setTitle("__bin");
         float[] arr_bin = (float[]) imp_bin.getChannelProcessor().getPixels();        
@@ -291,25 +293,9 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             int w = (int)(rt.getValueAsDouble(col_w, i));
             int h = (int)(rt.getValueAsDouble(col_h, i));  
             float[] point_max = new float[3];
-            
-            Roi roi_blob = new Roi(bx, by, w, h);
-
-            imp_dst.setRoi(roi_blob);
-            ImagePlus imp_dst_roi = imp_dst.duplicate();
-            float[] arr__dst_roi = (float[]) imp_dst_roi.getChannelProcessor().getPixels();
-            
-            imp_lab.setRoi(roi_blob);
-            ImagePlus imp_lab_roi = imp_lab.duplicate();
-            IJ.run(imp_lab_roi, "32-bit", "");
-            float[] arr_lab_roi = (float[]) imp_lab_roi.getChannelProcessor().getPixels();
-            
-            search_max_point(arr__dst_roi, arr_lab_roi, w, i + 1, point_max);
-            point_max[0] = point_max[0] + (float)bx;
-            point_max[1] = point_max[1] + (float)by; 
+          
+            search_max_point(arr_dst, bx, by, w, h, imw, point_max);
             arr_point_max.add(point_max);
-            
-            imp_dst_roi.close();
-            imp_lab_roi.close();
         }
         
         imp_bin.close();
@@ -356,7 +342,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     
     private void substracted_from_one(float[] srcdst)
     {
-         int num = srcdst.length;
+        int num = srcdst.length;
         
         for(int i = 0; i < num; i++)
         {
@@ -381,23 +367,26 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         }
     }
     
-    private void search_max_point(float[] src, float[] lab, int w, int ind, float[] point_max)
+    private void search_max_point(float[] src, int bx, int by, int w, int h, int imw, float[] point_max)
     {
         int num = src.length;
-        float max = src[0];
-        int ind_max = 0;
+        point_max[0] = (float)bx;
+        point_max[1] = (float)by;
+        point_max[2] = (float)src[bx + by * imw];
         
-        for(int i = 0; i < num; i++)
+        for(int y = by; y < by + h; y++)
         {
-            if(lab[i] == (float)ind && max < src[i])
+            for(int x = bx; x < bx + w; x++)
             {
-                max = src[i];
-                ind_max = i;
+                float s = src[x + y * imw];
+                
+                if(point_max[2] < s)
+                {
+                     point_max[0] = (float)bx;
+                    point_max[1] = (float)by;
+                    point_max[2] = s;
+                }
             }
         }
-        
-        point_max[0] = (float)(ind_max % w);
-        point_max[1] = (float)(ind_max / w);
-        point_max[2] = max;
     }
 }
