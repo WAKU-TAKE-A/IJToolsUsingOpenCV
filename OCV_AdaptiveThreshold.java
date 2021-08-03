@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * adaptiveThreshold (OpenCV4.3.0).
+ * adaptiveThreshold (OpenCV4.5.3).
  */
 public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
@@ -56,8 +56,8 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-
-        gd.addNumericField("maxValue", maxValue, 4);
+       
+        gd.addSlider("maxValue", 1, 255, maxValue);
         gd.addChoice("adaptiveMethod", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indMethod]);
         gd.addChoice("thresholdType", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
         gd.addNumericField("blockSize", blockSize, 0);
@@ -87,7 +87,6 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         subC = (double)gd.getNextNumber();
 
         if(Double.isNaN(maxValue) || Double.isNaN(subC)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(maxValue <= 0) { IJ.showStatus("'0 < maxValue' is necessary."); return false; }
         if(blockSize <= 1) { IJ.showStatus("'1 < blockSize' is necessary."); return false; }
         if(blockSize % 2 == 0) { IJ.showStatus("blockSize should be odd."); return false; }
         if(subC <= 0) { IJ.showStatus("'0 < subC'"); return false; }

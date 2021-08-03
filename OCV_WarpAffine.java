@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * warpAffine (OpenCV4.3.0).
+ * warpAffine (OpenCV4.5.3).
  */
 public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener
 {

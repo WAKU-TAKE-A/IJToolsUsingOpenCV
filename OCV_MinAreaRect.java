@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * minAreaRect (OpenCV4.3.0).
+ * minAreaRect (OpenCV4.5.3).
  */
 public class OCV_MinAreaRect implements ExtendedPlugInFilter
 {
@@ -106,7 +106,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         pts.fromList(lstPt);
         RotatedRect rect = Imgproc.minAreaRect(pts);
         
-         if(rect != null)
+        if(rect != null)
         {
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);

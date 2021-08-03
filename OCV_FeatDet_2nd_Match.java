@@ -49,7 +49,7 @@ import org.opencv.core.Point;
  */
 
 /**
- * Matching in FeatureDetection (OpenCV4.3.0).
+ * Matching in FeatureDetection (OpenCV4.5.3).
  *
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB

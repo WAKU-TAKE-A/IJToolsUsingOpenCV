@@ -2,7 +2,7 @@
 
 Latest update: May 10th 2020
 
-Confirmed with OpenCV4.3.0.
+Confirmed with OpenCV4.5.3.
 
 ## Changes
 

@@ -1,5 +1,4 @@
 import ij.IJ;
-import ij.gui.GenericDialog;
 import ij.ImagePlus;
 import ij.WindowManager;
 import ij.gui.Roi;
@@ -45,7 +44,7 @@ import org.opencv.core.Point;
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter
 {
-    public static final String VERSION = "0.9.35.0";
+    public static final String VERSION = "0.9.36.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -66,21 +65,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
     {
-        GenericDialog gd = new GenericDialog("Ver.  " + VERSION);
-
         if(!disposed)
-        {
-            gd.addMessage("It is already loaded.");
-        }
-        else
-        {
-            gd.addMessage("Load " + Core.NATIVE_LIBRARY_NAME + ".dll");
-        }
-
-        gd.addHelp(OCV__LoadLibrary.URL_HELP);
-        gd.showDialog();
-
-        if (gd.wasCanceled())
         {
             return DONE;
         }
@@ -96,7 +81,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         try
         {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            IJ.showStatus("Loading succeeded.");
+            IJ.showStatus("Loading succeeded.(" + VERSION + ")");
             disposed = false;
         }
         catch(Throwable ex)
@@ -109,17 +94,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     @Override
     public int setup(String arg0, ImagePlus imp)
     {
-        if(isLoadOpenCV())
-        {
-            disposed = false;
-            //IJ.showMessage("disposed = " + String.valueOf(disposed));
-        }
-        else
-        {
-            disposed = true;
-            //IJ.showMessage("disposed = " + String.valueOf(disposed));
-        }
-
+        disposed = !isLoadOpenCV();
         return NO_IMAGE_REQUIRED;
     }
 
@@ -139,14 +114,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
 
     private void dispose()
     {
-        if(isLoadOpenCV())
-        {
-            disposed = false;
-        }
-        else
-        {
-            disposed = true;
-        }
+        disposed = !isLoadOpenCV();
     }
 
     // for check
@@ -156,18 +124,14 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
         {
             if(dummy != null)
             {
-                //IJ.showMessage("dummy is release");
                 dummy.release();
             }
 
-            //IJ.error("dummy = new Mat()");
             dummy = new Mat();
-
             return true;
          }
         catch(Throwable ex)
         {
-            //IJ.error("ERR : " + ex.getMessage());
             return false;
         }
     }
@@ -243,8 +207,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     {
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();
-        int pos_x = 0;
-        int pos_y = 0;
+        int pos_x;
+        int pos_y;
 
         for(int y = 0; y < r.height; y++)
         {
@@ -293,7 +257,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
     public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone)
     {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;
+        RoiManager rm;
 
         if (frame == null)
         {

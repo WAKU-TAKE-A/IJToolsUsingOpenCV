@@ -35,7 +35,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * bilateralFilter (OpenCV4.3.0).
+ * bilateralFilter (OpenCV4.5.3).
  */
 public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {

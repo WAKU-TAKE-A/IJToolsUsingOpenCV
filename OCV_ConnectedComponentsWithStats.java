@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * connectedComponentsWithStats (OpenCV4.3.0).
+ * connectedComponentsWithStats (OpenCV4.5.3).
  */
 public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 {

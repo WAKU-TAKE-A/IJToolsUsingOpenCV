@@ -36,33 +36,42 @@ import java.awt.AWTEvent;
  */
 
 /**
- * HoughLinesP (OpenCV4.5.3).
+ * HoughCircles (OpenCV4.5.3).
  */
-public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
+public class OCV_HoughCircles implements ExtendedPlugInFilter, DialogListener
 {
     // constant var.
     private static final int FLAGS = DOES_8G;
     private static final double CV_PI = 3.1415926535897932384626433832795;
+    private static final int[] INT_HOUGHMETHOD = { Imgproc.HOUGH_GRADIENT, Imgproc.HOUGH_GRADIENT_ALT };
+    private static final String[] STR_HOUGHMETHOD = { "HOUGH_GRADIENT", "HOUGH_GRADIENT_ALT" };
 
-    // static var.
-    private static double resDist = 1;
-    private static double resAngFact = 180;
-    private static int minVotes = 1;
-    private static double minLen = 1;
-    private static double maxGap = 1;
+    // static var.    
+    private static int indMethod  = 1;
+    private static double dp = 1;
+    private static double minDist = 1;  
+    private static double param1 = 100;
+    private static double param2 = 100;
+    private static int minRadius = 0;
+    private static int maxRadius = 0;
     private static boolean enAddRoi = true;
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
-
-        gd.addNumericField("distance_resolution", resDist, 4);
-        gd.addMessage("angle_resolution = CV_PI / angle_resolution_factor");
-        gd.addNumericField("angle_resolution_factor", resAngFact, 4);
-        gd.addNumericField("min_votes", minVotes, 0);
-        gd.addNumericField("min_length", minLen, 4);
-        gd.addNumericField("max_allowed_gap", maxGap, 4);
+     
+        gd.addChoice("method", STR_HOUGHMETHOD, STR_HOUGHMETHOD[indMethod]);
+        gd.addMessage("'dp' is the inverse ratio of the resolution.");
+        gd.addNumericField("dp", dp, 4);
+        gd.addNumericField("minDist", minDist, 4);
+        gd.addMessage("'param1' is the higher threshold of the two passed to the Canny edge detector.");
+        gd.addNumericField("param1", param1, 4);
+        gd.addMessage("HOUGH_GRADIENT: 'param2' is the accumulator threshold for the circle centers.");
+        gd.addMessage("HOUGH_GRADIENT_ALT: 'param2' is the circle 'perfectness'.");
+        gd.addNumericField("param2", param2, 4);
+        gd.addNumericField("minRadius", minRadius, 0);
+        gd.addNumericField("maxRadius", maxRadius, 0);
         gd.addCheckbox("enable_add_roi", enAddRoi);
         gd.addDialogListener(this);
 
@@ -81,21 +90,24 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
     {
-        resDist = (double)gd.getNextNumber();
-        resAngFact = (double)gd.getNextNumber();
-        minVotes = (int)gd.getNextNumber();
-        minLen = (double)gd.getNextNumber();
-        maxGap = (double)gd.getNextNumber();
+        indMethod = (int)gd.getNextChoiceIndex();
+        dp = (double)gd.getNextNumber();
+        minDist = (double)gd.getNextNumber();
+        param1 = (double)gd.getNextNumber();
+        param2 = (double)gd.getNextNumber();
+        minRadius = (int)gd.getNextNumber();
+        maxRadius = (int)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
-
-        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(minLen) || Double.isNaN(maxGap)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(resDist < 0) { IJ.showStatus("'0 <= distance_resolution' is necessary."); return false; }
-        if(resAngFact < 0) { IJ.showStatus("'0 <= angle_resolution_factor' is necessary."); return false; }
-        if(minVotes < 0) { IJ.showStatus("'0 <= min_votes' is necessary."); return false; }
-        if(minLen < 0) { IJ.showStatus("'0 <= min_length' is necessary."); return false; }
-        if(maxGap < 0) { IJ.showStatus("'0 <= max_allowed_gap' is necessary."); return false; }
         
-        IJ.showStatus("OCV_HoughLinesP");
+        if(Double.isNaN(dp) || Double.isNaN(minDist) || Double.isNaN(param1) || Double.isNaN(param2)) { IJ.showStatus("ERR : NaN"); return false; }
+        if(dp <= 0) { IJ.showStatus("'0 < dp' is necessary."); return false; }
+        if(minDist < 0) { IJ.showStatus("'0 <= minDist' is necessary."); return false; }
+        if(param1 < 0) { IJ.showStatus("'0 <= param1' is necessary."); return false; }
+        if(param2 < 0) { IJ.showStatus("'0 <= param2' is necessary."); return false; }
+        if(minRadius < 0) { IJ.showStatus("'0 <= minRadius' is necessary."); return false; }
+        if(maxRadius < 0) { IJ.showStatus("'0 <= maxRadius' is necessary."); return false; }
+        
+        IJ.showStatus("OCV_HoughCircles");
         return true;
     }
     
@@ -135,14 +147,35 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
 
         // mat
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_lines = new Mat();          
+        Mat dst_circles = new Mat();          
 
         // run
         src_mat.put(0, 0, src_ar);
-        Imgproc.HoughLinesP(src_mat, dst_lines, resDist, CV_PI / resAngFact, minVotes, minLen, maxGap);
-
+        
+        if(param1 == 0)
+        {
+            Imgproc.HoughCircles(src_mat, dst_circles, INT_HOUGHMETHOD[indMethod], dp, minDist);
+        }
+        else if(param1 != 0 && param2 == 0)
+        {
+            Imgproc.HoughCircles(src_mat, dst_circles, INT_HOUGHMETHOD[indMethod], dp, minDist, param1);
+        }
+        else if(param1 != 0 && param2 != 0 && minRadius == 0)
+        {
+            Imgproc.HoughCircles(src_mat, dst_circles, INT_HOUGHMETHOD[indMethod], dp, minDist, param1, param2);
+        }
+        else if(param1 != 0 && param2 != 0 && minRadius != 0 && maxRadius == 0)
+        {
+            Imgproc.HoughCircles(src_mat, dst_circles, INT_HOUGHMETHOD[indMethod], dp, minDist, param1, param2, minRadius);
+        }
+        else if(param1 != 0 && param2 != 0 && minRadius != 0 && maxRadius != 0)
+        {
+            Imgproc.HoughCircles(src_mat, dst_circles, INT_HOUGHMETHOD[indMethod], dp, minDist, param1, param2, minRadius, maxRadius);
+        }
+        
+        
         // fin
-        showData(dst_lines);
+        showData(dst_circles);
     }
 
     // private

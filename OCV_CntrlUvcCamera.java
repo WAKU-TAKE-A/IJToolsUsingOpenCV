@@ -39,7 +39,7 @@ import org.opencv.videoio.VideoCapture;
  */
 
 /**
- * Control UVC camera using VideoCapture function (OpenCV4.3.0).
+ * Control UVC camera using VideoCapture function (OpenCV4.5.3).
  */
 public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 {
@@ -67,13 +67,14 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     private static int height = 480;
     private static int indCapApi = 0;
     private static int wait_time = 100;
+    private static boolean enOneShot = false; 
 
     // var.
     private String title = null;
     public JDialog diag_free = null;
     private boolean flag_fin_loop = false;
 
-      @Override
+    @Override
     public int showDialog(ImagePlus arg0, String cmd, PlugInFilterRunner arg2)
     {
         title = cmd.trim();
@@ -84,6 +85,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         gd.addNumericField("height", height, 0);
         gd.addChoice("capture_api", STR_CAP_APIS, STR_CAP_APIS[indCapApi]);
         gd.addNumericField("wait_time", wait_time, 0);
+        gd.addCheckbox("one_shot", enOneShot);
 
         gd.showDialog();
 
@@ -98,6 +100,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             height = (int)gd.getNextNumber();
             indCapApi = (int)gd.getNextChoiceIndex();
             wait_time = (int)gd.getNextNumber();
+            enOneShot = (boolean)gd.getNextBoolean();
 
             return FLAGS;
         }
@@ -173,8 +176,13 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         imp_dsp.show();
         
         // show stop dialog
-        diag_free.setVisible(true);
-
+        if(!enOneShot)
+        {
+            diag_free.setVisible(true);
+        }
+        
+        bret = src_cap.read(src_mat);
+        
         // run
         for(;;)
         {
@@ -205,7 +213,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             // display
             if(!imp_dsp.isVisible())
             {
-                imp_dsp = null;
+                imp_dsp.close();
                 imp_dsp = IJ.createImage(title, width, height, 1, 24);
                 impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
                 imp_dsp.show();
@@ -223,6 +231,11 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             }
 
             imp_dsp.draw();
+            
+            if(enOneShot)
+            {
+                break;
+            }
 
             // wait
             OCV__LoadLibrary.Wait(wait_time);
