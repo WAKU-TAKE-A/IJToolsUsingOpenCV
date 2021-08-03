@@ -85,10 +85,10 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
         
-        gd.addChoice("", STR_OPERATION, STR_OPERATION[indOperation]);
+        gd.addChoice("shape", STR_OPERATION, STR_OPERATION[indOperation]);
         gd.addNumericField("ksize_x", ksize_x, 0);
         gd.addNumericField("ksize_y", ksize_y, 0);
-        gd.addChoice("", STR_SHAPERTYPE, STR_SHAPERTYPE[indShapeType]);
+        gd.addChoice("operation", STR_SHAPERTYPE, STR_SHAPERTYPE[indShapeType]);
         gd.addNumericField("iterations", iterations, 0);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);

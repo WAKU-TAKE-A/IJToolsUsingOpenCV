@@ -3,7 +3,14 @@ import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.Prefs;
+import ij.gui.Plot;
+import ij.gui.ProfilePlot;
+import ij.gui.Roi;
+import ij.measure.Measurements;
+import ij.measure.ResultsTable;
 import ij.process.ImageProcessor;
+import ij.process.ImageStatistics;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowAdapter;
@@ -66,13 +73,20 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     private static int width = 640;
     private static int height = 480;
     private static int indCapApi = 0;
+    private static boolean enCalcStat = true;
+    private static int max_results = 100;
+    private static boolean enProfile = true;
     private static int wait_time = 100;
     private static boolean enOneShot = false; 
 
     // var.
     private String title = null;
     public JDialog diag_free = null;
+    private ResultsTable tblResults = null;
+    private Plot plot = null;
     private boolean flag_fin_loop = false;
+    private boolean ini_verticalProfile = false;
+    private ImagePlus impPlot = null;
 
     @Override
     public int showDialog(ImagePlus arg0, String cmd, PlugInFilterRunner arg2)
@@ -84,6 +98,10 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         gd.addNumericField("width", width, 0);
         gd.addNumericField("height", height, 0);
         gd.addChoice("capture_api", STR_CAP_APIS, STR_CAP_APIS[indCapApi]);
+        gd.addCheckbox("enabled_calculate_statistics", enCalcStat);
+        gd.addNumericField("lines_maximum", max_results, 0);
+        gd.addCheckbox("enabled_draw_profile", enProfile);
+        gd.addCheckbox("vertical_profile", Prefs.verticalProfile);
         gd.addNumericField("wait_time", wait_time, 0);
         gd.addCheckbox("one_shot", enOneShot);
 
@@ -95,10 +113,16 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         }
         else
         {
+            ini_verticalProfile = Prefs.verticalProfile;
+            
             device = (int)gd.getNextNumber();
             width = (int)gd.getNextNumber();
             height = (int)gd.getNextNumber();
             indCapApi = (int)gd.getNextChoiceIndex();
+            enCalcStat = gd.getNextBoolean();
+            max_results = (int)gd.getNextNumber();
+            enProfile = gd.getNextBoolean();
+            Prefs.verticalProfile = gd.getNextBoolean();
             wait_time = (int)gd.getNextNumber();
             enOneShot = (boolean)gd.getNextBoolean();
 
@@ -180,9 +204,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         {
             diag_free.setVisible(true);
         }
-        
-        bret = src_cap.read(src_mat);
-        
+              
         // run
         for(;;)
         {
@@ -232,6 +254,87 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 
             imp_dsp.draw();
             
+            // Statistics.
+            if(enCalcStat)
+            {
+                ImagePlus impBuf;
+                ImageStatistics st;
+                Roi ro;
+
+                int meas = Measurements.MIN_MAX;
+                meas += Measurements.MEAN;
+                meas += Measurements.MODE;
+                meas += Measurements.STD_DEV;
+                meas += Measurements.RECT;
+                meas += Measurements.AREA;
+
+                ro = imp_dsp.getRoi();
+
+                if(ro != null)
+                {
+                    impBuf = imp_dsp.getRoi().getImage();
+                    st = impBuf.getStatistics(meas);
+                    tblResults = ResultsTable.getResultsTable();
+
+                    if(tblResults == null || tblResults.getCounter() == 0)
+                    {
+                        tblResults = new ResultsTable();
+                    }
+
+                    if(max_results < tblResults.getCounter())
+                    {
+                        tblResults.reset();
+                    }
+
+                    tblResults.incrementCounter();
+                    tblResults.addValue("Min", st.min);
+                    tblResults.addValue("Max", st.max);
+                    tblResults.addValue("Mean", st.mean);
+                    tblResults.addValue("Mode", st.mode);
+                    tblResults.addValue("StdDev", st.stdDev);
+                    tblResults.addValue("X", st.roiX);
+                    tblResults.addValue("Y", st.roiY);
+                    tblResults.addValue("W", st.roiWidth);
+                    tblResults.addValue("H", st.roiHeight);
+                    tblResults.addValue("Area", st.area);
+
+                    tblResults.show("Results");
+                }
+            }
+            
+            // Profile.
+            if(enProfile)
+            {
+                Roi roi = imp_dsp.getRoi();
+
+                if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE))
+                {
+                    plot = getProfilePlot(imp_dsp);
+                }
+                else
+                {
+                    if(plot != null)
+                    {
+                        plot.dispose();
+                        plot = null;
+                    }
+                }
+
+                if(plot != null)
+                {
+                    if(impPlot == null)
+                    {
+                        impPlot = new ImagePlus("Profile (line or rectangle)", plot.getProcessor());
+                    }
+                    else
+                    {
+                        impPlot.setProcessor(null, plot.getProcessor());
+                    }
+
+                    impPlot.show();
+                }
+            }
+            
             if(enOneShot)
             {
                 break;
@@ -248,4 +351,24 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             src_cap.release();
         }
     }
+
+    private Plot getProfilePlot(ImagePlus imp)
+    {
+        ProfilePlot profPlot = new ProfilePlot(imp, Prefs.verticalProfile);
+        double[] prof = profPlot.getProfile();
+
+        if (prof == null || prof.length < 2)
+        {
+            return null;
+        }
+
+        String xLabel = "Distance (pixels)";
+        String yLabel = "Value";
+
+        Plot output_plot = new Plot("Profile", xLabel, yLabel);
+        output_plot.add("line", prof);        
+        
+        return output_plot;
+    }
+    
 }
