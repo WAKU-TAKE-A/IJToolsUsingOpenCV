@@ -1,3 +1,13 @@
+# Release v0.9.36.1
+
+Latest update: October 8th 2021
+
+Confirmed with ImageJ 1.53m + OpenCV4.5.3.
+
+## Changes
+
+* Accelerate OCV_CntrlUvcCamera.
+
 # Release v0.9.36.0
 
 Latest update: August 22th 2021
