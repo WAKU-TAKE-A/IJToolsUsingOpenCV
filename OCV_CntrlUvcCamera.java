@@ -87,10 +87,15 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     private boolean flag_fin_loop = false;
     private boolean ini_verticalProfile = false;
     private ImagePlus impPlot = null;
+    
+    // For speeding up.
+    private static VideoCapture src_cap = null;
+    private static ImagePlus imp_dsp = null;
+    private static int[] impdsp_intarray = null;
+    private boolean isChanged = true;
 
     @Override
-    public int showDialog(ImagePlus arg0, String cmd, PlugInFilterRunner arg2)
-    {
+    public int showDialog(ImagePlus arg0, String cmd, PlugInFilterRunner arg2) {
         title = cmd.trim();
         GenericDialog gd = new GenericDialog(title + "...");
 
@@ -107,13 +112,14 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if (gd.wasCanceled()) {
             return DONE;
-        }
-        else
-        {
+        } else {
             ini_verticalProfile = Prefs.verticalProfile;
+            
+            int dev_bef = device;
+            int w_bef = width;
+            int h_bef = height;            
             
             device = (int)gd.getNextNumber();
             width = (int)gd.getNextNumber();
@@ -126,21 +132,20 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             wait_time = (int)gd.getNextNumber();
             enOneShot = (boolean)gd.getNextBoolean();
 
+            isChanged = src_cap == null || dev_bef != device || w_bef != width || h_bef != height;            
+            
             return FLAGS;
         }
     }
 
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg0, ImagePlus arg1)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus arg1) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
@@ -149,8 +154,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     }
 
     @Override
-    public void run(ImageProcessor arg0)
-    {
+    public void run(ImageProcessor arg0) {
         boolean bret = true;
 
         // ----- stop dialog during continuous grabbing -----
@@ -177,39 +181,38 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         // ----- end of stop dialog -----
 
         // initialize camera
-        VideoCapture src_cap =new VideoCapture();
-        src_cap.open(device, INT_CAP_APIS[indCapApi]);
-        Mat src_mat = new Mat();
+        if(isChanged) {
+            src_cap = new VideoCapture();
+            bret = src_cap.open(device, INT_CAP_APIS[indCapApi]);
 
-        if(!bret)
-        {
-            IJ.error("Camera initialization is failed.");
-            diag_free.dispose();
-            return;
-        }
+            if(!bret) {
+                IJ.error("Camera initialization is failed.");
+                diag_free.dispose();
+                return;
+            }
 
-        src_cap.set(CV_CAP_PROP_FRAME_WIDTH, width);
-        src_cap.set(CV_CAP_PROP_FRAME_HEIGHT, height);
+            src_cap.set(CV_CAP_PROP_FRAME_WIDTH, width);
+            src_cap.set(CV_CAP_PROP_FRAME_HEIGHT, height);
 
-        // Setting the image display window
-        width = (int) src_cap.get(CV_CAP_PROP_FRAME_WIDTH);
-        height = (int) src_cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+            // Setting the image display window
+            width = (int) src_cap.get(CV_CAP_PROP_FRAME_WIDTH);
+            height = (int) src_cap.get(CV_CAP_PROP_FRAME_HEIGHT);
 
-        ImagePlus  imp_dsp = IJ.createImage(title, width, height, 1, 24);
-        int[] impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
-        imp_dsp.show();
-        
-        // show stop dialog
-        if(!enOneShot)
-        {
-            diag_free.setVisible(true);
+            imp_dsp = IJ.createImage(title, width, height, 1, 24);
+            impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
+            imp_dsp.show();        
         }
               
+        // show stop dialog
+        if(!enOneShot) {
+            diag_free.setVisible(true);
+        }
+        
+        Mat src_mat = new Mat();
+        
         // run
-        for(;;)
-        {
-            if(flag_fin_loop)
-            {
+        for(;;) {
+            if(flag_fin_loop) {
                 break;
             }
 
@@ -218,35 +221,29 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             bret = src_cap.read(src_mat);
             IJ.showTime(imp_dsp, imp_dsp.getStartTime(), title + " : ");
             
-            if(!bret)
-            {
+            if(!bret) {
                 IJ.error("Error occurred in grabbing.");
                 diag_free.dispose();
                 break;
             }
 
-            if(src_mat.empty())
-            {
+            if(src_mat.empty()) {
                 IJ.error("Mat is empty.");
                 diag_free.dispose();
                 break;
             }
             
             // display
-            if(!imp_dsp.isVisible())
-            {
+            if(!imp_dsp.isVisible()) {
                 imp_dsp.close();
                 imp_dsp = IJ.createImage(title, width, height, 1, 24);
                 impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
                 imp_dsp.show();
             }
             
-            if(src_mat.type() == CvType.CV_8UC3)
-            {
+            if(src_mat.type() == CvType.CV_8UC3) {
                 OCV__LoadLibrary.mat2intarray(src_mat, impdsp_intarray, width, height);
-            }
-            else
-            {
+            } else {
                 IJ.error("Color camera is supported only.");
                 diag_free.dispose();
                 break;
@@ -255,8 +252,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             imp_dsp.draw();
             
             // Statistics.
-            if(enCalcStat)
-            {
+            if(enCalcStat) {
                 ImagePlus impBuf;
                 ImageStatistics st;
                 Roi ro;
@@ -270,19 +266,16 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 
                 ro = imp_dsp.getRoi();
 
-                if(ro != null)
-                {
+                if(ro != null) {
                     impBuf = imp_dsp.getRoi().getImage();
                     st = impBuf.getStatistics(meas);
                     tblResults = ResultsTable.getResultsTable();
 
-                    if(tblResults == null || tblResults.getCounter() == 0)
-                    {
+                    if(tblResults == null || tblResults.getCounter() == 0) {
                         tblResults = new ResultsTable();
                     }
 
-                    if(max_results < tblResults.getCounter())
-                    {
+                    if(max_results < tblResults.getCounter()) {
                         tblResults.reset();
                     }
 
@@ -303,31 +296,22 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             }
             
             // Profile.
-            if(enProfile)
-            {
+            if(enProfile) {
                 Roi roi = imp_dsp.getRoi();
 
-                if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE))
-                {
+                if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE)) {
                     plot = getProfilePlot(imp_dsp);
-                }
-                else
-                {
-                    if(plot != null)
-                    {
+                } else {
+                    if(plot != null) {
                         plot.dispose();
                         plot = null;
                     }
                 }
 
-                if(plot != null)
-                {
-                    if(impPlot == null)
-                    {
+                if(plot != null) {
+                    if(impPlot == null) {
                         impPlot = new ImagePlus("Profile (line or rectangle)", plot.getProcessor());
-                    }
-                    else
-                    {
+                    } else {
                         impPlot.setProcessor(null, plot.getProcessor());
                     }
 
@@ -335,8 +319,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                 }
             }
             
-            if(enOneShot)
-            {
+            if(enOneShot) {
                 break;
             }
 
@@ -344,21 +327,15 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             OCV__LoadLibrary.Wait(wait_time);
         }
 
+        Prefs.verticalProfile = ini_verticalProfile;                                                                           
         diag_free.dispose();
-        
-        if(src_cap.isOpened())
-        {
-            src_cap.release();
-        }
     }
 
-    private Plot getProfilePlot(ImagePlus imp)
-    {
+    private Plot getProfilePlot(ImagePlus imp) {
         ProfilePlot profPlot = new ProfilePlot(imp, Prefs.verticalProfile);
         double[] prof = profPlot.getProfile();
 
-        if (prof == null || prof.length < 2)
-        {
+        if (prof == null || prof.length < 2) {
             return null;
         }
 
@@ -370,5 +347,4 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         
         return output_plot;
     }
-    
 }
