@@ -1,3 +1,13 @@
+# Release v0.9.37.0
+
+Latest update: October 19th 2021
+
+Confirmed with ImageJ 1.53m + OpenCV4.5.3.
+
+## Changes
+
+* OCV_MedianBlur is supported in RGB 24-bit, 8-bit gray, 16-bit gray, and 32-bit gray. When 16-bit gray, and 32-bit gray, ksize is 3 or 5.
+
 # Release v0.9.36.1
 
 Latest update: October 8th 2021

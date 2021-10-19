@@ -39,17 +39,19 @@ import org.opencv.imgproc.Imgproc;
 public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
 {
     // constant var.
-    private static final int FLAGS = DOES_8G| KEEP_PREVIEW; // For larger aperture sizes, it can only be CV_8U.
-    public static int ERR_OK = 0;
-    public static int ERR_NG = -1;
-
-    // staic var.
-    private static int ksize = 3; // aperture linear size; it must be odd and greater than 1, for example: 3, 5, 7 ...
+    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
     
+    // staic var.
+    private static int ksize = 3; // Blurring kernel size of x
+    
+    // var.
+    private int bitDepth;
+
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
     {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        bitDepth = imp.getBitDepth();
         
         gd.addNumericField("ksize", ksize, 0);
         gd.addPreviewCheckbox(pfr);
@@ -74,6 +76,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
 
         if(ksize < 3) { IJ.showStatus("'3 <= ksize' is necessary."); return false; }
         if(ksize % 2 == 0) { IJ.showStatus("ksize must be odd."); return false; }
+        if((bitDepth == 16 || bitDepth == 32) && 5 < ksize) { IJ.showStatus("When an image of type is 16bit or 32bit, 'ksize <= 5' is necessary."); return false; }
         
         IJ.showStatus("OCV_MedianBlur");
         return true;
@@ -108,18 +111,73 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
     @Override
     public void run(ImageProcessor ip)
     {        
-        // srcdst
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        byte[] srcdst_bytes = (byte[])ip.getPixels();
-
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
-        // run
-        src_mat.put(0, 0, srcdst_bytes);
-        Imgproc.medianBlur(src_mat, dst_mat, ksize);
-        dst_mat.get(0, 0, srcdst_bytes);
+        if(bitDepth == 8)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            byte[] srcdst_bytes = (byte[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            
+            // run
+            src_mat.put(0, 0, srcdst_bytes);
+            Imgproc.medianBlur(src_mat, dst_mat, (int)ksize);
+            dst_mat.get(0, 0, srcdst_bytes);
+        }
+        else if(bitDepth == 16)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            short[] srcdst_shorts = (short[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
+            
+            // run
+            src_mat.put(0, 0, srcdst_shorts);
+            Imgproc.medianBlur(src_mat, dst_mat, (int)ksize);
+            dst_mat.get(0, 0, srcdst_shorts);        
+        }
+        else if(bitDepth == 24)
+        {
+            // dst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            int[] srcdst_ints = (int[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
+         
+            // run
+            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
+            Imgproc.medianBlur(src_mat, dst_mat, (int)ksize);
+            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
+        }
+        else if(bitDepth == 32)
+        {
+            // srcdst
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            float[] srcdst_floats = (float[])ip.getPixels();
+            
+            // mat
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
+            
+            // run
+            src_mat.put(0, 0, srcdst_floats);
+            Imgproc.medianBlur(src_mat, dst_mat, (int)ksize);
+            dst_mat.get(0, 0, srcdst_floats);        
+        }
+        else
+        {
+            IJ.error("Wrong image format");
+        }
     }
 }
