@@ -247,7 +247,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             // Output result
             Mat mskOfRansac = new Mat();
 
-             if(enDetectQuery)
+            if(enDetectQuery)
             {
                 drawDetectedCorner(OCV__LoadLibrary.QueryMat, pnts_query, pnts_train, mskOfRansac);
             }
@@ -339,6 +339,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         
         dst_rt.show("Results");
     }
+    
     private void drawMatches(
             Mat mat_query,
             MatOfKeyPoint key_query,
@@ -408,7 +409,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             (float)corner_detected_mat.get(0, 0)[1],
         };
         
-        PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYLINE);
+        PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYGON);
         roi.setPosition(countNPass + 1); // Start from one.
         countNPass++;
         
