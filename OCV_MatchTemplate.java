@@ -43,8 +43,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * matchTemplate (OpenCV4.5.3).
  */
-public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private final int FLAGS = DOES_8G;
     private final String[] TYPE_STR = new String[] { "1 - TM_SQDIFF_NORMED", "TM_CCORR_NORMED", "TM_CCOEFF_NORMED"};
@@ -66,8 +65,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     private String[] titles;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addChoice("src", titles, titles[ind_src]);
@@ -75,84 +73,87 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         gd.addChoice("method", TYPE_STR, TYPE_STR[ind_type]);
         gd.addNumericField("threshold_of_results", thr_res, 4);
         gd.addCheckbox("enable_results_table", enResult);
-        gd.addCheckbox("enable_search_max_point_in_blob", enSearchMax);        
+        gd.addCheckbox("enable_search_max_point_in_blob", enSearchMax);
         gd.addDialogListener(this);
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         ind_src = (int)gd.getNextChoiceIndex();
         ind_tmp = (int)gd.getNextChoiceIndex();
         ind_type = (int)gd.getNextChoiceIndex();
         thr_res = (float)gd.getNextNumber();
-        enResult = (boolean)gd.getNextBoolean();   
-        enSearchMax = (boolean)gd.getNextBoolean(); 
-       
-        if(Float.isNaN(thr_res)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(ind_src == ind_tmp) { IJ.showStatus("The same image can not be selected."); return false; }
+        enResult = (boolean)gd.getNextBoolean();
+        enSearchMax = (boolean)gd.getNextBoolean();
+
+        if(Float.isNaN(thr_res)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(ind_src == ind_tmp) {
+            IJ.showStatus("The same image can not be selected.");
+            return false;
+        }
 
         imp_src = WindowManager.getImage(lst_wid[ind_src]);
         imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
         title_src = imp_src.getShortTitle();
 
-        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8) { IJ.showStatus("The both images should be 8bit gray"); return false; }
-        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight()) { IJ.showStatus("The size of src should be larger than the size of template."); return false; }
-                
-        if(enSearchMax)
-        {
+        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8) {
+            IJ.showStatus("The both images should be 8bit gray");
+            return false;
+        }
+
+        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight()) {
+            IJ.showStatus("The size of src should be larger than the size of template.");
+            return false;
+        }
+
+        if(enSearchMax) {
             enResult = true;
         }
-        
+
         IJ.showStatus("OCV_MatchTemplate");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             lst_wid = WindowManager.getIDList();
 
-            if (lst_wid==null || lst_wid.length < 2)
-            {
+            if(lst_wid == null || lst_wid.length < 2) {
                 IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
             titles = new String[lst_wid.length];
 
-            for (int i=0; i < lst_wid.length; i++)
-            {
+            for(int i = 0; i < lst_wid.length; i++) {
                 ImagePlus imp2 = WindowManager.getImage(lst_wid[i]);
                 titles[i] = imp2 != null ? imp2.getTitle() : "";
             }
@@ -162,8 +163,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src
         byte[] arr_src = (byte[])imp_src.getChannelProcessor().getPixels();
         int imw_src = imp_src.getWidth();
@@ -182,7 +182,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         String title_dst = WindowManager.getUniqueName(title_src + "_MatchTemplate");
         int imw_dst = imw_src - imw_tmp + 1;
         int imh_dst = imh_src - imh_tmp + 1;
-        ImagePlus imp_dst = new ImagePlus (title_dst, new FloatProcessor(imw_dst, imh_dst));
+        ImagePlus imp_dst = new ImagePlus(title_dst, new FloatProcessor(imw_dst, imh_dst));
         float[] arr_dst = (float[]) imp_dst.getChannelProcessor().getPixels();
         Mat mat_dst = new Mat();
 
@@ -190,68 +190,59 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         Imgproc.matchTemplate(mat_src, mat_tmp, mat_dst, TYPE_VAL[ind_type]);
         mat_dst.get(0, 0, arr_dst);
         imp_dst.show();
-        
-        if(TYPE_VAL[ind_type] == Imgproc.TM_SQDIFF_NORMED)
-        {
+
+        if(TYPE_VAL[ind_type] == Imgproc.TM_SQDIFF_NORMED) {
             substracted_from_one(arr_dst);
         }
-        
+
         //IJ.run(imp_dst, "Enhance Contrast", "saturated=0.35");
 
         // show data
-        if(enResult)
-        {
-            if(enSearchMax)
-            {
+        if(enResult) {
+            if(enSearchMax) {
                 showData_enSearchMaxPoint(imp_dst, arr_dst, thr_res, imw_tmp, imh_tmp);
             }
-            else
-            {
+            else {
                 showData(arr_dst, imw_dst, imh_dst, imw_tmp, imh_tmp);
             }
         }
     }
-    
-    private void showData(float[] arr_dst, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp)
-    {
+
+    private void showData(float[] arr_dst, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp) {
         // prepare the ResultsTable
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        
+
         // prepare the ROI Manager
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
-        
+
         // show
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
         ArrayList<float[]> res = new ArrayList<float[]>();
-        
-        for(int y = 0; y < imh_dst; y++)
-        {
-            for(int x = 0; x < imw_dst; x++)
-            {
-                if(thr_res <= arr_dst[x + y * imw_dst])
-                {
+
+        for(int y = 0; y < imh_dst; y++) {
+            for(int x = 0; x < imw_dst; x++) {
+                if(thr_res <= arr_dst[x + y * imw_dst]) {
                     res.add(new float[] { (float)x, (float)y, arr_dst[x + y * imw_dst]});
                 }
             }
         }
-        
+
         int num_match = res.size();
-        
-        for(int i = 0; i < num_match; i++)
-        {
+
+        for(int i = 0; i < num_match; i++) {
             int bx = (int)res.get(i)[0];
             int by = (int)res.get(i)[1];
             float match = res.get(i)[2];
-            
+
             Roi roi = new Roi(bx, by, imw_tmp, imh_tmp);
             imp_src.setRoi(roi);
-            
+
             roiMan.addRoi(roi);
             int idx_last = roiMan.getCount() - 1;
             roiMan.select(idx_last);
             roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
-            
+
             rt.incrementCounter();
             rt.addValue("No", i + 1);
             rt.addValue("BX", bx);
@@ -259,73 +250,70 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             rt.addValue("Width", imw_tmp);
             rt.addValue("Height", imh_tmp);
             rt.addValue("Match", String.valueOf(match));
-            rt.show("Results");            
+            rt.show("Results");
         }
-        
+
         mr.runMacro("setBatchMode(false);", "");
         roiMan.runCommand("Show All");
     }
-    
-    private void showData_enSearchMaxPoint(ImagePlus imp_dst, float[] arr_dst, float thr, int imw_tmp, int imh_tmp)
-    {
+
+    private void showData_enSearchMaxPoint(ImagePlus imp_dst, float[] arr_dst, float thr, int imw_tmp, int imh_tmp) {
         int imw = imp_dst.getWidth();
-        
+
         ImagePlus imp_bin = imp_dst.duplicate();
         imp_bin.setTitle("__bin");
-        float[] arr_bin = (float[]) imp_bin.getChannelProcessor().getPixels();        
+        float[] arr_bin = (float[]) imp_bin.getChannelProcessor().getPixels();
         binary_float(arr_bin, thr);
 
         IJ.run(imp_bin, "8-bit", "");
         IJ.run(imp_bin, "OCV ConnectedComponentsWithStats", "connectivity=8-connected enable_output_labeled_image");
-        ImagePlus imp_lab = WindowManager.getImage("__bin_Connect8-1");        
-        
+        ImagePlus imp_lab = WindowManager.getImage("__bin_Connect8-1");
+
         ResultsTable rt = ResultsTable.getResultsTable();
         int col_x = rt.getColumnIndex("BX");
         int col_y = rt.getColumnIndex("BY");
         int col_w = rt.getColumnIndex("Width");
         int col_h = rt.getColumnIndex("Height");
         ArrayList<float[]> arr_point_max = new ArrayList<float[]>();
-        
-        for(int i = 0; i < rt.size(); i++)
-        {
+
+        for(int i = 0; i < rt.size(); i++) {
             int bx = (int)(rt.getValueAsDouble(col_x, i));
             int by = (int)(rt.getValueAsDouble(col_y, i));
             int w = (int)(rt.getValueAsDouble(col_w, i));
-            int h = (int)(rt.getValueAsDouble(col_h, i));  
+            int h = (int)(rt.getValueAsDouble(col_h, i));
             float[] point_max = new float[3];
-          
+
             search_max_point(arr_dst, bx, by, w, h, imw, point_max);
             arr_point_max.add(point_max);
         }
-        
+
         imp_bin.close();
         imp_lab.close();
-        
+
         // prepare the ResultsTable
         rt.reset();
-        
+
         // prepare the ROI Manager
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
-        
+
         // show
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
         int num_match = arr_point_max.size();
-        
-        for(int i = 0; i < num_match; i++)
-        {
+
+        for(int i = 0; i < num_match; i++) {
             int bx = (int)arr_point_max.get(i)[0];
             int by = (int)arr_point_max.get(i)[1];
             float match = arr_point_max.get(i)[2];
-            
+
             Roi roi = new Roi(bx, by, imw_tmp, imh_tmp);
             imp_src.setRoi(roi);
-            
+
             roiMan.addRoi(roi);
             int idx_last = roiMan.getCount() - 1;
             roiMan.select(idx_last);
             roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
-            
+
             rt.incrementCounter();
             rt.addValue("No", i + 1);
             rt.addValue("BX", bx);
@@ -333,56 +321,46 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             rt.addValue("Width", imw_tmp);
             rt.addValue("Height", imh_tmp);
             rt.addValue("Match", String.valueOf(match));
-            rt.show("Results");            
+            rt.show("Results");
         }
-        
+
         mr.runMacro("setBatchMode(false);", "");
-        roiMan.runCommand("Show All");    
+        roiMan.runCommand("Show All");
     }
-    
-    private void substracted_from_one(float[] srcdst)
-    {
+
+    private void substracted_from_one(float[] srcdst) {
         int num = srcdst.length;
-        
-        for(int i = 0; i < num; i++)
-        {
+
+        for(int i = 0; i < num; i++) {
             srcdst[i] = 1 - srcdst[i];
         }
     }
-    
-    private void binary_float(float[] srcdst, float thr)
-    {
+
+    private void binary_float(float[] srcdst, float thr) {
         int num = srcdst.length;
-        
-        for(int i = 0; i < num; i++)
-        {
-            if(thr <= srcdst[i])
-            {
+
+        for(int i = 0; i < num; i++) {
+            if(thr <= srcdst[i]) {
                 srcdst[i] = 255;
             }
-            else
-            {
+            else {
                 srcdst[i] = 0;
             }
         }
     }
-    
-    private void search_max_point(float[] src, int bx, int by, int w, int h, int imw, float[] point_max)
-    {
+
+    private void search_max_point(float[] src, int bx, int by, int w, int h, int imw, float[] point_max) {
         int num = src.length;
         point_max[0] = (float)bx;
         point_max[1] = (float)by;
         point_max[2] = (float)src[bx + by * imw];
-        
-        for(int y = by; y < by + h; y++)
-        {
-            for(int x = bx; x < bx + w; x++)
-            {
+
+        for(int y = by; y < by + h; y++) {
+            for(int x = bx; x < bx + w; x++) {
                 float s = src[x + y * imw];
-                
-                if(point_max[2] < s)
-                {
-                     point_max[0] = (float)bx;
+
+                if(point_max[2] < s) {
+                    point_max[0] = (float)bx;
                     point_max[1] = (float)by;
                     point_max[2] = s;
                 }

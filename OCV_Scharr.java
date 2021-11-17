@@ -42,11 +42,10 @@ import org.opencv.imgproc.Imgproc;
 /**
  * Scharr (OpenCV4.5.3).
  */
-public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | KEEP_PREVIEW;
-    
+
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -67,12 +66,11 @@ public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, Dialog
     private static double scale = 1; // optional scale factor for the computed derivative values.
     private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst.
     private static int indBorderType = 2; // border type
- 
+
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-        
+
         gd.addNumericField("dx", dx, 0);
         gd.addNumericField("dy", dy, 0);
         gd.addNumericField("scale", scale, 4);
@@ -83,111 +81,105 @@ public class OCV_Scharr implements ij.plugin.filter.ExtendedPlugInFilter, Dialog
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {    
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         dx = (int)gd.getNextNumber();
         dy = (int)gd.getNextNumber();
         scale = (double)gd.getNextNumber();
         delta = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(!(dx >= 0 && dy >= 0 && dx+dy == 1)) { IJ.showStatus("'dx >= 0 && dy >= 0 && dx+dy == 1' is necessary."); return false; }
-        if(Double.isNaN(scale) || Double.isNaN(delta)) { IJ.showStatus("ERR : NaN"); return false; } 
-        
+        if(!(dx >= 0 && dy >= 0 && dx + dy == 1)) {
+            IJ.showStatus("'dx >= 0 && dy >= 0 && dx+dy == 1' is necessary.");
+            return false;
+        }
+
+        if(Double.isNaN(scale) || Double.isNaN(delta)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
         IJ.showStatus("OCV_Scharr");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {        
-        if(ip.getBitDepth() == 8)
-        {
+    public void run(ImageProcessor ip) {
+        if(ip.getBitDepth() == 8) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             byte[] srcdst_bytes = (byte[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            
+
             // run
             src_mat.put(0, 0, srcdst_bytes);
             Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
-        else if(ip.getBitDepth() == 16)
-        {
+        else if(ip.getBitDepth() == 16) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             short[] srcdst_shorts = (short[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-            
+
             // run
             src_mat.put(0, 0, srcdst_shorts);
             Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_shorts);        
+            dst_mat.get(0, 0, srcdst_shorts);
         }
-          else if(ip.getBitDepth() == 32)
-        {
+        else if(ip.getBitDepth() == 32) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             float[] srcdst_floats = (float[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-            
+
             // run
             src_mat.put(0, 0, srcdst_floats);
             Imgproc.Scharr(src_mat, dst_mat, src_mat.depth(), dx, dy, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_floats);        
+            dst_mat.get(0, 0, srcdst_floats);
         }
-        else
-        {
+        else {
             IJ.error("Wrong image format");
         }
     }

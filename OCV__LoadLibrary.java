@@ -42,9 +42,8 @@ import org.opencv.core.Point;
 /**
  * Load OpenCV library.
  */
-public class OCV__LoadLibrary implements ExtendedPlugInFilter
-{
-    public static final String VERSION = "0.9.38.0";
+public class OCV__LoadLibrary implements ExtendedPlugInFilter {
+    public static final String VERSION = "0.9.37.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -57,87 +56,70 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
 
     // ExtendedPlugInFilter
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
-    {
-        if(!disposed)
-        {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
+        if(!disposed) {
             return DONE;
         }
-        else
-        {
+        else {
             return NO_IMAGE_REQUIRED;
         }
     }
 
     @Override
-    public void run(ImageProcessor arg0)
-    {
-        try
-        {
+    public void run(ImageProcessor arg0) {
+        try {
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
             IJ.showStatus("Loading succeeded.(" + VERSION + ")");
             disposed = false;
         }
-        catch(Throwable ex)
-        {
+        catch(Throwable ex) {
             IJ.error("ERR : " + ex.getMessage() + "\nThe recovering method : Restart ImageJ, especially after 'Refresh Menus'.");
             disposed = true;
         }
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
+    public int setup(String arg0, ImagePlus imp) {
         disposed = !isLoadOpenCV();
         return NO_IMAGE_REQUIRED;
     }
 
     // finalize
     @Override
-    protected void finalize() throws Throwable
-    {
-        try
-        {
+    protected void finalize() throws Throwable {
+        try {
             super.finalize();
         }
-        finally
-        {
+        finally {
             dispose();
         }
     }
 
-    private void dispose()
-    {
+    private void dispose() {
         disposed = !isLoadOpenCV();
     }
 
     // for check
-    private boolean isLoadOpenCV()
-    {
-        try
-        {
-            if(dummy != null)
-            {
+    private boolean isLoadOpenCV() {
+        try {
+            if(dummy != null) {
                 dummy.release();
             }
 
             dummy = new Mat();
             return true;
-         }
-        catch(Throwable ex)
-        {
+        }
+        catch(Throwable ex) {
             return false;
         }
     }
 
-    public static boolean isLoad()
-    {
+    public static boolean isLoad() {
         return !disposed;
     }
 
@@ -149,17 +131,13 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * @param imw width of image
      * @param imh height of image
      */
-    public static void mat2intarray(Mat src_cv_8uc3, int[] dst_ar, int imw, int imh)
-    {
-        if((src_cv_8uc3.width() != imw) || (src_cv_8uc3.height() != imh) || dst_ar.length != imw * imh)
-        {
+    public static void mat2intarray(Mat src_cv_8uc3, int[] dst_ar, int imw, int imh) {
+        if((src_cv_8uc3.width() != imw) || (src_cv_8uc3.height() != imh) || dst_ar.length != imw * imh) {
             IJ.error("Wrong image size");
         }
 
-        for(int y = 0; y < imh; y++)
-        {
-            for(int x = 0; x < imw; x++)
-            {
+        for(int y = 0; y < imh; y++) {
+            for(int x = 0; x < imw; x++) {
                 byte[] dst_cv_8uc3_ele = new byte[3];
                 src_cv_8uc3.get(y, x, dst_cv_8uc3_ele);
                 int b = dst_cv_8uc3_ele[0] & 0x000000ff;
@@ -178,17 +156,13 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * @param imw width of image
      * @param imh height of image
      */
-    public static void intarray2mat(int[] src_ar, Mat dst_cv_8uc3, int imw, int imh)
-    {
-        if((dst_cv_8uc3.width() != imw) || (dst_cv_8uc3.height() != imh) || src_ar.length != imw * imh)
-        {
+    public static void intarray2mat(int[] src_ar, Mat dst_cv_8uc3, int imw, int imh) {
+        if((dst_cv_8uc3.width() != imw) || (dst_cv_8uc3.height() != imh) || src_ar.length != imw * imh) {
             IJ.error("Wrong image size");
         }
 
-        for(int y = 0; y < imh; y++)
-        {
-            for(int x = 0; x < imw; x++)
-            {
+        for(int y = 0; y < imh; y++) {
+            for(int x = 0; x < imw; x++) {
                 int ind = x + imw * y;
                 byte b = (byte)(src_ar[ind] & 0xff);
                 byte g = (byte)((src_ar[ind] >> 8) & 0xff);
@@ -203,19 +177,15 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * @param roi
      * @param lstPt
      */
-    public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt)
-    {
+    public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt) {
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();
         int pos_x;
         int pos_y;
 
-        for(int y = 0; y < r.height; y++)
-        {
-            for(int x = 0; x < r.width; x++)
-            {
-                if (mask == null || mask.getPixel(x, y) != 0)
-                {
+        for(int y = 0; y < r.height; y++) {
+            for(int x = 0; x < r.width; x++) {
+                if(mask == null || mask.getPixel(x, y) != 0) {
                     pos_x = r.x + x;
                     pos_y = r.y + y;
                     lstPt.add(new Point(pos_x, pos_y));
@@ -229,22 +199,18 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * @param enReset reset or not
      * @return ResultsTable
      */
-    public static ResultsTable GetResultsTable(boolean enReset)
-    {
+    public static ResultsTable GetResultsTable(boolean enReset) {
         ResultsTable rt = ResultsTable.getResultsTable();
 
-        if(rt == null || rt.getCounter() == 0)
-        {
+        if(rt == null || rt.getCounter() == 0) {
             rt = new ResultsTable();
         }
 
-        if(enReset)
-        {
+        if(enReset) {
             rt.reset();
         }
 
         rt.show("Results");
-
         return rt;
     }
 
@@ -254,28 +220,23 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * @param enShowNone show none or not
      * @return RoiManager
      */
-    public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone)
-    {
+    public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone) {
         Frame frame = WindowManager.getFrame("ROI Manager");
         RoiManager rm;
 
-        if (frame == null)
-        {
+        if(frame == null) {
             rm = new RoiManager();
             rm.setVisible(true);
         }
-        else
-        {
+        else {
             rm = (RoiManager)frame;
         }
 
-        if(enReset)
-        {
+        if(enReset) {
             rm.reset();
         }
 
-        if(enShowNone)
-        {
+        if(enShowNone) {
             rm.runCommand("Show None");
         }
 
@@ -286,21 +247,16 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter
      * Wait.
      * @param wt wait time (ms).
      */
-    public static void Wait(int wt)
-    {
-        try
-        {
-            if(wt == 0)
-            {
+    public static void Wait(int wt) {
+        try {
+            if(wt == 0) {
                 // do nothing
             }
-            else
-            {
+            else {
                 Thread.sleep(wt);
             }
         }
-        catch (InterruptedException e)
-        {
+        catch(InterruptedException e) {
             // do nothing
         }
     }

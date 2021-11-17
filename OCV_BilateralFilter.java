@@ -37,11 +37,10 @@ import org.opencv.imgproc.Imgproc;
 /**
  * bilateralFilter (OpenCV4.5.3).
  */
-public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | KEEP_PREVIEW; // 8-bit or floating-point, 1-channel or 3-channel image.
-    
+
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -63,10 +62,9 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     private static int indBorderType = 2; // Border type.
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-        
+
         gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
         gd.addNumericField("diameter", diameter, 0);
         gd.addNumericField("sigmaColor", sigmaColor, 4);
@@ -77,111 +75,109 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         diameter = (int)gd.getNextNumber();
         sigmaColor = (double)gd.getNextNumber();
         sigmaSpace = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(Double.isNaN(sigmaColor) || Double.isNaN(sigmaSpace)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(sigmaColor <= 0) { IJ.showStatus("'0 < sigmaColor' is necessary."); return false; }
-        if(sigmaSpace <= 0) { IJ.showStatus("'0 < sigmaSpace' is necessary."); return false; }
-        
+        if(Double.isNaN(sigmaColor) || Double.isNaN(sigmaSpace)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(sigmaColor <= 0) {
+            IJ.showStatus("'0 < sigmaColor' is necessary.");
+            return false;
+        }
+
+        if(sigmaSpace <= 0) {
+            IJ.showStatus("'0 < sigmaSpace' is necessary.");
+            return false;
+        }
+
         IJ.showStatus("OCV_BilateralFilter");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
-        if(ip.getBitDepth() == 8)
-        {
+    public void run(ImageProcessor ip) {
+        if(ip.getBitDepth() == 8) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             byte[] srcdst_bytes = (byte[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            
+
             // run
             src_mat.put(0, 0, srcdst_bytes);
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
-        else if(ip.getBitDepth() == 24)
-        {
+        else if(ip.getBitDepth() == 24) {
             // dst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             int[] srcdst_ints = (int[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-         
+
             // run
             OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
             OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
         }
-        else if(ip.getBitDepth() == 32)
-        {
-             // srcdst
+        else if(ip.getBitDepth() == 32) {
+            // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             float[] srcdst_bytes = (float[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32FC1);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32FC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32FC1);
-            
+
             // run
             src_mat.put(0, 0, srcdst_bytes);
             Imgproc.bilateralFilter(src_mat, dst_mat, diameter, sigmaColor, sigmaSpace, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_bytes);           
+            dst_mat.get(0, 0, srcdst_bytes);
         }
-        else
-        {
+        else {
             IJ.error("Wrong image format");
         }
     }

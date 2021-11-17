@@ -41,8 +41,7 @@ import org.opencv.core.Point;
  * The selected roi is displayed in the center.
  * If there is not a selected roi, the center of image is displayed in the center.
  */
-public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
-{
+public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
     // const var.
     private static final int FLAGS = DOES_ALL;
 
@@ -51,27 +50,22 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
     private RoiManager roiMan = null;
 
     @Override
-    public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr)
-    {
+    public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr) {
         return FLAGS;
     }
 
     @Override
-    public void setNPasses(int i)
-    {
+    public void setNPasses(int i) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus imp)
-    {
-        if (imp == null)
-        {
+    public int setup(String string, ImagePlus imp) {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             // get the ImagePlus
             impSrc = imp;
 
@@ -83,8 +77,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {       
+    public void run(ImageProcessor ip) {
         int num_roi = roiMan.getCount();
         int[] selectedIndexes = roiMan.getSelectedIndexes();
         int num_slctd = selectedIndexes == null ? 0 : selectedIndexes.length;
@@ -94,111 +87,96 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter
         int cy;
         int zm;
 
-        if(num_roi == 0 || num_slctd == 0)
-        {
+        if(num_roi == 0 || num_slctd == 0) {
             Rectangle roi = ip.getRoi();
-            
-            if(roi == null)
-            {
+
+            if(roi == null) {
                 cx = (int)((double)ip.getWidth() / 2 + 0.5);
                 cy = (int)((double)ip.getHeight() / 2 + 0.5);
                 zm = (int)(ic.getMagnification() * 100);
-                
-                mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");      
+
+                mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
             }
-            else
-            {
+            else {
                 cx = (int)((double)roi.getX() + (double)roi.getWidth() / 2 + 0.5);
                 cy = (int)((double)roi.getY() + (double)roi.getHeight() / 2 + 0.5);
                 zm = (int)(ic.getMagnification() * 100);
-                
+
                 mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
             }
         }
-        else
-        {
+        else {
             int num_all = 0;
             double sx = 0;
             double sy = 0;
             ArrayList<Point> lstPt = new ArrayList<Point>();
 
-            for(int i = 0; i < num_slctd; i++)
-            {
+            for(int i = 0; i < num_slctd; i++) {
                 Roi roi = roiMan.getRoi(selectedIndexes[i]);
-                getCoordinates(roi, lstPt);           
+                getCoordinates(roi, lstPt);
             }
 
             num_all = lstPt.size();
 
-            for(int i = 0; i < num_all; i++)
-            {
+            for(int i = 0; i < num_all; i++) {
                 double x = lstPt.get(i).x;
-                double y = lstPt.get(i).y;            
+                double y = lstPt.get(i).y;
 
                 sx += x;
                 sy += y;
             }
 
-            cx = (int)(sx / (double)num_all + 0.5);      
+            cx = (int)(sx / (double)num_all + 0.5);
             cy = (int)(sy / (double)num_all + 0.5);
             zm = (int)(ic.getMagnification() * 100);
-            
+
             mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
         }
     }
-    
+
     /**
      * get the RoiManager or create a new RoiManager
      * @param enReset reset or not
      * @param enShowNone show none or not
      * @return RoiManager
      */
-    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
-    {
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone) {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;        
-        
-        if (frame == null)
-        {
+        RoiManager rm = null;
+
+        if(frame == null) {
             rm = new RoiManager();
             rm.setVisible(true);
         }
-        else
-        {
-            rm = (RoiManager)frame;       
+        else {
+            rm = (RoiManager)frame;
         }
-        
-        if(enReset)
-        {
+
+        if(enReset) {
             rm.reset();
         }
-        
-        if(enShowNone)
-        {
+
+        if(enShowNone) {
             rm.runCommand("Show None");
         }
-        
+
         return rm;
     }
-    
+
     /**
      * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
      * @param roi
-     * @param lstPt 
+     * @param lstPt
      */
-    private void getCoordinates(Roi roi, ArrayList<Point> lstPt)
-    {
+    private void getCoordinates(Roi roi, ArrayList<Point> lstPt) {
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();
         int pos_x = 0;
         int pos_y = 0;
 
-        for(int y = 0; y < r.height; y++)
-        {
-            for(int x = 0; x < r.width; x++)
-            {
-                if (mask == null || mask.getPixel(x, y) != 0)
-                {
+        for(int y = 0; y < r.height; y++) {
+            for(int x = 0; x < r.width; x++) {
+                if(mask == null || mask.getPixel(x, y) != 0) {
                     pos_x = r.x + x;
                     pos_y = r.y + y;
                     lstPt.add(new Point(pos_x, pos_y));

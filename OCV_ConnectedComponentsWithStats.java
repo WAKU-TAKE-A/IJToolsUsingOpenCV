@@ -38,8 +38,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * connectedComponentsWithStats (OpenCV4.5.3).
  */
-public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
-{
+public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
     // const var.
     private static final int FLAGS = DOES_8G;
     private static final int CONN_4 = 4;
@@ -56,22 +55,19 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
     private ImagePlus impSrc = null;
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pifr)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pifr) {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
 
         gd.addChoice("connectivity", TYPE_STR, TYPE_STR[type_ind]);
         gd.addCheckbox("enable_output_labeled_image", enOutImg);
-        gd.addCheckbox("enable_select_roi_by_dowand", enWand);               
+        gd.addCheckbox("enable_select_roi_by_dowand", enWand);
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             type_ind = (int)gd.getNextChoiceIndex();
             enOutImg = (boolean)gd.getNextBoolean();
             enWand = (boolean)gd.getNextBoolean();
@@ -81,35 +77,29 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
     }
 
     @Override
-    public void setNPasses(int i)
-    {
+    public void setNPasses(int i) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String string, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             impSrc = imp;
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src
         int imw = ip.getWidth();
         int imh = ip.getHeight();
@@ -118,7 +108,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         // dst
         String titleDst = WindowManager.getUniqueName(impSrc.getTitle() + "_Connect" + String.valueOf(TYPE_INT[type_ind]));
-        ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(imw, imh));
+        ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(imw, imh));
         float[] dst_arr = (float[]) impDst.getChannelProcessor().getPixels();
         Mat dst_mat_32s = new Mat(imh, imw, CvType.CV_32S);
         Mat dst_mat_32f = new Mat(imh, imw, CvType.CV_32F);
@@ -132,24 +122,20 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         dst_mat_32f.get(0, 0, dst_arr);
 
         // show data
-        if(1 < output_con)
-        {
+        if(1 < output_con) {
             showData(dst_arr, imw, imh, output_con, stats_mat, cens_mat);
         }
 
         // finish
-        if(1 < output_con && enOutImg)
-        {
+        if(1 < output_con && enOutImg) {
             impDst.show();
         }
-        else
-        {
+        else {
             impDst.close();
         }
     }
 
-    private void showData(float[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat)
-    {
+    private void showData(float[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat) {
         int num_lab = output_con - 1;
         Rectangle[] rects = new Rectangle[output_con];
         int[] areas = new int[output_con];
@@ -157,8 +143,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
 
         cens_mat.get(0, 0, cens);
 
-        for(int i = 0; i < output_con; i++)
-        {
+        for(int i = 0; i < output_con; i++) {
             rects[i] = new Rectangle((int)(stats_mat.get(i, 0)[0]), (int)(stats_mat.get(i, 1)[0]), (int)(stats_mat.get(i, 2)[0]), (int)(stats_mat.get(i, 3)[0]));
             areas[i] = (int)(stats_mat.get(i, 4)[0]);
         }
@@ -166,11 +151,10 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
         RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
         Macro_Runner mr = new Macro_Runner();
-        
+
         mr.runMacro("setBatchMode(true);", "");
-        
-        for(int i = 1; i < output_con; i++)
-        {
+
+        for(int i = 1; i < output_con; i++) {
             rt.incrementCounter();
             rt.addValue("No", i);
             rt.addValue("Area", areas[i]);
@@ -178,30 +162,25 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
             rt.addValue("BY", rects[i].y);
             rt.addValue("Width", rects[i].width);
             rt.addValue("Height", rects[i].height);
-            
-            if(!enWand)
-            {
+
+            if(!enWand) {
                 Roi roi = new Roi(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
                 roiManager.addRoi(roi);
                 roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
             }
         }
-        
-        if(enWand)
-        {
+
+        if(enWand) {
             int[] chk = new int[num_lab + 1];
             int[] x_doWand = new int[num_lab + 1];
             int[] y_doWand = new int[num_lab + 1];
             String type = TYPE_STR[type_ind];
 
-            for(int y = 0; y < imh; y++)
-            {
-                for(int x = 0; x < imw; x++)
-                {
+            for(int y = 0; y < imh; y++) {
+                for(int x = 0; x < imw; x++) {
                     int val = (int)dst_arr[x + y * imw];
 
-                    if(val != 0 && chk[val] == 0)
-                    {
+                    if(val != 0 && chk[val] == 0) {
                         chk[val] = 1;
                         x_doWand[val] = x;
                         y_doWand[val] = y;
@@ -209,17 +188,16 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter
                 }
             }
 
-            for(int i = 1; i < num_lab + 1; i++)
-            {
+            for(int i = 1; i < num_lab + 1; i++) {
                 mr.runMacro("doWand(" + String.valueOf(x_doWand[i]) + ", " + String.valueOf(y_doWand[i]) + ", 0.0, \"" + type + "\");", "");
                 roiManager.runCommand("add");
                 roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
             }
         }
-        
+
         mr.runMacro("setBatchMode(false);", "");
-        
-        rt.show("Results"); 
+
+        rt.show("Results");
         roiManager.runCommand("show all");
     }
 }

@@ -38,8 +38,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * warpPerspective (OpenCV4.5.3).
  */
-public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
-{
+public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
     private static final int[] FLAGS_INT = new int[] { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
@@ -50,8 +49,7 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
     private ResultsTable rt  = null;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addChoice("interpolation_method", FLAGS_STR, FLAGS_STR[flags_ind]);
@@ -60,76 +58,65 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         flags_ind = (int)gd.getNextChoiceIndex();
         IJ.showStatus("OCV_WarpPerspective");
         return true;
     }
 
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
 
         rt = OCV__LoadLibrary.GetResultsTable(false);
 
-        if(rt == null || rt.size() != 3)
-        {
+        if(rt == null || rt.size() != 3) {
             IJ.error("It is necessary that ResultsTable.size() is three.");
             return DONE;
         }
 
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
-        
+
         return FLAGS;
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         Size size =  new Size((double)imw, (double)imh);
         Mat mat = new Mat(3, 3, CvType.CV_64FC1);
-        
-        for(int i = 0; i < 3 ; i++)
-        {
+
+        for(int i = 0; i < 3 ; i++) {
             mat.put(i, 0, new double[] { Double.valueOf(rt.getStringValue(0, i).replaceAll("\"|'", "")) });
             mat.put(i, 1, new double[] { Double.valueOf(rt.getStringValue(1, i).replaceAll("\"|'", "")) });
-            mat.put(i, 2, new double[] { Double.valueOf(rt.getStringValue(2, i).replaceAll("\"|'", "")) });       
+            mat.put(i, 2, new double[] { Double.valueOf(rt.getStringValue(2, i).replaceAll("\"|'", "")) });
         }
 
-        if(ip.getBitDepth() == 8)
-        {
+        if(ip.getBitDepth() == 8) {
             byte[] srcdst_ar = (byte[])ip.getPixels();
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
@@ -138,8 +125,7 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
             Imgproc.warpPerspective(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
             dst_mat.get(0, 0, srcdst_ar);
         }
-        else if(ip.getBitDepth() == 16)
-        {
+        else if(ip.getBitDepth() == 16) {
             short[] srcdst_ar = (short[])ip.getPixels();
             Mat src_mat = new Mat(imh, imw, CvType.CV_16UC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_16UC1);
@@ -148,8 +134,7 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
             Imgproc.warpPerspective(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
             dst_mat.get(0, 0, srcdst_ar);
         }
-        else if(ip.getBitDepth() == 24)
-        {
+        else if(ip.getBitDepth() == 24) {
             int[] srcdst_ar = (int[])ip.getPixels();
             Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
@@ -158,9 +143,8 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
             Imgproc.warpPerspective(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
             OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ar, imw, imh);
         }
-        else if(ip.getBitDepth() == 32)
-        {
-          float[] srcdst_ar = (float[])ip.getPixels();
+        else if(ip.getBitDepth() == 32) {
+            float[] srcdst_ar = (float[])ip.getPixels();
             Mat src_mat = new Mat(imh, imw, CvType.CV_32FC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32FC1);
 
@@ -168,8 +152,7 @@ public class OCV_WarpPerspective implements ExtendedPlugInFilter, DialogListener
             Imgproc.warpPerspective(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
             dst_mat.get(0, 0, srcdst_ar);
         }
-        else
-        {
+        else {
             IJ.error("Wrong image format");
         }
     }

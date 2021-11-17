@@ -37,15 +37,14 @@ import org.opencv.imgproc.Imgproc;
 /**
  * watershed (OpenCV4.5.3).
  */
-public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private final int FLAGS = DOES_32 | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 32-bit single-channel map.
-    
+
     // static var.
     private static int ind_src = 0;
     private static int ind_msk = 1;
-    
+
     // var.
     private ImagePlus imp_src = null;
     private ImagePlus imp_map = null;
@@ -53,80 +52,79 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private String[] titles_wnd;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addChoice("src", titles_wnd, titles_wnd[ind_src]);
         gd.addChoice("mask", titles_wnd, titles_wnd[ind_msk]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
-        
+
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         ind_src = (int)gd.getNextChoiceIndex();
         ind_msk = (int)gd.getNextChoiceIndex();
-        
-        if(ind_src == ind_msk) { IJ.showStatus("The same image can not be selected."); return false; }
+
+        if(ind_src == ind_msk) {
+            IJ.showStatus("The same image can not be selected.");
+            return false;
+        }
 
         imp_src = WindowManager.getImage(lst_wnd[ind_src]);
         imp_map = WindowManager.getImage(lst_wnd[ind_msk]);
 
-        if(imp_src.getBitDepth() != 24 || imp_map.getBitDepth() != 32) { IJ.showStatus("The image should be RGB, and the mask should be 32bit."); return false; }
-        if(imp_src.getWidth() != imp_map.getWidth() || imp_src.getHeight() != imp_map.getHeight()) { IJ.showStatus("The size of src should be same as the size of mask."); return false; }
-        
+        if(imp_src.getBitDepth() != 24 || imp_map.getBitDepth() != 32) {
+            IJ.showStatus("The image should be RGB, and the mask should be 32bit.");
+            return false;
+        }
+
+        if(imp_src.getWidth() != imp_map.getWidth() || imp_src.getHeight() != imp_map.getHeight()) {
+            IJ.showStatus("The size of src should be same as the size of mask.");
+            return false;
+        }
+
         IJ.showStatus("OCV_Watershed");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             // get the windows
             lst_wnd = WindowManager.getIDList();
 
-            if (lst_wnd==null || lst_wnd.length < 2)
-            {
+            if(lst_wnd == null || lst_wnd.length < 2) {
                 IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
             titles_wnd = new String[lst_wnd.length];
 
-            for (int i=0; i < lst_wnd.length; i++)
-            {
+            for(int i = 0; i < lst_wnd.length; i++) {
                 ImagePlus imp2 = WindowManager.getImage(lst_wnd[i]);
                 titles_wnd[i] = imp2 != null ? imp2.getTitle() : "";
             }
@@ -136,8 +134,7 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src (RGB)
         int[] arr_src_rgb = (int[])imp_src.getChannelProcessor().getPixels();
         int imw_src = imp_src.getWidth();
@@ -150,15 +147,15 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         int imh_map = imp_map.getHeight();
         Mat mat_map_32f = new Mat(imh_map, imw_map, CvType.CV_32FC1);
         Mat mat_map_32s = new Mat(imh_map, imw_map, CvType.CV_32SC1);
-        
+
         // run
         OCV__LoadLibrary.intarray2mat(arr_src_rgb, mat_src_rgb, imw_src, imh_src);
         mat_map_32f.put(0, 0, arr_map_32f);
         mat_map_32f.convertTo(mat_map_32s, CvType.CV_32SC1);
-        
+
         Imgproc.watershed(mat_src_rgb, mat_map_32s);
-        
+
         mat_map_32s.convertTo(mat_map_32f, CvType.CV_32FC1);
-        mat_map_32f.get(0, 0, arr_map_32f);         
+        mat_map_32f.get(0, 0, arr_map_32f);
     }
 }

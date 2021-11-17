@@ -34,8 +34,7 @@ import java.awt.Frame;
 /**
  * Select all ROI.
  */
-public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter
-{
+public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter {
     // const var.
     private static final int FLAGS = DOES_ALL;
     private static final String STR_NONE = "none";
@@ -48,45 +47,37 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     private RoiManager roiMan = null;
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(cmd + "...");
         gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             type_ind = (int)gd.getNextChoiceIndex();
             return FLAGS;
         }
     }
 
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if (imp == null)
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             // get the ROI Manager
             roiMan = getRoiManager(false, true);
             int num_roi = roiMan.getCount();
 
-            if(num_roi == 0)
-            {
+            if(num_roi == 0) {
                 IJ.error("ROI is vacant.");
                 return DONE;
             }
@@ -96,69 +87,59 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         Macro_Runner mr = new Macro_Runner();
         mr.runMacro("setBatchMode(true);", "");
-        
+
         int num_roi = roiMan.getCount();
 
-        if(num_roi == 0)
-        {
+        if(num_roi == 0) {
             // do nothing
         }
-        else if(num_roi == 1)
-        {
+        else if(num_roi == 1) {
             roiMan.select(0);
             // do nothing after selecting
         }
-        else
-        {
+        else {
             roiMan.deselect();
 
             int[] indx_all = roiMan.getIndexes();
             roiMan.setSelectedIndexes(indx_all);
 
-            if(!TYPE_STR[type_ind].equals(STR_NONE))
-            {
+            if(!TYPE_STR[type_ind].equals(STR_NONE)) {
                 roiMan.runCommand(TYPE_STR[type_ind]);
             }
         }
-        
+
         mr.runMacro("setBatchMode(false);", "");
     }
-    
+
     /**
      * get the RoiManager or create a new RoiManager
      * @param enReset reset or not
      * @param enShowNone show none or not
      * @return RoiManager
      */
-    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
-    {
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone) {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;        
-        
-        if (frame == null)
-        {
+        RoiManager rm = null;
+
+        if(frame == null) {
             rm = new RoiManager();
             rm.setVisible(true);
         }
-        else
-        {
-            rm = (RoiManager)frame;       
+        else {
+            rm = (RoiManager)frame;
         }
-        
-        if(enReset)
-        {
+
+        if(enReset) {
             rm.reset();
         }
-        
-        if(enShowNone)
-        {
+
+        if(enShowNone) {
             rm.runCommand("Show None");
         }
-        
+
         return rm;
     }
 }

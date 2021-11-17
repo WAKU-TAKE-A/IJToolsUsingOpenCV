@@ -33,59 +33,51 @@ import org.opencv.imgproc.Imgproc;
 /**
  * equalizeHist (OpenCV4.5.3).
  */
-public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter
-{
+public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
     // constant var.
     private static final int FLAGS = DOES_8G; // 8-bit single channel image.
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         // do nothing
         return IJ.setupDialog(imp, FLAGS);
     }
 
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         byte[] srcdst_bytes = (byte[])ip.getPixels();
-        
+
         // mat
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);      
+        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
 
         // run
         src_mat.put(0, 0, srcdst_bytes);
         Imgproc.equalizeHist(src_mat, dst_mat);
-        dst_mat.get(0, 0, srcdst_bytes);        
+        dst_mat.get(0, 0, srcdst_bytes);
     }
 }

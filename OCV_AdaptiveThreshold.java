@@ -36,8 +36,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * adaptiveThreshold (OpenCV4.5.3).
  */
-public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW; // 8-bit single-channel image.
     private static final int[] INT_ADAPTIVEMETHOD = { Imgproc.ADAPTIVE_THRESH_MEAN_C, Imgproc.ADAPTIVE_THRESH_GAUSSIAN_C };
@@ -53,10 +52,9 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     private static double subC = 10.0;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-       
+
         gd.addSlider("maxValue", 1, 255, maxValue);
         gd.addChoice("adaptiveMethod", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indMethod]);
         gd.addChoice("thresholdType", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
@@ -67,68 +65,74 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         maxValue = (double)gd.getNextNumber();
         indMethod = (int)gd.getNextChoiceIndex();
         indType = (int)gd.getNextChoiceIndex();
         blockSize = (int)gd.getNextNumber();
         subC = (double)gd.getNextNumber();
 
-        if(Double.isNaN(maxValue) || Double.isNaN(subC)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(blockSize <= 1) { IJ.showStatus("'1 < blockSize' is necessary."); return false; }
-        if(blockSize % 2 == 0) { IJ.showStatus("blockSize should be odd."); return false; }
-        if(subC <= 0) { IJ.showStatus("'0 < subC'"); return false; }
-        
+        if(Double.isNaN(maxValue) || Double.isNaN(subC)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(blockSize <= 1) {
+            IJ.showStatus("'1 < blockSize' is necessary.");
+            return false;
+        }
+
+        if(blockSize % 2 == 0) {
+            IJ.showStatus("blockSize should be odd.");
+            return false;
+        }
+
+        if(subC <= 0) {
+            IJ.showStatus("'0 < subC'");
+            return false;
+        }
+
         IJ.showStatus("OCV_AdaptiveThreshold");
         return true;
     }
 
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
 
         // srcdst
-        byte[] srcdst_ar = (byte[])ip.getPixels();        
+        byte[] srcdst_ar = (byte[])ip.getPixels();
 
         // mat
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);

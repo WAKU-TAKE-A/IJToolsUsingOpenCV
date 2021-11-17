@@ -36,14 +36,13 @@ import org.opencv.imgproc.Imgproc;
 /**
  * distanceTransform (OpenCV4.5.3).
  */
-public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS =  DOES_32 | KEEP_PREVIEW;
-    
+
     /*
     Distance types for Distance Transform and M-estimators
-    
+
     DIST_USER : User defined distance.
     DIST_L1 : distance = |x1-x2| + |y1-y2|
     DIST_L2 : the simple euclidean distance
@@ -55,7 +54,7 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     */
     private static final int[] INT_DISTANCETYPE = { Imgproc.CV_DIST_L1, Imgproc.CV_DIST_L2, Imgproc.CV_DIST_C, Imgproc.CV_DIST_L12, Imgproc.DIST_FAIR, Imgproc.DIST_WELSCH, Imgproc.DIST_HUBER };
     private static final String[] STR_DISTANCETYPE = { "CV_DIST_L1", "CV_DIST_L2", "CV_DIST_C" };
-    
+
     private static final int[] INT_DISTANCETRANSFORMMASKS = { Imgproc.CV_DIST_MASK_3, Imgproc.CV_DIST_MASK_5, Imgproc.CV_DIST_MASK_PRECISE  };
     private static final String[] STR_DISTANCETRANSFORMMASKS = { "CV_DIST_MASK_3", "CV_DIST_MASK_5", "CV_DIST_MASK_PRECISE" };
 
@@ -64,10 +63,9 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     private static int indMskSize = 0;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-        
+
         gd.addChoice("distanceType", STR_DISTANCETYPE, STR_DISTANCETYPE[indDistType]);
         gd.addChoice("maskSize", STR_DISTANCETRANSFORMMASKS, STR_DISTANCETRANSFORMMASKS[indMskSize]);
         gd.addPreviewCheckbox(pfr);
@@ -75,55 +73,46 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         indDistType = (int)gd.getNextChoiceIndex();
         indMskSize = (int)gd.getNextChoiceIndex();
-       
+
         IJ.showStatus("OCV_DistanceTransform");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {        
+    public void run(ImageProcessor ip) {
         // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
@@ -138,6 +127,6 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
         src_mat_32f.put(0, 0, srcdst_floats);
         src_mat_32f.convertTo(src_mat_8u, CvType.CV_8UC1);
         Imgproc.distanceTransform(src_mat_8u, dst_mat_32f, INT_DISTANCETYPE[indDistType], INT_DISTANCETRANSFORMMASKS[indMskSize]);
-        dst_mat_32f.get(0, 0, srcdst_floats);         
+        dst_mat_32f.get(0, 0, srcdst_floats);
     }
 }

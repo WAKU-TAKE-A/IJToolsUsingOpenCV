@@ -36,24 +36,22 @@ import org.opencv.imgproc.Imgproc;
 /**
  * Cany (OpenCV4.5.3).
  */
-public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW; // 8-bit input image.
     private final String[] SIZE_STR = new String[] { "3", "5", "7"};
-    private final int[] SIZE_VAL = new int[] { 3, 5, 7 }; 
+    private final int[] SIZE_VAL = new int[] { 3, 5, 7 };
 
     // staic var.
     private static double thr1  = 0; // first threshold for the hysteresis procedure.
     private static double thr2  = 0; // second threshold for the hysteresis procedure.
-    private static int ind_size = 0; // aperture size for the Sobel operator. 
+    private static int ind_size = 0; // aperture size for the Sobel operator.
     private static boolean l2grad = false; // L2gradient;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-        
+
         gd.addNumericField("threshold1", thr1, 4);
         gd.addNumericField("threshold2", thr2, 4);
         gd.addChoice("apertureSize", SIZE_STR, SIZE_STR[ind_size]);
@@ -63,68 +61,70 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         thr1 = (double)gd.getNextNumber();
         thr2 = (double)gd.getNextNumber();
         ind_size = (int)gd.getNextChoiceIndex();
         l2grad = (boolean)gd.getNextBoolean();
 
-        if(Double.isNaN(thr1) || Double.isNaN(thr2)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(thr1 < 0) { IJ.showStatus("'0 <= threshold1' is necessary."); return false; }
-        if(thr2 < 0) { IJ.showStatus("'0 <= threshold2' is necessary."); return false; }
-        
+        if(Double.isNaN(thr1) || Double.isNaN(thr2)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(thr1 < 0) {
+            IJ.showStatus("'0 <= threshold1' is necessary.");
+            return false;
+        }
+
+        if(thr2 < 0) {
+            IJ.showStatus("'0 <= threshold2' is necessary.");
+            return false;
+        }
+
         IJ.showStatus("OCV_Canny");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         byte[] srcdst_bytes = (byte[])ip.getPixels();
 
         // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
         Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
 
         // run

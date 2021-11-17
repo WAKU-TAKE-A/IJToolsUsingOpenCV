@@ -38,11 +38,10 @@ import org.opencv.imgproc.Imgproc;
 /**
  *  cornerHarris (OpenCV4.5.3).
  */
-public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_32 | KEEP_PREVIEW;
-    
+
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -65,12 +64,11 @@ public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, 
 
     // var
     private final String titleSrc = "";
-    
+
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-        
+
         gd.addNumericField("blockSize", blockSize, 0);
         gd.addNumericField("ksize", ksize, 0);
         gd.addNumericField("free_parame", k, 4);
@@ -79,111 +77,110 @@ public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, 
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {        
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         blockSize = (int)gd.getNextNumber();
         ksize = (int)gd.getNextNumber();
         k = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(blockSize <= 0) { IJ.showStatus("'0 < ksize_x' is necessary."); return false; }
-        if(ksize <= 0) { IJ.showStatus("'0 < ksize_y' is necessary."); return false; }
-        if(Double.isNaN(k)) { IJ.showStatus("ERR : NaN"); return false; }
-        
+        if(blockSize <= 0) {
+            IJ.showStatus("'0 < ksize_x' is necessary.");
+            return false;
+        }
+
+        if(ksize <= 0) {
+            IJ.showStatus("'0 < ksize_y' is necessary.");
+            return false;
+        }
+
+        if(Double.isNaN(k)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
         IJ.showStatus("OCV_ CornerHarris");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {        
-        if(ip.getBitDepth() == 8)
-        {
+    public void run(ImageProcessor ip) {
+        if(ip.getBitDepth() == 8) {
             // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             byte[] src_bytes = (byte[])ip.getPixels();
-            
-             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_CornerHarris");
-            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(imw, imh));
-            float[] dst_floats = (float[]) impDst.getChannelProcessor().getPixels(); 
-            
+
+            // dst
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_CornerHarris");
+            ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(imw, imh));
+            float[] dst_floats = (float[]) impDst.getChannelProcessor().getPixels();
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-            
+
             // run
             src_mat.put(0, 0, src_bytes);
             Imgproc.cornerHarris(src_mat, dst_mat, blockSize, ksize, k, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, dst_floats);
-            
+
             // show
             impDst.show();
         }
-        else if(ip.getBitDepth() == 32)
-        {
+        else if(ip.getBitDepth() == 32) {
             // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             float[] src_floats = (float[])ip.getPixels();
-            
-             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_CornerHarris");
-            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor(imw, imh));
-            float[] dst_floats = (float[]) impDst.getChannelProcessor().getPixels();  
-            
+
+            // dst
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_CornerHarris");
+            ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(imw, imh));
+            float[] dst_floats = (float[]) impDst.getChannelProcessor().getPixels();
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-            
+
             // run
             src_mat.put(0, 0, src_floats);
             Imgproc.cornerHarris(src_mat, dst_mat, blockSize, ksize, k, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, dst_floats);
-            
+
             // show
             impDst.show();
         }
-        else
-        {
+        else {
             IJ.error("Wrong image format");
         }
     }

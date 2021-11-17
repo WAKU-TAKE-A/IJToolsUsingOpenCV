@@ -38,8 +38,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * getRotationMatrix2D (OpenCV4.5.3).
  */
-public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogListener
-{
+public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
 
@@ -50,14 +49,12 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     private static double scale = 1; // Isotropic scale factor
 
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         GenericDialog gd = new GenericDialog(cmd.trim() + " ...");
 
         gd.addNumericField("center_x", center_x, 4);
@@ -68,38 +65,40 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
 
         gd.showDialog();
 
-         if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         center_x = (double)gd.getNextNumber();
         center_y = (double)gd.getNextNumber();
         angle = (double)gd.getNextNumber();
         scale = (double)gd.getNextNumber();
 
-        if(Double.isNaN(center_x) || Double.isNaN(center_y) || Double.isNaN(angle) || Double.isNaN(scale)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(scale <= 0) { IJ.showStatus("'0 < scale' is necessary."); return false; }
+        if(Double.isNaN(center_x) || Double.isNaN(center_y) || Double.isNaN(angle) || Double.isNaN(scale)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(scale <= 0) {
+            IJ.showStatus("'0 < scale' is necessary.");
+            return false;
+        }
 
         IJ.showStatus("OCV_GetRotationMatrix2D");
         return true;
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         Mat mat = Imgproc.getRotationMatrix2D(new Point(center_x, center_y), angle, scale);
 
-        if(mat == null || mat.rows() <= 0 || mat.cols() <= 0)
-        {
+        if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
             IJ.showMessage("Output is null or error");
             return;
         }
@@ -117,14 +116,12 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
+
         return FLAGS;
     }
 }

@@ -38,8 +38,7 @@ import java.awt.AWTEvent;
 /**
  * HoughLinesP (OpenCV4.5.3).
  */
-public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
-{
+public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G;
     private static final double CV_PI = 3.1415926535897932384626433832795;
@@ -53,8 +52,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
     private static boolean enAddRoi = true;
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
 
         gd.addNumericField("distance_resolution", resDist, 4);
@@ -68,19 +66,16 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         resDist = (double)gd.getNextNumber();
         resAngFact = (double)gd.getNextNumber();
         minVotes = (int)gd.getNextNumber();
@@ -88,46 +83,63 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
         maxGap = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
 
-        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(minLen) || Double.isNaN(maxGap)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(resDist < 0) { IJ.showStatus("'0 <= distance_resolution' is necessary."); return false; }
-        if(resAngFact < 0) { IJ.showStatus("'0 <= angle_resolution_factor' is necessary."); return false; }
-        if(minVotes < 0) { IJ.showStatus("'0 <= min_votes' is necessary."); return false; }
-        if(minLen < 0) { IJ.showStatus("'0 <= min_length' is necessary."); return false; }
-        if(maxGap < 0) { IJ.showStatus("'0 <= max_allowed_gap' is necessary."); return false; }
-        
+        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(minLen) || Double.isNaN(maxGap)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(resDist < 0) {
+            IJ.showStatus("'0 <= distance_resolution' is necessary.");
+            return false;
+        }
+
+        if(resAngFact < 0) {
+            IJ.showStatus("'0 <= angle_resolution_factor' is necessary.");
+            return false;
+        }
+
+        if(minVotes < 0) {
+            IJ.showStatus("'0 <= min_votes' is necessary.");
+            return false;
+        }
+
+        if(minLen < 0) {
+            IJ.showStatus("'0 <= min_length' is necessary.");
+            return false;
+        }
+
+        if(maxGap < 0) {
+            IJ.showStatus("'0 <= max_allowed_gap' is necessary.");
+            return false;
+        }
+
         IJ.showStatus("OCV_HoughLinesP");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         //do nothing
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
-        if (imp == null)
-        {
+
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return DOES_8G;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src
         int imw = ip.getWidth();
         int imh = ip.getHeight();
@@ -135,7 +147,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
 
         // mat
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_lines = new Mat();          
+        Mat dst_lines = new Mat();
 
         // run
         src_mat.put(0, 0, src_ar);
@@ -146,32 +158,29 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
     }
 
     // private
-    private void showData(Mat lines)
-    {
+    private void showData(Mat lines) {
         // prepare the ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);        
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
         // prepare the ROI Manager
         RoiManager roiMan = null;
-        
-        if(enAddRoi)
-        {
+
+        if(enAddRoi) {
             roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         }
-       
+
         // show
         int num_lines = lines.rows();
         int[] line = new int[4];
-        
-        for(int i = 0; i < num_lines; i++)
-        {
+
+        for(int i = 0; i < num_lines; i++) {
             lines.get(i, 0, line);
-            
+
             int x1 = line[0];
             int y1 = line[1];
             int x2 = line[2];
             int y2 = line[3];
-            
+
             rt.incrementCounter();
             rt.addValue("No", i + 1);
             rt.addValue("x1", x1);
@@ -179,8 +188,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener
             rt.addValue("x2", x2);
             rt.addValue("y2", y2);
 
-            if(enAddRoi && (roiMan != null))
-            {
+            if(enAddRoi && (roiMan != null)) {
                 Line roi = new Line(x1, y1, x2, y2);
                 roiMan.addRoi(roi);
                 roiMan.rename(i, "no" + String.valueOf(i + 1));

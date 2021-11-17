@@ -39,8 +39,7 @@ import org.opencv.core.Rect;
 /**
  * grabCut (OpenCV4.5.3).
  */
-public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 8-bit single-channel mask.
     private final String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK" };
@@ -51,18 +50,17 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     private static int ind_msk = 1;
     private static int ind_type = 0;
     private static int iter = 3;
-    private static boolean enFgd = true;   
-        
+    private static boolean enFgd = true;
+
     // var.
     private ImagePlus imp_src = null;
     private ImagePlus imp_msk = null;
     private Rect rect = null;
     private int[] lst_wnd;
-    private String[] titles_wnd;    
+    private String[] titles_wnd;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addChoice("src", titles_wnd, titles_wnd[ind_src]);
@@ -72,91 +70,89 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         gd.addCheckbox("enable_foreground_is_255", enFgd);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
-        
+
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         ind_src = (int)gd.getNextChoiceIndex();
         ind_msk = (int)gd.getNextChoiceIndex();
         iter = (int)gd.getNextNumber();
         ind_type = (int)gd.getNextChoiceIndex();
-        enFgd = (boolean)gd.getNextBoolean();   
-        
-        if(ind_src == ind_msk) { IJ.showStatus("The same image can not be selected."); return false; }
+        enFgd = (boolean)gd.getNextBoolean();
+
+        if(ind_src == ind_msk) {
+            IJ.showStatus("The same image can not be selected.");
+            return false;
+        }
 
         imp_src = WindowManager.getImage(lst_wnd[ind_src]);
         imp_msk = WindowManager.getImage(lst_wnd[ind_msk]);
 
-        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) { IJ.showStatus("The image should be RGB, and the mask should be 8bit gray."); return false; }
-        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) { IJ.showStatus("The size of src should be same as the size of mask."); return false; }
-        
+        if(imp_src.getBitDepth() != 24 || imp_msk.getBitDepth() != 8) {
+            IJ.showStatus("The image should be RGB, and the mask should be 8bit gray.");
+            return false;
+        }
+
+        if(imp_src.getWidth() != imp_msk.getWidth() || imp_src.getHeight() != imp_msk.getHeight()) {
+            IJ.showStatus("The size of src should be same as the size of mask.");
+            return false;
+        }
+
         IJ.showStatus("OCV_GrabCut");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             // get the windows
             lst_wnd = WindowManager.getIDList();
 
-            if (lst_wnd==null || lst_wnd.length < 2)
-            {
+            if(lst_wnd == null || lst_wnd.length < 2) {
                 IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
             titles_wnd = new String[lst_wnd.length];
 
-            for (int i=0; i < lst_wnd.length; i++)
-            {
+            for(int i = 0; i < lst_wnd.length; i++) {
                 ImagePlus imp2 = WindowManager.getImage(lst_wnd[i]);
                 titles_wnd[i] = imp2 != null ? imp2.getTitle() : "";
             }
-            
+
             // get the ROI
             Rectangle rect_java;
 
-            if(imp.getRoi() != null)
-            {
+            if(imp.getRoi() != null) {
                 rect_java = imp.getRoi().getBounds();
             }
-            else
-            {
+            else {
                 rect_java = new Rectangle(1, 1, imp.getWidth() - 2, imp.getHeight() - 2);
             }
-            
+
             rect = new Rect(rect_java.x , rect_java.y, rect_java.width, rect_java.height);
 
             return FLAGS;
@@ -164,8 +160,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src (RGB)
         int[] src_arr = (int[])imp_src.getChannelProcessor().getPixels();
         int imw_src = imp_src.getWidth();
@@ -183,25 +178,21 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         Mat mat_msk = new Mat(imh_msk, imw_msk, CvType.CV_8UC1);
         Mat bgdModel = new Mat();
         Mat fgdModel = new Mat();
-        
-        // run      
+
+        // run
         mat_msk.put(0, 0, msk_arr);
-        Imgproc.grabCut(mat_src, mat_msk, rect, bgdModel, fgdModel, iter, TYPE_VAL[ind_type]);        
-        mat_msk.get(0, 0, msk_arr);        
-        
-        if(enFgd)
-        {
-            for(int i = 0; i < numpix_msk; i++)
-            {
-                if(msk_arr[i] == Imgproc.GC_FGD || msk_arr[i] == Imgproc.GC_PR_FGD)
-                {
+        Imgproc.grabCut(mat_src, mat_msk, rect, bgdModel, fgdModel, iter, TYPE_VAL[ind_type]);
+        mat_msk.get(0, 0, msk_arr);
+
+        if(enFgd) {
+            for(int i = 0; i < numpix_msk; i++) {
+                if(msk_arr[i] == Imgproc.GC_FGD || msk_arr[i] == Imgproc.GC_PR_FGD) {
                     msk_arr[i] = (byte)255;
                 }
-                else
-                {
+                else {
                     msk_arr[i] = (byte)0;
                 }
             }
-        }  
+        }
     }
 }

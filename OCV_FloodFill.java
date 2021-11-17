@@ -42,8 +42,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * floodFill (OpenCV4.5.3).
  */
-public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | KEEP_PREVIEW; // 1- or 3-channel, 8-bit, or floating-point image.
     private static final int[] INT_FLAGS = { 4, 8, Imgproc.FLOODFILL_FIXED_RANGE };
@@ -60,19 +59,18 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static double upDiff_1 = 5.0;
     private static double upDiff_2 = 5.0;
     private static int indFlags = 1;
-    
+
     // var.
     private RoiManager roiMan = null;
     private int[] selectedIndexes = null;
     private Scalar newVal = null;
     private Scalar loDiff = null;
     private Scalar upDiff = null;
-    
+
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-       
+
         gd.addNumericField("newVal_B", newVal_0, 3);
         gd.addNumericField("newVal_G", newVal_1, 3);
         gd.addNumericField("newVal_R", newVal_2, 3);
@@ -90,90 +88,79 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         newVal_0 = (double)gd.getNextNumber();
         newVal_1 = (double)gd.getNextNumber();
         newVal_2 = (double)gd.getNextNumber();
         loDiff_0 = (double)gd.getNextNumber();
         loDiff_1 = (double)gd.getNextNumber();
-        loDiff_2 = (double)gd.getNextNumber();      
+        loDiff_2 = (double)gd.getNextNumber();
         upDiff_0 = (double)gd.getNextNumber();
         upDiff_1 = (double)gd.getNextNumber();
-        upDiff_2 = (double)gd.getNextNumber();        
+        upDiff_2 = (double)gd.getNextNumber();
         indFlags = (int)gd.getNextChoiceIndex();
 
         if(
-            Double.isNaN(newVal_0) || 
-            Double.isNaN(newVal_1) || 
-            Double.isNaN(newVal_2) || 
-            Double.isNaN(loDiff_0) || 
-            Double.isNaN(loDiff_1) || 
-            Double.isNaN(loDiff_2) || 
-            Double.isNaN(upDiff_0) || 
-            Double.isNaN(upDiff_1) || 
-            Double.isNaN(upDiff_2))
-        {
+            Double.isNaN(newVal_0) ||
+            Double.isNaN(newVal_1) ||
+            Double.isNaN(newVal_2) ||
+            Double.isNaN(loDiff_0) ||
+            Double.isNaN(loDiff_1) ||
+            Double.isNaN(loDiff_2) ||
+            Double.isNaN(upDiff_0) ||
+            Double.isNaN(upDiff_1) ||
+            Double.isNaN(upDiff_2)) {
             IJ.showStatus("ERR : NaN");
             return false;
         }
-        
+
         newVal = new Scalar(newVal_0, newVal_1, newVal_2);
         loDiff = new Scalar(loDiff_0, loDiff_1, loDiff_2);
         upDiff = new Scalar(upDiff_0, upDiff_1, upDiff_2);
-        
+
         IJ.showStatus("OCV_FloodFill");
         return true;
     }
 
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String string, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
-        if (imp == null)
-        {
+
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             // get the ROI Manager
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
             int num_roi = roiMan.getCount();
 
-            if(num_roi == 0)
-            {
+            if(num_roi == 0) {
                 IJ.error("ROI is vacant. Select points.");
                 return DONE;
             }
-            
+
             // get the selected rois
             selectedIndexes = roiMan.getSelectedIndexes();
-            
-            if(selectedIndexes == null || selectedIndexes.length == 0)
-            {
+
+            if(selectedIndexes == null || selectedIndexes.length == 0) {
                 selectedIndexes = new int[] { 0 };
             }
 
@@ -182,86 +169,78 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // set varr.
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         Rect rect = new Rect(0, 0, imw, imh);
-        
+
         // get seed points
         int num_slctd = selectedIndexes.length;
         ArrayList<Point> lstPt = new ArrayList<Point>();
 
-        for(int i = 0; i < num_slctd; i++)
-        {
+        for(int i = 0; i < num_slctd; i++) {
             Roi roi = roiMan.getRoi(selectedIndexes[i]);
-            OCV__LoadLibrary.GetCoordinates(roi, lstPt);           
+            OCV__LoadLibrary.GetCoordinates(roi, lstPt);
         }
-        
-        
-        if(ip.getBitDepth() == 8)
-        {
+
+
+        if(ip.getBitDepth() == 8) {
             // srcdst
-            byte[] srcdst_bytes = (byte[])ip.getPixels(); 
+            byte[] srcdst_bytes = (byte[])ip.getPixels();
 
             // mat
             Mat srcdst_mat = new Mat(imh, imw, CvType.CV_8UC1);
             srcdst_mat.put(0, 0, srcdst_bytes);
-            
+
             // run
             int num = lstPt.size();
-        
-            for(int i = 0; i < num; i++)
-            {
+
+            for(int i = 0; i < num; i++) {
                 Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
                 Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
 
-                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);            
+                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
             }
 
             srcdst_mat.get(0, 0, srcdst_bytes);
         }
-        else if(ip.getBitDepth() == 24)
-        {
+        else if(ip.getBitDepth() == 24) {
             // srcdst
-            int[] srcdst_ints = (int[])ip.getPixels(); 
+            int[] srcdst_ints = (int[])ip.getPixels();
 
             // mat
             Mat srcdst_mat = new Mat(imh, imw, CvType.CV_8UC3);
             OCV__LoadLibrary.intarray2mat(srcdst_ints, srcdst_mat, imw, imh);
-            
+
             // run
             int num = lstPt.size();
-        
-            for(int i = 0; i < num; i++)
-            {
+
+            for(int i = 0; i < num; i++) {
                 Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
                 Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
 
-                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);            
+                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
             }
 
-            OCV__LoadLibrary.mat2intarray(srcdst_mat, srcdst_ints, imw, imh);            
+            OCV__LoadLibrary.mat2intarray(srcdst_mat, srcdst_ints, imw, imh);
         }
-        else if(ip.getBitDepth() == 32)
-        {
+        else if(ip.getBitDepth() == 32) {
             // srcdst
-            float[] srcdst_floats = (float[])ip.getPixels(); 
+            float[] srcdst_floats = (float[])ip.getPixels();
 
             // mat
             Mat srcdst_mat = new Mat(imh, imw, CvType.CV_32F);
             srcdst_mat.put(0, 0, srcdst_floats);
-            
+
             // run
             int num = lstPt.size();
-        
-            for(int i = 0; i < num; i++)
-            {
+
+            for(int i = 0; i < num; i++) {
                 Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
                 Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
 
-                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);            
+                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
             }
 
             srcdst_mat.get(0, 0, srcdst_floats);
