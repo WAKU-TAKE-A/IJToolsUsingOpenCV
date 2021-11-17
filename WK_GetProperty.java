@@ -33,8 +33,7 @@ import java.awt.datatransfer.StringSelection;
 /**
  * System.getProperty.
  */
-public class WK_GetProperty implements ExtendedPlugInFilter
-{
+public class WK_GetProperty implements ExtendedPlugInFilter {
     // constant var.
     private final int FLAGS = NO_IMAGE_REQUIRED;
     private static final String[] LIST_KEYS = {
@@ -89,53 +88,48 @@ public class WK_GetProperty implements ExtendedPlugInFilter
         "user.language",
         "user.name",
         "user.timezone",
-        "user.variant"};
+        "user.variant"
+    };
 
     // static var.
     private static int ind_list = 7;
 
     @Override
-    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr)
-    {
+    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
         gd.addChoice("key", LIST_KEYS, LIST_KEYS[ind_list]);
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             ind_list = (int)gd.getNextChoiceIndex();
             return FLAGS;
         }
     }
-    
+
     @Override
-    public void setNPasses(int i)
-    {
+    public void setNPasses(int i) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus ip)
-    {
+    public int setup(String string, ImagePlus ip) {
         // do nothing
         return FLAGS;
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         String key = LIST_KEYS[ind_list];
         String val = System.getProperty(key);
         val = val.replaceAll(";", "\r\n");
-        
+
         Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
         StringSelection selection = new StringSelection(val);
         clipboard.setContents(selection, null);
-        
+
         IJ.showMessageWithCancel(key, val);
     }
 }

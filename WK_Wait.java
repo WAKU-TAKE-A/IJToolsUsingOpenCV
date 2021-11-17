@@ -30,8 +30,7 @@ import ij.plugin.filter.*;
 /**
  * Wait time.
  */
-public class WK_Wait implements ExtendedPlugInFilter
-{
+public class WK_Wait implements ExtendedPlugInFilter {
     // constant var.
     private final int FLAGS = NO_IMAGE_REQUIRED;
 
@@ -39,40 +38,34 @@ public class WK_Wait implements ExtendedPlugInFilter
     private static int wtime = 0;
 
     @Override
-    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr)
-    {
+    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
         gd.addNumericField("waittime", wtime, 0);
         gd.addMessage("The unit is ms.");
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             wtime = (int)gd.getNextNumber();
             return FLAGS;
         }
     }
-    
+
     @Override
-    public void setNPasses(int i)
-    {
+    public void setNPasses(int i) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus ip)
-    {
+    public int setup(String string, ImagePlus ip) {
         // do nothing
         return FLAGS;
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         OCV__LoadLibrary.Wait(wtime);
     }
 }

@@ -33,8 +33,7 @@ import java.awt.Rectangle;
 /**
  * Change the pixel values.
  */
-public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
-{
+public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private final int FLAGS = DOES_8G | DOES_16 | DOES_32 | CONVERT_TO_FLOAT | DOES_STACKS | PARALLELIZE_STACKS | KEEP_PREVIEW;
     private static final float USHORT_MAX = 65535;
@@ -55,32 +54,28 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
     private int bitDepth = 0;
 
     @Override
-    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr)
-    {
+    public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr) {
         lower = 0 < ip.getProcessor().getMinThreshold() ? (int)(ip.getProcessor().getMinThreshold()) : lower;
         upper = 0 < ip.getProcessor().getMaxThreshold() ? (int)(ip.getProcessor().getMaxThreshold()) : upper;
         type = type == null ? INNER : type;
 
         double min_val = 0;
         double max_val = 0;
-        
-        if(bitDepth == 8)
-        {
+
+        if(bitDepth == 8) {
             min_val = 0;
             max_val = UBYTE_MAX;
         }
-        else if(bitDepth == 16)
-        {
+        else if(bitDepth == 16) {
             min_val = 0;
-            max_val = USHORT_MAX;   
+            max_val = USHORT_MAX;
         }
-        else
-        {
+        else {
             ImageStatistics stat =  ip.getStatistics();
             min_val = stat.min - 1;
             max_val = stat.max + 1;
         }
-        
+
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addSlider("lower", min_val, max_val, lower);
@@ -93,69 +88,61 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(ip, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         lower = (float)gd.getNextNumber();
         upper = (float)gd.getNextNumber();
-        
-        if(upper < lower) { IJ.showStatus("'lower <= upper' is necessary."); return false; }
 
-        if(bitDepth == 8 || bitDepth == 16)
-        {
-            lower = checkValue(lower, 0, valMax);
-            upper = checkValue(upper, 0, valMax);      
+        if(upper < lower) {
+            IJ.showStatus("'lower <= upper' is necessary.");
+            return false;
         }
-        
+
+        if(bitDepth == 8 || bitDepth == 16) {
+            lower = checkValue(lower, 0, valMax);
+            upper = checkValue(upper, 0, valMax);
+        }
+
         type = (String)BYNARY_TYPE[(int)gd.getNextChoiceIndex()];
 
         valTrue = (float)gd.getNextNumber();
         valFalse = (float)gd.getNextNumber();
-        
-        if(bitDepth == 8 || bitDepth == 16)
-        {        
+
+        if(bitDepth == 8 || bitDepth == 16) {
             valTrue = checkValue(valTrue, 0, valMax);
             valFalse = checkValue(valFalse, 0, valMax);
         }
-        
+
         IJ.showStatus("WK_ChangePixelValue");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int i)
-    {
+    public void setNPasses(int i) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus ip)
-    {
-        if (ip == null)
-        {
+    public int setup(String string, ImagePlus ip) {
+        if(ip == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             bitDepth = ip.getBitDepth();
 
-            if(bitDepth == 8)
-            {
+            if(bitDepth == 8) {
                 valMax = UBYTE_MAX;
             }
-            else if(bitDepth == 16)
-            {
+            else if(bitDepth == 16) {
                 valMax = USHORT_MAX;
             }
 
@@ -164,108 +151,86 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         float[] srcdst = (float[])((FloatProcessor)ip).getPixels();
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         int numpix = imw * imh;
-        Rectangle rect = ip.getRoi();       
-        
-        if(rect == null || (rect.width == imw && rect.height == imh))
-        {       
-            rect = null;          
+        Rectangle rect = ip.getRoi();
+
+        if(rect == null || (rect.width == imw && rect.height == imh)) {
+            rect = null;
         }
-        else
-        {
+        else {
             rect = ip.getRoi().getBounds();
         }
 
-        if(bitDepth == 8 || bitDepth == 16)
-        {
+        if(bitDepth == 8 || bitDepth == 16) {
             float[] table = makeTable(lower, upper, type, valTrue, valFalse);
 
-            if(rect == null)
-            {
+            if(rect == null) {
                 changePixelValueWithTable(srcdst, numpix, table);
             }
-            else
-            {
+            else {
                 changePixelValueWithTable(srcdst, imw, rect.x, rect.y, rect.width, rect.height, table);
-            }           
+            }
         }
-        else
-        {
-            if(rect == null)
-            {
+        else {
+            if(rect == null) {
                 rect = new Rectangle(0, 0, imw, imh);
             }
-            
+
             changePixelValueForFloat(srcdst, lower, upper, type, valTrue, valFalse, imw, rect.x, rect.y, rect.width, rect.height);
         }
     }
-   
-    private float checkValue(float src, float min, float max)
-    {
+
+    private float checkValue(float src, float min, float max) {
         float dst = 0;
 
-        if(src < min)
-        {
+        if(src < min) {
             dst = min;
         }
-        else if(max < src)
-        {
+        else if(max < src) {
             dst = max;
         }
-        else
-        {
+        else {
             dst = src;
         }
 
         return dst;
     }
 
-    private float[] makeTable(float lower, float upper, String type, float val_tr, float val_fls)
-    {
+    private float[] makeTable(float lower, float upper, String type, float val_tr, float val_fls) {
         float[] table_new = new float[(int)valMax  + 1];
 
-        for (int i = 0; i < lower; i++)
-        {
-            if(type.equals(OUTER)) // true
-            {
+        for(int i = 0; i < lower; i++) {
+            if(type.equals(OUTER)) { // true
                 table_new[i] = (float)val_tr;
             }
-            else if(type.equals(INNER)) // false
-            {
+            else if(type.equals(INNER)) { // false
                 table_new[i] = (float)val_fls;
             }
         }
 
         int lower_int = (int)lower;
         int upper_int = (int)upper;
-        
-        for (int i = lower_int; i < upper_int + 1; i++)
-        {
-            if(type.equals(OUTER)) // false
-            {
+
+        for(int i = lower_int; i < upper_int + 1; i++) {
+            if(type.equals(OUTER)) { // false
                 table_new[i] = (float)val_fls;
             }
-            else if(type.equals(INNER)) // true
-            {
+            else if(type.equals(INNER)) { // true
                 table_new[i] = (float)val_tr;
             }
         }
 
         int valMax_int = (int)valMax;
-        
-        for (int i = upper_int + 1; i < valMax_int + 1; i++)
-        {
-            if(type.equals(OUTER)) // true
-            {
+
+        for(int i = upper_int + 1; i < valMax_int + 1; i++) {
+            if(type.equals(OUTER)) { // true
                 table_new[i] = (float)val_tr;
             }
-            else if(type.equals(INNER)) // false
-            {
+            else if(type.equals(INNER)) { // false
                 table_new[i] = (float)val_fls;
             }
         }
@@ -273,78 +238,60 @@ public class WK_ChangePixelValue implements ExtendedPlugInFilter, DialogListener
         return table_new;
     }
 
-    private void changePixelValueWithTable(float[] srcdst, int num, float[] tbl)
-    {
-        for (int i = 0; i < num; i++)
-        {
+    private void changePixelValueWithTable(float[] srcdst, int num, float[] tbl) {
+        for(int i = 0; i < num; i++) {
             srcdst[i] = tbl[(int)srcdst[i]];
         }
     }
 
-    private void changePixelValueWithTable(float[] srcdst, int str, int roix, int roiy, int roiw, int roih, float[] tbl)
-    {
+    private void changePixelValueWithTable(float[] srcdst, int str, int roix, int roiy, int roiw, int roih, float[] tbl) {
         int k = 0;
 
-        for (int y = 0; y < roih; y++)
-        {
-            for (int x = 0; x < roiw; x++)
-            {
+        for(int y = 0; y < roih; y++) {
+            for(int x = 0; x < roiw; x++) {
                 k = x + roix + (str * (y + roiy));
                 srcdst[k] = tbl[(int)srcdst[k]];
             }
         }
     }
-  
+
     private void  changePixelValueForFloat(
-            float[] srcdst, 
-            float thr_low, float thr_high,
-            String type,
-            float val_tr, float val_fls,
-            int str, int roix, int roiy, int roiw, int roih)
-    {
+        float[] srcdst,
+        float thr_low, float thr_high,
+        String type,
+        float val_tr, float val_fls,
+        int str, int roix, int roiy, int roiw, int roih) {
         int k = 0;
-        
-        if(type.equals(OUTER))
-        {
-            for (int y = 0; y < roih; y++)
-            {
-                for (int x = 0; x < roiw; x++)
-                {
+
+        if(type.equals(OUTER)) {
+            for(int y = 0; y < roih; y++) {
+                for(int x = 0; x < roiw; x++) {
                     k = x + roix + (str * (y + roiy));
 
-                    if(srcdst[k] < thr_low)
-                    {
-                         srcdst[k] = val_tr;
+                    if(srcdst[k] < thr_low) {
+                        srcdst[k] = val_tr;
                     }
-                    else if (thr_low <= srcdst[k] && srcdst[k] <  thr_high)
-                    {
+                    else if(thr_low <= srcdst[k] && srcdst[k] <  thr_high) {
                         srcdst[k] = val_fls;
                     }
-                    else if(thr_high <= srcdst[k])
-                    {
+                    else if(thr_high <= srcdst[k]) {
                         srcdst[k] = val_tr;
                     }
                 }
             }
         }
-        else if(type.equals(INNER))
-        {
-            for (int y = 0; y < roih; y++)
-            {
-                for (int x = 0; x < roiw; x++)
-                {
+        else if(type.equals(INNER)) {
+            for(int y = 0; y < roih; y++) {
+                for(int x = 0; x < roiw; x++) {
                     k = x + roix + (str * (y + roiy));
 
-                    if(srcdst[k] < thr_low)
-                    {
-                         srcdst[k] = val_fls;
+                    if(srcdst[k] < thr_low) {
+                        srcdst[k] = val_fls;
                     }
-                    else if (thr_low <= srcdst[k] && srcdst[k] <  thr_high)
-                    {
+                    else if(thr_low <= srcdst[k] && srcdst[k] <  thr_high) {
                         srcdst[k] = val_tr;
                     }
-                    else if(thr_high <= srcdst[k])
-                    {
+                    else if(thr_high <= srcdst[k]) {
                         srcdst[k] = val_fls;
                     }
                 }

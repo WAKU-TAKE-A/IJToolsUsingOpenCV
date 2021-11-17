@@ -1,14 +1,14 @@
 import ij.IJ;
 import ij.ImagePlus;
-import ij.gui.GenericDialog;
-import ij.plugin.filter.ExtendedPlugInFilter;
-import ij.plugin.filter.PlugInFilterRunner;
 import ij.Prefs;
+import ij.gui.GenericDialog;
 import ij.gui.Plot;
 import ij.gui.ProfilePlot;
 import ij.gui.Roi;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
+import ij.plugin.filter.ExtendedPlugInFilter;
+import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
 import java.awt.event.MouseAdapter;
@@ -48,8 +48,7 @@ import org.opencv.videoio.VideoCapture;
 /**
  * Control UVC camera using VideoCapture function (OpenCV4.5.3).
  */
-public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
-{
+public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter {
     // const var.
     private final int FLAGS = NO_IMAGE_REQUIRED;
     // from /sources/modules/videoio/include/opencv2/videoio/videoio_c.h
@@ -57,17 +56,17 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     private final int CV_CAP_PROP_FRAME_HEIGHT = 4;
     /*
     VideoCapture API backends identifier.
-    
+
     * CAP_ANY : Auto detect.
     * CAP_DSHOW  : DirectShow (via videoInput).
     * CAP_MSMF : Microsoft Media Foundation (via videoInput).
     */
     private final int CV_CAP_ANY = 0;
     private final int CV_CAP_DSHOW = 700;
-    private final int  CV_CAP_MSMF = 1400;    
+    private final int  CV_CAP_MSMF = 1400;
     private final int[] INT_CAP_APIS = { CV_CAP_ANY, CV_CAP_DSHOW, CV_CAP_MSMF};
     private final String[] STR_CAP_APIS = { "Auto", "DirectShow", "MicrosoftMediaFoundation" };
-    
+
     // static var.
     private static int device = 0;
     private static int width = 640;
@@ -77,7 +76,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     private static int max_results = 100;
     private static boolean enProfile = true;
     private static int wait_time = 100;
-    private static boolean enOneShot = false; 
+    private static boolean enOneShot = false;
 
     // var.
     private String title = null;
@@ -87,7 +86,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
     private boolean flag_fin_loop = false;
     private boolean ini_verticalProfile = false;
     private ImagePlus impPlot = null;
-    
+
     // For speeding up.
     private static VideoCapture src_cap = null;
     private static ImagePlus imp_dsp = null;
@@ -112,15 +111,16 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 
         gd.showDialog();
 
-        if (gd.wasCanceled()) {
+        if(gd.wasCanceled()) {
             return DONE;
-        } else {
+        }
+        else {
             ini_verticalProfile = Prefs.verticalProfile;
-            
+
             int dev_bef = device;
             int w_bef = width;
-            int h_bef = height;            
-            
+            int h_bef = height;
+
             device = (int)gd.getNextNumber();
             width = (int)gd.getNextNumber();
             height = (int)gd.getNextNumber();
@@ -132,8 +132,8 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             wait_time = (int)gd.getNextNumber();
             enOneShot = (boolean)gd.getNextBoolean();
 
-            isChanged = src_cap == null || dev_bef != device || w_bef != width || h_bef != height;            
-            
+            isChanged = src_cap == null || dev_bef != device || w_bef != width || h_bef != height;
+
             return FLAGS;
         }
     }
@@ -170,10 +170,10 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         });
 
         diag_free.addWindowListener(new WindowAdapter() {
-              @Override
-              public void windowClosing(WindowEvent e) {
-                  flag_fin_loop = true;
-              }
+            @Override
+            public void windowClosing(WindowEvent e) {
+                flag_fin_loop = true;
+            }
         });
 
         diag_free.add(but_stop_cont);
@@ -200,16 +200,16 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
 
             imp_dsp = IJ.createImage(title, width, height, 1, 24);
             impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
-            imp_dsp.show();        
+            imp_dsp.show();
         }
-              
+
         // show stop dialog
         if(!enOneShot) {
             diag_free.setVisible(true);
         }
-        
+
         Mat src_mat = new Mat();
-        
+
         // run
         for(;;) {
             if(flag_fin_loop) {
@@ -220,7 +220,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             imp_dsp.startTiming();
             bret = src_cap.read(src_mat);
             IJ.showTime(imp_dsp, imp_dsp.getStartTime(), title + " : ");
-            
+
             if(!bret) {
                 IJ.error("Error occurred in grabbing.");
                 diag_free.dispose();
@@ -232,7 +232,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                 diag_free.dispose();
                 break;
             }
-            
+
             // display
             if(!imp_dsp.isVisible()) {
                 imp_dsp.close();
@@ -240,17 +240,18 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                 impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
                 imp_dsp.show();
             }
-            
+
             if(src_mat.type() == CvType.CV_8UC3) {
                 OCV__LoadLibrary.mat2intarray(src_mat, impdsp_intarray, width, height);
-            } else {
+            }
+            else {
                 IJ.error("Color camera is supported only.");
                 diag_free.dispose();
                 break;
             }
 
             imp_dsp.draw();
-            
+
             // Statistics.
             if(enCalcStat) {
                 ImagePlus impBuf;
@@ -294,14 +295,15 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                     tblResults.show("Results");
                 }
             }
-            
+
             // Profile.
             if(enProfile) {
                 Roi roi = imp_dsp.getRoi();
 
                 if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE)) {
                     plot = getProfilePlot(imp_dsp);
-                } else {
+                }
+                else {
                     if(plot != null) {
                         plot.dispose();
                         plot = null;
@@ -311,14 +313,15 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
                 if(plot != null) {
                     if(impPlot == null) {
                         impPlot = new ImagePlus("Profile (line or rectangle)", plot.getProcessor());
-                    } else {
+                    }
+                    else {
                         impPlot.setProcessor(null, plot.getProcessor());
                     }
 
                     impPlot.show();
                 }
             }
-            
+
             if(enOneShot) {
                 break;
             }
@@ -327,7 +330,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
             OCV__LoadLibrary.Wait(wait_time);
         }
 
-        Prefs.verticalProfile = ini_verticalProfile;                                                                           
+        Prefs.verticalProfile = ini_verticalProfile;
         diag_free.dispose();
     }
 
@@ -335,7 +338,7 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         ProfilePlot profPlot = new ProfilePlot(imp, Prefs.verticalProfile);
         double[] prof = profPlot.getProfile();
 
-        if (prof == null || prof.length < 2) {
+        if(prof == null || prof.length < 2) {
             return null;
         }
 
@@ -343,8 +346,8 @@ public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter
         String yLabel = "Value";
 
         Plot output_plot = new Plot("Profile", xLabel, yLabel);
-        output_plot.add("line", prof);        
-        
+        output_plot.add("line", prof);
+
         return output_plot;
     }
 }

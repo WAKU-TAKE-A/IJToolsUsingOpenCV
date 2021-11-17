@@ -35,8 +35,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * getRotationMatrix2D (OpenCV4.5.3).
  */
-public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
-{
+public class OCV_InvertAffineTransform implements ExtendedPlugInFilter {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
 
@@ -45,23 +44,19 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
     private Boolean isPerspective = false;
 
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         // do nothing
         return FLAGS;
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
-        if(isPerspective)
-        {
+    public void run(ImageProcessor ip) {
+        if(isPerspective) {
             Mat mat_src = new Mat(3, 3, CvType.CV_64FC1);
             Mat mat_dst = new Mat(3, 3, CvType.CV_64FC1);
 
@@ -92,8 +87,7 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
             rt.addValue("Column03", String.valueOf(mat_dst.get(2, 2)[0]));
             rt.show("Results");
         }
-        else
-        {
+        else {
             Mat mat_src = new Mat(2, 3, CvType.CV_64FC1);
             Mat mat_dst = new Mat(2, 3, CvType.CV_64FC1);
 
@@ -121,32 +115,26 @@ public class OCV_InvertAffineTransform implements ExtendedPlugInFilter
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
         rt = OCV__LoadLibrary.GetResultsTable(false);
 
-        if(rt == null)
-        {
+        if(rt == null) {
             IJ.error("ResultsTable is none.");
             return DONE;
         }
-        
-        if(rt.size() == 2)
-        {
+
+        if(rt.size() == 2) {
             isPerspective = false;
         }
-        else if(rt.size() == 3)
-        {
+        else if(rt.size() == 3) {
             isPerspective = true;
         }
-        else
-        {
+        else {
             IJ.error("It is necessary that ResultsTable.size() is either two or three.");
             return DONE;
         }

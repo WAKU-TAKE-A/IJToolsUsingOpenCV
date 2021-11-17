@@ -38,8 +38,7 @@ import java.awt.AWTEvent;
 /**
  * HoughLines (OpenCV4.5.3).
  */
-public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
-{
+public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G;
     private static final double CV_PI = 3.1415926535897932384626433832795;
@@ -55,8 +54,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
     private static boolean enAddRoi = true;
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
 
         gd.addNumericField("distance_resolution", resDist, 4);
@@ -73,19 +71,16 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         resDist = (double)gd.getNextNumber();
         resAngFact = (double)gd.getNextNumber();
         minVotes = (int)gd.getNextNumber();
@@ -94,52 +89,89 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
         srn = (double)gd.getNextNumber();
         stn = (double)gd.getNextNumber();
         enAddRoi = gd.getNextBoolean();
-        
-        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(srn) || Double.isNaN(stn) || Double.isNaN(minDeg) || Double.isNaN(maxDeg)) { IJ.showStatus("ERR : NaN"); return false; }
-        if(resDist < 0) { IJ.showStatus("'0 <= distance_resolution' is necessary."); return false; }
-        if(resAngFact < 0) { IJ.showStatus("'0 <= angle_resolution_factor' is necessary."); return false; }
-        if(minVotes < 0) { IJ.showStatus("'0 <= min_votes' is necessary."); return false; }
-        if(srn < 0) { IJ.showStatus("'0 <= divisor_distance' is necessary."); return false; }
-        if(stn < 0) { IJ.showStatus("'0 <= devisor_angle' is necessary."); return false; }
-        if(minDeg < 0) { IJ.showStatus("'0 <= min_angle' is necessary."); return false; }
-        if(maxDeg < 0) { IJ.showStatus("'0 <= max_angle' is necessary."); return false; }
-        if(360 < minDeg) { IJ.showStatus("'min_angle <= 360' is necessary."); return false; }
-        if(360 < maxDeg) { IJ.showStatus("'max_angle <= 360' is necessary."); return false; }
-        if(maxDeg < minDeg) { IJ.showStatus("'min_angle <= max_angle' is necessary."); return false; }
-        
+
+        if(Double.isNaN(resDist) || Double.isNaN(resAngFact) || Double.isNaN(srn) || Double.isNaN(stn) || Double.isNaN(minDeg) || Double.isNaN(maxDeg)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(resDist < 0) {
+            IJ.showStatus("'0 <= distance_resolution' is necessary.");
+            return false;
+        }
+
+        if(resAngFact < 0) {
+            IJ.showStatus("'0 <= angle_resolution_factor' is necessary.");
+            return false;
+        }
+
+        if(minVotes < 0) {
+            IJ.showStatus("'0 <= min_votes' is necessary.");
+            return false;
+        }
+
+        if(srn < 0) {
+            IJ.showStatus("'0 <= divisor_distance' is necessary.");
+            return false;
+        }
+
+        if(stn < 0) {
+            IJ.showStatus("'0 <= devisor_angle' is necessary.");
+            return false;
+        }
+
+        if(minDeg < 0) {
+            IJ.showStatus("'0 <= min_angle' is necessary.");
+            return false;
+        }
+
+        if(maxDeg < 0) {
+            IJ.showStatus("'0 <= max_angle' is necessary.");
+            return false;
+        }
+
+        if(360 < minDeg) {
+            IJ.showStatus("'min_angle <= 360' is necessary.");
+            return false;
+        }
+
+        if(360 < maxDeg) {
+            IJ.showStatus("'max_angle <= 360' is necessary.");
+            return false;
+        }
+
+        if(maxDeg < minDeg) {
+            IJ.showStatus("'min_angle <= max_angle' is necessary.");
+            return false;
+        }
+
         IJ.showStatus("OCV_HoughLines");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         //do nothing
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
-        if (imp == null)
-        {
+
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return DOES_8G;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src
         int imw = ip.getWidth();
         int imh = ip.getHeight();
@@ -147,11 +179,11 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
 
         // mat
         Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_lines = new Mat();          
+        Mat dst_lines = new Mat();
 
         // run
         src_mat.put(0, 0, src_ar);
-        
+
         double resAng = CV_PI / resAngFact;
         double minTheta = CV_PI / 360.0 * minDeg;
         double maxTheta = CV_PI / 360.0 * maxDeg;
@@ -162,27 +194,24 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
     }
 
     // private
-    private void showData(Mat lines, int imw, int imh)
-    {
+    private void showData(Mat lines, int imw, int imh) {
         // prepare the ResultsTable
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        
+
         // prepare the ROI Manager
         RoiManager roiMan = null;
-        
-        if(enAddRoi)
-        {
+
+        if(enAddRoi) {
             roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         }
-       
+
         // show
         int num_lines = lines.rows();
         float[] res = new float[2];
-        
-        for(int i = 0; i < num_lines; i++)
-        {
+
+        for(int i = 0; i < num_lines; i++) {
             lines.get(i, 0, res);
-            
+
             float rho = res[0];
             float theta = res[1];
             double a = Math.cos(theta);
@@ -194,7 +223,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
             double y1 = y0 + z * a;
             double x2 = x0 - z * (-b);
             double y2 = y0 - z * (a);
-            
+
             rt.incrementCounter();
             rt.addValue("No", i + 1);
             rt.addValue("theta", (double)theta / CV_PI * 180);
@@ -203,8 +232,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener
             rt.addValue("x2", x2);
             rt.addValue("y2", y2);
 
-            if(enAddRoi && (roiMan != null))
-            {
+            if(enAddRoi && (roiMan != null)) {
                 Line roi = new Line(x1, y1, x2, y2);
                 roiMan.addRoi(roi);
                 roiMan.rename(i, "no" + String.valueOf(i + 1));

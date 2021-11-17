@@ -54,8 +54,7 @@ import org.opencv.core.Point;
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB
  */
-public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private final int FLAGS = DOES_RGB;
     private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB"};
@@ -75,8 +74,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     private int countNPass = 0;
 
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addMessage("Type of feature detector is " + OCV__LoadLibrary.FeatDetType + ".");
@@ -89,19 +87,16 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         ind_match = (int)gd.getNextChoiceIndex();
         max_dist = (double)gd.getNextNumber();
         enDrawMatches = (boolean)gd.getNextBoolean();
@@ -109,54 +104,57 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         ransacReprojThreshold = (double)gd.getNextNumber();
 
         fname = TYPE_STR_DET[ind_det] + ".xml";
-        
-        if(Double.isNaN(max_dist)  || Double.isNaN(ransacReprojThreshold)) { IJ.showStatus("ERR : NaN"); return false; }        
-        if(max_dist <= 0) { IJ.showStatus("'0 < max_dist' is necessary."); return false; }
-        if(ransacReprojThreshold <= 0) { IJ.showStatus("'0 < max_dist' is necessary."); return false; }
+
+        if(Double.isNaN(max_dist)  || Double.isNaN(ransacReprojThreshold)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(max_dist <= 0) {
+            IJ.showStatus("'0 < max_dist' is necessary.");
+            return false;
+        }
+
+        if(ransacReprojThreshold <= 0) {
+            IJ.showStatus("'0 < max_dist' is necessary.");
+            return false;
+        }
 
         IJ.showStatus("OCV_FeatDet_2nd_Match");
         return true;
     }
 
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if(OCV__LoadLibrary.QueryMat == null || OCV__LoadLibrary.QueryKeys == null || OCV__LoadLibrary.QueryKeys.rows() == 0 || OCV__LoadLibrary.QueryDesc == null || OCV__LoadLibrary.QueryDesc.rows() == 0 || OCV__LoadLibrary.FeatDetType == null)
-        {
+        if(OCV__LoadLibrary.QueryMat == null || OCV__LoadLibrary.QueryKeys == null || OCV__LoadLibrary.QueryKeys.rows() == 0 || OCV__LoadLibrary.QueryDesc == null || OCV__LoadLibrary.QueryDesc.rows() == 0 || OCV__LoadLibrary.FeatDetType == null) {
             IJ.error("Query is empty.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
 
-        for(int i = 0; i < TYPE_STR_DET.length; i++)
-        {
-            if(OCV__LoadLibrary.FeatDetType.equals(TYPE_STR_DET[i]))
-            {
+        for(int i = 0; i < TYPE_STR_DET.length; i++) {
+            if(OCV__LoadLibrary.FeatDetType.equals(TYPE_STR_DET[i])) {
                 ind_det = i;
                 break;
             }
         }
 
-        if(ind_det == -1)
-        {
-             IJ.error("Unknown error.");
+        if(ind_det == -1) {
+            IJ.error("Unknown error.");
             return DONE;
         }
 
@@ -164,10 +162,8 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
-        try
-        {
+    public void run(ImageProcessor ip) {
+        try {
             // TrainImage
             int[] arr_train = (int[])ip.getPixels();
             int imw_train = ip.getWidth();
@@ -180,20 +176,17 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             detector.create();
             File file = new File(fname);
 
-            if(file.exists())
-            {
+            if(file.exists()) {
                 detector.readParam(fname);
             }
-            else
-            {
+            else {
                 detector.writeDefalutParam(fname);
             }
 
             MatOfKeyPoint key_train = new MatOfKeyPoint();
             detector.detect(mat_train, key_train);
 
-            if(key_train.rows() == 0)
-            {
+            if(key_train.rows() == 0) {
                 throw new Exception("key_train.rows() == 0");
             }
 
@@ -201,12 +194,11 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             Mat desc_train = new Mat();
             detector.compute(mat_train, key_train, desc_train);
 
-            if(desc_train.rows() == 0)
-            {
+            if(desc_train.rows() == 0) {
                 throw new Exception("desc_train.rows() == 0");
             }
 
-            // Match   
+            // Match
             DescriptorMatcher matcher = DescriptorMatcher.create(TYPE_VAL_MATCH[ind_match]);
             MatOfDMatch matchQt = new MatOfDMatch();
             MatOfDMatch matchTq = new MatOfDMatch();
@@ -223,18 +215,15 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             MatOfPoint2f pnts_train = new MatOfPoint2f();
             boolean[] chk = new boolean[num_max];
 
-            for(int i = 0; i < num_matchTq; i++)
-            {
+            for(int i = 0; i < num_matchTq; i++) {
                 int tq_trainIdx = (int)getElementOfDMatch(matchTq, i)[1];
 
-                for(int di = 0; di < num_matchQt; di++)
-                {
+                for(int di = 0; di < num_matchQt; di++) {
                     int qt_queryIdx = (int)getElementOfDMatch(matchQt, di)[0];
                     int qt_trainIdx = (int)getElementOfDMatch(matchQt, di)[1];
                     int qt_distance = (int)getElementOfDMatch(matchQt, di)[3];
 
-                    if(!chk[qt_queryIdx] && qt_distance <= max_dist && qt_queryIdx == tq_trainIdx)
-                    {
+                    if(!chk[qt_queryIdx] && qt_distance <= max_dist && qt_queryIdx == tq_trainIdx) {
                         chk[qt_queryIdx] = true;
                         cross_match.push_back(matchQt.row(di));
                         pnts_query.push_back(getPointOfKeyPoint(OCV__LoadLibrary.QueryKeys, qt_queryIdx));
@@ -247,54 +236,46 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             // Output result
             Mat mskOfRansac = new Mat();
 
-            if(enDetectQuery)
-            {
+            if(enDetectQuery) {
                 drawDetectedCorner(OCV__LoadLibrary.QueryMat, pnts_query, pnts_train, mskOfRansac);
             }
 
-            if(enDrawMatches)
-            {
+            if(enDrawMatches) {
                 showData(OCV__LoadLibrary.QueryKeys, key_train, cross_match, mskOfRansac);
                 drawMatches(OCV__LoadLibrary.QueryMat, OCV__LoadLibrary.QueryKeys, mat_train, key_train, cross_match);
             }
         }
-        catch (Exception ex)
-        {
-             IJ.showStatus("Can not calculation. ( " +  ex.getMessage() + " )"); // Not suitable, but to prevent "Unknown error".
+        catch(Exception ex) {
+            IJ.showStatus("Can not calculation. ( " +  ex.getMessage() + " )"); // Not suitable, but to prevent "Unknown error".
         }
     }
 
-    private float[] getElementOfDMatch(MatOfDMatch src, int row)
-    {
+    private float[] getElementOfDMatch(MatOfDMatch src, int row) {
         float[] dst = new float[4];
         src.get(row, 0, dst);
         return dst;
     }
-    
-    private MatOfPoint2f getPointOfKeyPoint(MatOfKeyPoint src, int row)
-    {
+
+    private MatOfPoint2f getPointOfKeyPoint(MatOfKeyPoint src, int row) {
         double[] buf = src.get(row, 0);
         return new MatOfPoint2f(new Point(buf[0], buf[1]));
     }
 
     private void showData(
-            MatOfKeyPoint key_query,
-            MatOfKeyPoint key_train,
-            MatOfDMatch dmatch,
-            Mat mskOfRansac)
-    {
+        MatOfKeyPoint key_query,
+        MatOfKeyPoint key_train,
+        MatOfDMatch dmatch,
+        Mat mskOfRansac) {
         int num = dmatch.rows();
         boolean existMsk = 0 < mskOfRansac.rows();
-        
-        if(num == 0)
-        {
+
+        if(num == 0) {
             return;
         }
-        
+
         ResultsTable dst_rt = OCV__LoadLibrary.GetResultsTable(true);
-        
-        for(int i = 0; i < num; i++)
-        {
+
+        for(int i = 0; i < num; i++) {
             float[] ele_match = getElementOfDMatch(dmatch, i);
             int queryidx = (int)ele_match[0];
             int trainidx = (int)ele_match[1];
@@ -336,41 +317,37 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             dst_rt.addValue("distance", distance);
             dst_rt.addValue("RANSAC", ransac);
         }
-        
+
         dst_rt.show("Results");
     }
-    
     private void drawMatches(
-            Mat mat_query,
-            MatOfKeyPoint key_query,
-            Mat mat_train,
-            MatOfKeyPoint key_train,
-            MatOfDMatch dmatch)
-    {
+        Mat mat_query,
+        MatOfKeyPoint key_query,
+        Mat mat_train,
+        MatOfKeyPoint key_train,
+        MatOfDMatch dmatch) {
         Mat mat_dst = new Mat();
         Features2d.drawMatches(mat_query, key_query, mat_train, key_train, dmatch, mat_dst);
 
         String title_dst = WindowManager.getUniqueName("FeatureDetection_Match");
         int imw_dst = mat_dst.cols();
         int imh_dst = mat_dst.rows();
-        ImagePlus imp_dst = new ImagePlus (title_dst, new ColorProcessor(imw_dst, imh_dst));
+        ImagePlus imp_dst = new ImagePlus(title_dst, new ColorProcessor(imw_dst, imh_dst));
         int[] arr_dst = (int[]) imp_dst.getChannelProcessor().getPixels();
         OCV__LoadLibrary.mat2intarray(mat_dst, arr_dst, imw_dst, imh_dst);
         imp_dst.show();
     }
 
     private void drawDetectedCorner(
-            Mat mat_query,
-            MatOfPoint2f pnts_query,
-            MatOfPoint2f pnts_train,
-            Mat mskOfRansac)
-    {
+        Mat mat_query,
+        MatOfPoint2f pnts_query,
+        MatOfPoint2f pnts_train,
+        Mat mskOfRansac) {
         Size size_query = mat_query.size();
         int num_query = pnts_query.rows();
-        int num_train = pnts_train.rows();        
+        int num_train = pnts_train.rows();
 
-        if(num_query < 4 || num_train < 4)
-        {
+        if(num_query < 4 || num_train < 4) {
             return;
         }
 
@@ -381,16 +358,15 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         corner_query[3] = new Point(0, size_query.height);
         MatOfPoint2f corner_query_mat = new MatOfPoint2f(corner_query);
         MatOfPoint2f corner_detected_mat = new MatOfPoint2f();
-        
+
         Mat hg = Calib3d.findHomography(pnts_query, pnts_train, Calib3d.RANSAC, ransacReprojThreshold, mskOfRansac, 2000, 0.995); // "maxIters = 2000" and "confidence = 0.995" is default value.
 
-        if(hg == null || hg.rows() == 0)
-        {
+        if(hg == null || hg.rows() == 0) {
             return;
         }
 
         Core.perspectiveTransform(corner_query_mat, corner_detected_mat, hg);
-        
+
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
 
         float[] pnts_x = {
@@ -400,7 +376,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             (float)corner_detected_mat.get(3, 0)[0],
             (float)corner_detected_mat.get(0, 0)[0],
         };
-        
+
         float[] pnts_y = {
             (float)corner_detected_mat.get(0, 0)[1],
             (float)corner_detected_mat.get(1, 0)[1],
@@ -408,11 +384,11 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             (float)corner_detected_mat.get(3, 0)[1],
             (float)corner_detected_mat.get(0, 0)[1],
         };
-        
-        PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYGON);
+
+        PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYLINE);
         roi.setPosition(countNPass + 1); // Start from one.
         countNPass++;
-        
+
         roiMan.addRoi(roi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);

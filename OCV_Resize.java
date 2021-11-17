@@ -36,46 +36,43 @@ import org.opencv.imgproc.Imgproc;
 /**
  * resize (OpenCV4.5.3).
  */
-public class OCV_Resize implements ExtendedPlugInFilter, DialogListener
-{
+public class OCV_Resize implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32;
-  
+
     /*
     interpolation algorithm
 
-    * INTER_NEAREST   :	nearest neighbor interpolation
-    * INTER_LINEAR    :	bilinear interpolation
-    * INTER_CUBIC     :	bicubic interpolation
-    * INTER_AREA      :	resampling using pixel area relation
-    * INTER_LANCZOS4  :	Lanczos interpolation over 8x8 neighborhood
-    * INTER_LINEAR_EXACT:	Bit exact bilinear interpolation
-    * INTER_MAX       :	mask for interpolation codes(Error occurred)
-    * WARP_FILL_OUTLIERS:	flag, fills all of the destination image pixels(Error occurred)
+    * INTER_NEAREST   : nearest neighbor interpolation
+    * INTER_LINEAR    : bilinear interpolation
+    * INTER_CUBIC     : bicubic interpolation
+    * INTER_AREA      : resampling using pixel area relation
+    * INTER_LANCZOS4  : Lanczos interpolation over 8x8 neighborhood
+    * INTER_LINEAR_EXACT:   Bit exact bilinear interpolation
+    * INTER_MAX       : mask for interpolation codes(Error occurred)
+    * WARP_FILL_OUTLIERS:   flag, fills all of the destination image pixels(Error occurred)
     */
     private static final int[] INT_INTERPOLATION = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.INTER_LINEAR_EXACT/*,  Imgproc.INTER_MAX,  Imgproc.WARP_FILL_OUTLIERS*/ };
     private static final String[] STR_INTERPOLATION = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "INTER_LINEAR_EXACT"/*, "INTER_MAX", "WARP_FILL_OUTLIERS"*/ };
-    
+
     // static var.
     private static double dsize_w = 0;
     private static double dsize_h = 0;
     private static double scale_w = 0;
     private static double scale_h = 0;
     private static int indInterpolation = 0;
-    
+
     // var
     private String titleSrc = "";
     private ImagePlus impSrc = null;
-    
+
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {      
-        if(scale_w == 0 || scale_h == 0)
-        {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
+        if(scale_w == 0 || scale_h == 0) {
             dsize_w = imp.getWidth();
             dsize_h = imp.getHeight();
         }
-        
+
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
         gd.addNumericField("dsize_w", dsize_w, 0);
@@ -87,68 +84,78 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {            
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-   
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) 
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         dsize_w = (double)gd.getNextNumber();
         dsize_h = (double)gd.getNextNumber();
         scale_w = (double)gd.getNextNumber();
         scale_h = (double)gd.getNextNumber();
         indInterpolation = (int)gd.getNextChoiceIndex();
 
-        if(dsize_w < 0) { IJ.showStatus("'0 <= dsize_w' is necessary."); return false; }
-        if(dsize_h < 0) { IJ.showStatus("'0 <= dsize_h' is necessary."); return false; }
-        if(scale_w < 0) { IJ.showStatus("'0 <= scale_w' is necessary."); return false; }
-        if(scale_h < 0) { IJ.showStatus("'0 <= scale_h' is necessary."); return false; }
-        if(Double.isNaN(dsize_w) || Double.isNaN(dsize_h) || Double.isNaN(scale_w) || Double.isNaN(scale_h)) {IJ.showStatus("ERR : NaN"); return false;}
+        if(dsize_w < 0) {
+            IJ.showStatus("'0 <= dsize_w' is necessary.");
+            return false;
+        }
 
-        if(0 < scale_w && 0 < scale_h)
-        {
+        if(dsize_h < 0) {
+            IJ.showStatus("'0 <= dsize_h' is necessary.");
+            return false;
+        }
+
+        if(scale_w < 0) {
+            IJ.showStatus("'0 <= scale_w' is necessary.");
+            return false;
+        }
+
+        if(scale_h < 0) {
+            IJ.showStatus("'0 <= scale_h' is necessary.");
+            return false;
+        }
+
+        if(Double.isNaN(dsize_w) || Double.isNaN(dsize_h) || Double.isNaN(scale_w) || Double.isNaN(scale_h)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(0 < scale_w && 0 < scale_h) {
             dsize_w = ((double)impSrc.getWidth()) * scale_w;
             dsize_h = ((double)impSrc.getHeight()) * scale_h;
         }
 
-        if(dsize_w == 0 || dsize_h == 0)
-        {
-            IJ.showStatus("'The output height and width values should not be 0."); return true;
+        if(dsize_w == 0 || dsize_h == 0) {
+            IJ.showStatus("'The output height and width values should not be 0.");
+            return true;
         }
-        
+
         IJ.showStatus("OCV_Resize");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             titleSrc = imp.getTitle();
             impSrc = imp;
             return FLAGS;
@@ -156,120 +163,114 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {        
+    public void run(ImageProcessor ip) {
         Size dsize = new Size(dsize_w, dsize_h);
-        
-        if(ip.getBitDepth() == 8)
-        {
+
+        if(ip.getBitDepth() == 8) {
             // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             byte[] src_byte = (byte[])ip.getPixels();
-            
+
             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
-            ImagePlus impDst = new ImagePlus (titleDst, new ByteProcessor((int)dsize.width, (int)dsize.height));
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_Resize");
+            ImagePlus impDst = new ImagePlus(titleDst, new ByteProcessor((int)dsize.width, (int)dsize.height));
             byte[] dst_byte = (byte[]) impDst.getChannelProcessor().getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_8UC1);
-            
+
             // flag
             int flags = INT_INTERPOLATION[indInterpolation];
-            
+
             // run
             src_mat.put(0, 0, src_byte);
             Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             dst_mat.get(0, 0, dst_byte);
-            
+
             // show
             impDst.show();
         }
-        else if(ip.getBitDepth() == 16)
-        {
+        else if(ip.getBitDepth() == 16) {
             // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             short[] src_short = (short[])ip.getPixels();
-            
+
             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
-            ImagePlus impDst = new ImagePlus (titleDst, new ShortProcessor((int)dsize.width, (int)dsize.height));
-            short[] dst_short = (short[]) impDst.getChannelProcessor().getPixels();            
-            
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_Resize");
+            ImagePlus impDst = new ImagePlus(titleDst, new ShortProcessor((int)dsize.width, (int)dsize.height));
+            short[] dst_short = (short[]) impDst.getChannelProcessor().getPixels();
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
             Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_16S);
-            
+
             // flag
-             int flags = INT_INTERPOLATION[indInterpolation];
-            
+            int flags = INT_INTERPOLATION[indInterpolation];
+
             // run
             src_mat.put(0, 0, src_short);
             Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             dst_mat.get(0, 0, dst_short);
-            
+
             // show
             impDst.show();
         }
-        else if(ip.getBitDepth() == 24)
-        {
+        else if(ip.getBitDepth() == 24) {
             // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             int[] src_int = (int[])ip.getPixels();
-            
+
             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_Resize");
             ImagePlus  impDst = IJ.createImage(titleDst, (int)dsize.width, (int)dsize.height, 1, 24);
             int[] dst_int = (int[])impDst.getChannelProcessor().getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
             Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_8UC3);
-         
-             // flag
-             int flags = INT_INTERPOLATION[indInterpolation];
- 
+
+            // flag
+            int flags = INT_INTERPOLATION[indInterpolation];
+
             // run
             OCV__LoadLibrary.intarray2mat(src_int, src_mat, imw, imh);
             Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             OCV__LoadLibrary.mat2intarray(dst_mat, dst_int, (int)dsize.width, (int)dsize.height);
-            
+
             // show
             impDst.show();
         }
-        else if(ip.getBitDepth() == 32)
-        {
+        else if(ip.getBitDepth() == 32) {
             // src
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             float[] src_float = (float[])ip.getPixels();
-            
-             // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc+ "_Resize");
-            ImagePlus impDst = new ImagePlus (titleDst, new FloatProcessor((int)dsize.width, (int)dsize.height));
-            float[] dst_float = (float[]) impDst.getChannelProcessor().getPixels();  
-            
-             // flag
-             int flags = INT_INTERPOLATION[indInterpolation];
-            
+
+            // dst
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_Resize");
+            ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor((int)dsize.width, (int)dsize.height));
+            float[] dst_float = (float[]) impDst.getChannelProcessor().getPixels();
+
+            // flag
+            int flags = INT_INTERPOLATION[indInterpolation];
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
             Mat dst_mat = new Mat((int)dsize.width, (int)dsize.height, CvType.CV_32F);
-            
+
             // run
             src_mat.put(0, 0, src_float);
             Imgproc.resize(src_mat, dst_mat, dsize, scale_w, scale_h, flags);
             dst_mat.get(0, 0, dst_float);
-            
+
             // show
             impDst.show();
         }
-        else
-        {
+        else {
             IJ.error("Wrong image format");
         }
     }

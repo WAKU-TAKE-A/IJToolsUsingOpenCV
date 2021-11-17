@@ -41,8 +41,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * minAreaRect (OpenCV4.5.3).
  */
-public class OCV_MinAreaRect implements ExtendedPlugInFilter
-{
+public class OCV_MinAreaRect implements ExtendedPlugInFilter {
     // static var.
     private static boolean enRefData = false;
 
@@ -53,97 +52,81 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
     private int countNPass = 0;
 
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
         gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             enRefData = (boolean)gd.getNextBoolean();
             return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         byte[] byteArray = (byte[])ip.getPixels();
         int w = ip.getWidth();
         int h = ip.getHeight();
         int num_slice = ip.getSliceNumber();
-        
+
         ArrayList<Point> lstPt = new ArrayList<Point>();
         MatOfPoint2f pts = new MatOfPoint2f();
 
-        for(int y = 0; y < h; y++)
-        {
-            for(int x = 0; x < w; x++)
-            {
-                if(byteArray[x + w * y] != 0)
-                {
+        for(int y = 0; y < h; y++) {
+            for(int x = 0; x < w; x++) {
+                if(byteArray[x + w * y] != 0) {
                     lstPt.add(new Point((double)x, (double)y));
                 }
             }
         }
 
-        if(lstPt.isEmpty())
-        {
+        if(lstPt.isEmpty()) {
             return;
         }
 
         pts.fromList(lstPt);
         RotatedRect rect = Imgproc.minAreaRect(pts);
-        
-        if(rect != null)
-        {
+
+        if(rect != null) {
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
-            
-             if(enRefData)
-            {
+
+            if(enRefData) {
                 rt.reset();
                 roiMan.reset();
             }
-             
+
             showData(rect, num_slice);
         }
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             impSrc = imp;
             return DOES_8G;
         }
     }
 
-    private void showData(RotatedRect rect, int num_slice)
-    {  
+    private void showData(RotatedRect rect, int num_slice) {
         // set the ResultsTable
         rt.incrementCounter();
         rt.addValue("CenterX", rect.center.x);
@@ -152,7 +135,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         rt.addValue("Height", rect.size.height);
         rt.addValue("Angle", rect.angle);
         rt.show("Results");
-        
+
         // set the ROI
         float[] xPoints = new float[4];
         float[] yPoints = new float[4];
@@ -177,7 +160,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter
         PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
         proi.setPosition(countNPass + 1); // Start from one.
         countNPass++;
-        
+
         roiMan.addRoi(proi);
         int num_roiMan = roiMan.getCount();
         roiMan.select(num_roiMan - 1);

@@ -37,8 +37,7 @@ import java.awt.Frame;
 /**
  * Limit ROI.
  */
-public class WK_RoiMan_Limited implements ExtendedPlugInFilter
-{
+public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
     // const var.
     private static final int FLAGS = DOES_ALL;
 
@@ -57,8 +56,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     private boolean useExistRes;
 
     @Override
-    public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr)
-    {
+    public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr) {
         String[] feats = rsTbl.getHeadings();
 
         GenericDialog gd = new GenericDialog(cmd + "...");
@@ -69,23 +67,19 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         gd.addCheckbox("enable_max_limit", enMax);
         gd.addNumericField("max_limit", max, 4);
 
-        if(useExistRes)
-        {
+        if(useExistRes) {
             gd.addMessage("The existing ResultsTable is used");
         }
-        else
-        {
+        else {
             gd.addMessage("The new ResultsTable is used");
         }
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             type = (String)feats[(int)gd.getNextChoiceIndex()];
             enMin = (boolean)gd.getNextBoolean();
             min = (double)gd.getNextNumber();
@@ -97,27 +91,22 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     }
 
     @Override
-    public void setNPasses(int i)
-    {
+    public void setNPasses(int i) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus imp)
-    {
-        if (imp == null)
-        {
+    public int setup(String string, ImagePlus imp) {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             // get the ROI Manager
             roiMan = getRoiManager(false, true);
             num_roi = roiMan.getCount();
 
-            if(num_roi == 0)
-            {
+            if(num_roi == 0) {
                 IJ.error("ROI is vacant.");
                 return DONE;
             }
@@ -125,21 +114,18 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
             // get the ResultsTable
             rsTbl = getResultsTable(false);
 
-            if(rsTbl.getCounter() != roiMan.getCount())
-            {
+            if(rsTbl.getCounter() != roiMan.getCount()) {
                 rsTbl.reset();
             }
 
             // Mesure
             roiMan.deselect();
 
-            if(rsTbl.getCounter() == 0)
-            {
+            if(rsTbl.getCounter() == 0) {
                 mr.runMacro("roiManager(\"Measure\");", "");
                 useExistRes = false;
             }
-            else
-            {
+            else {
                 useExistRes = true;
             }
 
@@ -148,8 +134,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         mr.runMacro("setBatchMode(true);", "");
 
         int col = rsTbl.getColumnIndex(type);
@@ -157,14 +142,12 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         boolean chk_min;
         boolean chk_max;
 
-        for(int i = num_roi - 1; 0 <= i; i--)
-        {
+        for(int i = num_roi - 1; 0 <= i; i--) {
             val = Double.valueOf(rsTbl.getStringValue(col, i));
             chk_min = enMin ? min <= val : true;
             chk_max = enMax ? val <= max : true;
 
-            if(!chk_min || !chk_max)
-            {
+            if(!chk_min || !chk_max) {
                 roiMan.select(i);
                 roiMan.runCommand("delete");
                 rsTbl.deleteRow(i);
@@ -175,23 +158,20 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
         rsTbl.show("Results");
         roiMan.runCommand("show all");
     }
-    
+
     /**
      * get the ResultsTable or create a new ResultsTable
      * @param enReset reset or not
      * @return ResultsTable
      */
-    private ResultsTable getResultsTable(boolean enReset)
-    {
+    private ResultsTable getResultsTable(boolean enReset) {
         ResultsTable rt = ResultsTable.getResultsTable();
 
-        if(rt == null || rt.getCounter() == 0)
-        {
+        if(rt == null || rt.getCounter() == 0) {
             rt = new ResultsTable();
         }
 
-        if(enReset)
-        {
+        if(enReset) {
             rt.reset();
         }
 
@@ -199,38 +179,33 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter
 
         return rt;
     }
-    
+
     /**
      * get the RoiManager or create a new RoiManager
      * @param enReset reset or not
      * @param enShowNone show none or not
      * @return RoiManager
      */
-    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
-    {
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone) {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;        
-        
-        if (frame == null)
-        {
+        RoiManager rm = null;
+
+        if(frame == null) {
             rm = new RoiManager();
             rm.setVisible(true);
         }
-        else
-        {
-            rm = (RoiManager)frame;       
+        else {
+            rm = (RoiManager)frame;
         }
-        
-        if(enReset)
-        {
+
+        if(enReset) {
             rm.reset();
         }
-        
-        if(enShowNone)
-        {
+
+        if(enShowNone) {
             rm.runCommand("Show None");
         }
-        
+
         return rm;
     }
 }

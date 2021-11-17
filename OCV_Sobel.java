@@ -42,14 +42,13 @@ import org.opencv.imgproc.Imgproc;
 /**
  * Sobel (OpenCV4.5.3).
  */
-public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener
-{
+public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | KEEP_PREVIEW;
 
     private static final int[] INT_KSIZE = { 1, 3, 5, 7};
     private static final String[] STR_KSIZE = { "1" , "3", "5", "7" };
-    
+
     /*
      Various border types, image boundaries are denoted with '|'
 
@@ -71,12 +70,11 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     private static double scale = 1; // optional scale factor for the computed derivative values.
     private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst.
     private static int indBorderType = 2; // border type
- 
+
     @Override
-    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
-        
+
         gd.addNumericField("dx", dx, 0);
         gd.addNumericField("dy", dy, 0);
         gd.addChoice("ksize", STR_KSIZE, STR_KSIZE[indKsize]);
@@ -88,19 +86,16 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return IJ.setupDialog(imp, FLAGS);
         }
     }
-    
+
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {    
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         dx = (int)gd.getNextNumber();
         dy = (int)gd.getNextNumber();
         indKsize = (int)gd.getNextChoiceIndex();
@@ -108,94 +103,99 @@ public class OCV_Sobel implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         delta = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(dx < 0) { IJ.showStatus("'0 <= dx' is necessary."); return false; }
-        if(dy < 0) { IJ.showStatus("'0 <= dy' is necessary."); return false; }
-        if(dx <= 0 && dy <= 0) { IJ.showStatus("Either dx or dy is greater than zero."); return false; }
-        if(Double.isNaN(scale) || Double.isNaN(delta)) { IJ.showStatus("ERR : NaN"); return false; } 
-        
+        if(dx < 0) {
+            IJ.showStatus("'0 <= dx' is necessary.");
+            return false;
+        }
+
+        if(dy < 0) {
+            IJ.showStatus("'0 <= dy' is necessary.");
+            return false;
+        }
+
+        if(dx <= 0 && dy <= 0) {
+            IJ.showStatus("Either dx or dy is greater than zero.");
+            return false;
+        }
+
+        if(Double.isNaN(scale) || Double.isNaN(delta)) {
+            IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
         IJ.showStatus("OCV_Sobel");
         return true;
     }
-    
+
     @Override
-    public void setNPasses(int nPasses)
-    {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String arg, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if (imp == null)
-        {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {        
-        if(ip.getBitDepth() == 8)
-        {
+    public void run(ImageProcessor ip) {
+        if(ip.getBitDepth() == 8) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             byte[] srcdst_bytes = (byte[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            
+
             // run
             src_mat.put(0, 0, srcdst_bytes);
             Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, INT_KSIZE[indKsize], scale, delta, INT_BORDERTYPE[indBorderType]);
             dst_mat.get(0, 0, srcdst_bytes);
         }
-        else if(ip.getBitDepth() == 16)
-        {
+        else if(ip.getBitDepth() == 16) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             short[] srcdst_shorts = (short[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-            
+
             // run
             src_mat.put(0, 0, srcdst_shorts);
             Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, INT_KSIZE[indKsize], scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_shorts);        
+            dst_mat.get(0, 0, srcdst_shorts);
         }
-          else if(ip.getBitDepth() == 32)
-        {
+        else if(ip.getBitDepth() == 32) {
             // srcdst
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             float[] srcdst_floats = (float[])ip.getPixels();
-            
+
             // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);            
+            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
             Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-            
+
             // run
             src_mat.put(0, 0, srcdst_floats);
             Imgproc.Sobel(src_mat, dst_mat, src_mat.depth(), dx, dy, INT_KSIZE[indKsize], scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_floats);        
+            dst_mat.get(0, 0, srcdst_floats);
         }
-        else
-        {
+        else {
             IJ.error("Wrong image format");
         }
     }

@@ -40,49 +40,43 @@ import org.opencv.imgproc.Imgproc;
 /**
  * getAffineTransform (OpenCV4.5.3).
  */
-public class OCV_GetAffineTransform implements ExtendedPlugInFilter
-{
+public class OCV_GetAffineTransform implements ExtendedPlugInFilter {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
-    
+
     // var.
     private RoiManager roiMan = null;
     private ArrayList<org.opencv.core.Point> lstPt_src = null;
     private ArrayList<org.opencv.core.Point> lstPt_dst = null;
 
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         // do nothing
     }
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         // do nothing
         return FLAGS;
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {      
+    public void run(ImageProcessor ip) {
         MatOfPoint2f matPt_src = new MatOfPoint2f();
-        MatOfPoint2f matPt_dst = new MatOfPoint2f();        
+        MatOfPoint2f matPt_dst = new MatOfPoint2f();
         matPt_src.fromList(lstPt_src);
         matPt_dst.fromList(lstPt_dst);
-        
+
         Mat mat = Imgproc.getAffineTransform(matPt_src, matPt_dst);
 
-        if(mat == null || mat.rows() <= 0 || mat.cols() <= 0)
-        {
+        if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
             IJ.showMessage("Output is null or error");
             return;
         }
 
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        
-        for(int i = 0; i < 2; i++)
-        {
+
+        for(int i = 0; i < 2; i++) {
             rt.incrementCounter();
             rt.addValue("Column01", String.valueOf(mat.get(i, 0)[0]));
             rt.addValue("Column02", String.valueOf(mat.get(i, 1)[0]));
@@ -93,61 +87,53 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if(!OCV__LoadLibrary.isLoad())
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
-        
+
         roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
-        
-        if(roiMan == null || roiMan.getCount() < 2)
-        {
+
+        if(roiMan == null || roiMan.getCount() < 2) {
             IJ.error("'2 <= RoiManager.getCount()' is necessary.");
             return DONE;
         }
-        
-        if(imp != null)
-        {
+
+        if(imp != null) {
             Macro_Runner mr = new Macro_Runner();
             mr.runMacro("run(\"Select None\");", "");
         }
-        
-       Roi roi_src = roiMan.getRoi(0);
-       Roi roi_dst = roiMan.getRoi(1);
+
+        Roi roi_src = roiMan.getRoi(0);
+        Roi roi_dst = roiMan.getRoi(1);
         //java.awt.Point[] pts_src = roi_src.getContainedPoints();
         java.awt.Point[] pts_src = getContainedPoints(roi_src);
-       // java.awt.Point[] pts_dst = roi_dst.getContainedPoints();
+        // java.awt.Point[] pts_dst = roi_dst.getContainedPoints();
         java.awt.Point[] pts_dst = getContainedPoints(roi_dst);
-        
-        if(pts_src.length != 3 || pts_dst.length != 3)
-        {
+
+        if(pts_src.length != 3 || pts_dst.length != 3) {
             IJ.error("It is necessary that the number of point is three.");
             return DONE;
         }
-        
+
         lstPt_src = new ArrayList<org.opencv.core.Point>();
         lstPt_dst = new ArrayList<org.opencv.core.Point>();
-        
-        for(int i = 0; i < 3; i++)
-        {
+
+        for(int i = 0; i < 3; i++) {
             lstPt_src.add(new org.opencv.core.Point(pts_src[i].getX(), pts_src[i].getY()));
             lstPt_dst.add(new org.opencv.core.Point(pts_dst[i].getX(), pts_dst[i].getY()));
         }
-        
+
         return FLAGS;
     }
-    
-    private java.awt.Point[] getContainedPoints(Roi roi)
-    {
+
+    private java.awt.Point[] getContainedPoints(Roi roi) {
         FloatPolygon p = roi.getFloatPolygon();
         java.awt.Point[] points = new java.awt.Point[p.npoints];
 
-        for (int i=0; i<p.npoints; i++)
-        {
-            points[i] = new java.awt.Point((int)Math.round(p.xpoints[i]),(int)Math.round(p.ypoints[i]));
+        for(int i = 0; i < p.npoints; i++) {
+            points[i] = new java.awt.Point((int)Math.round(p.xpoints[i]), (int)Math.round(p.ypoints[i]));
         }
 
         return points;

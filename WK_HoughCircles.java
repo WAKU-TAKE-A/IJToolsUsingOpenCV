@@ -39,8 +39,7 @@ import java.util.ArrayList;
 /**
  * Circle hough transform.
  */
-public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
-{
+public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G;
     private static final int ERR_OK = 0;
@@ -73,8 +72,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     private final ArrayList<double[]> res = new ArrayList<double[]>();
 
     @Override
-    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr)
-    {
+    public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
 
         gd.addNumericField("min_radius", rmin, 0);
@@ -88,19 +86,16 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
         gd.showDialog();
 
-        if (gd.wasCanceled())
-        {
+        if(gd.wasCanceled()) {
             return DONE;
         }
-        else
-        {
+        else {
             return FLAGS;
         }
     }
 
     @Override
-    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte)
-    {
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         rmin = (int)gd.getNextNumber();
         rmax = (int)gd.getNextNumber();
         indMode = gd.getNextChoiceIndex();
@@ -109,40 +104,53 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         enAddRoi = gd.getNextBoolean();
         enOutputImg = gd.getNextBoolean();
 
-        if(rmin < 0) { IJ.showStatus("'0 <= rmin' is necessary."); return false; }
-        if(rmax < 0) { IJ.showStatus("'0 <= rmax' is necessary."); return false; }
-        if(rmax < rmin) { IJ.showStatus("'rmin <= rmax' is necessary."); return false; }
-        if(minVotes < 0) { IJ.showStatus("'0 <= minVotes' is necessary."); return false; }
-        if(rngSame < 0) { IJ.showStatus("'0 <= rngSame' is necessary."); return false; }
-        
+        if(rmin < 0) {
+            IJ.showStatus("'0 <= rmin' is necessary.");
+            return false;
+        }
+
+        if(rmax < 0) {
+            IJ.showStatus("'0 <= rmax' is necessary.");
+            return false;
+        }
+
+        if(rmax < rmin) {
+            IJ.showStatus("'rmin <= rmax' is necessary.");
+            return false;
+        }
+
+        if(minVotes < 0) {
+            IJ.showStatus("'0 <= minVotes' is necessary.");
+            return false;
+        }
+
+        if(rngSame < 0) {
+            IJ.showStatus("'0 <= rngSame' is necessary.");
+            return false;
+        }
+
         IJ.showStatus("WK_HoughCircles");
         return true;
-    }    
-    
+    }
+
     @Override
-    public void setNPasses(int arg0)
-    {
+    public void setNPasses(int arg0) {
         //do nothing
     }
 
     @Override
-    public int setup(String arg0, ImagePlus imp)
-    {
-        if (imp == null)
-        {
+    public int setup(String arg0, ImagePlus imp) {
+        if(imp == null) {
             IJ.noImage();
             return DONE;
         }
-        else
-        {
+        else {
             impSrc = imp;
 
-            if(imp.getRoi() != null)
-            {
+            if(imp.getRoi() != null) {
                 rect = imp.getRoi().getBounds();
             }
-            else
-            {
+            else {
                 rect = new Rectangle(0, 0, imp.getWidth(), imp.getHeight());
             }
 
@@ -153,14 +161,13 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     }
 
     @Override
-    public void run(ImageProcessor ip)
-    {
+    public void run(ImageProcessor ip) {
         // src
         byte[] src = (byte[]) ip.getPixels();
         int imw = ip.getWidth();
 
         // dst
-        ImagePlus impDst = new ImagePlus ("tmp", new ShortProcessor(rect.width, rect.height * (rmax - rmin + 1)));
+        ImagePlus impDst = new ImagePlus("tmp", new ShortProcessor(rect.width, rect.height * (rmax - rmin + 1)));
         short[] dst = (short[]) impDst.getChannelProcessor().getPixels();
 
         // run
@@ -168,14 +175,12 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         int err = houghCircles(src, dst, imw, rect.x, rect.y, rect.width, rect.height, rmin, rmax, mode);
 
         // fin
-        if (err != ERR_OK)
-        {
+        if(err != ERR_OK) {
             IJ.error("Err code of HoughCircle() is " + String.valueOf(err));
             return;
         }
 
-        if(enOutputImg)
-        {
+        if(enOutputImg) {
             showHoughImg(impDst, rect, rmin, rmax, impSrc.getShortTitle() + "_HoughImage");
         }
 
@@ -183,20 +188,17 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
     }
 
     // private
-    private int houghCircles(byte[] pSrc, short[] pHoughValues, int imw, int roix, int roiy, int roiw, int roih, int rmin, int rmax, int mode)
-    {
+    private int houghCircles(byte[] pSrc, short[] pHoughValues, int imw, int roix, int roiy, int roiw, int roih, int rmin, int rmax, int mode) {
         int err = ERR_OK;
         int incDen = 0;
         int depthR = (rmax - rmin) + 1;
         int lutSize = 0;
 
         // check
-        if (err == ERR_OK && mode > 0)
-        {
+        if(err == ERR_OK && mode > 0) {
             incDen = mode;
         }
-        else
-        {
+        else {
             err = ERR_ARG;
         }
 
@@ -204,32 +206,26 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         int[] cosLut = new int[incDen * depthR];
         int[] sinLut = new int[incDen * depthR];
 
-        if (err == ERR_OK)
-        {
-            if ((cosLut == null) || (sinLut == null))
-            {
+        if(err == ERR_OK) {
+            if((cosLut == null) || (sinLut == null)) {
                 err = ERR_MEM_ALLOC;
             }
         }
 
         int i = 0;
 
-        if (err == ERR_OK)
-        {
-            for (int indR = 0; indR < depthR ; indR++)
-            {
+        if(err == ERR_OK) {
+            for(int indR = 0; indR < depthR ; indR++) {
                 i = 0;
 
-                for (int incNun = 0; incNun < incDen / 4; incNun++)
-                {
+                for(int incNun = 0; incNun < incDen / 4; incNun++) {
                     double angle =  2 * Math.PI  / (double)incDen * (double)incNun;
                     int tmp = (int)((rmin + indR) * Math.cos(angle));
                     int rcos = (int)(tmp + 0.5 - (tmp < 0 ? 1 : 0));
                     tmp = (int)((rmin + indR) * Math.sin(angle));
                     int rsin = (int)(tmp + 0.5 - (tmp < 0 ? 1 : 0));
 
-                    if ((i == 0) | (rcos != cosLut[i * depthR + indR]) & (rsin != sinLut[i * depthR + indR]))
-                    {
+                    if((i == 0) | (rcos != cosLut[i * depthR + indR]) & (rsin != sinLut[i * depthR + indR])) {
                         cosLut[i * depthR + indR] = rcos;
                         sinLut[i * depthR + indR] = rsin;
                         i++;
@@ -240,24 +236,17 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
             lutSize = i;
         }
 
-       // Hough transform
-        if (err == ERR_OK)
-        {
-            for (int y = roih - 1; y >= 0; y--)
-            {
-                for (int x = roiw - 1; x >= 0; x--)
-                {
-                    for (int indR = depthR - 1; indR >= 0; indR--)
-                    {
-                        if (pSrc[(x + roix) + (y + roiy) * imw] != 0)
-                        {
-                            for (int k = lutSize - 1; k >= 0; k--)
-                            {
+        // Hough transform
+        if(err == ERR_OK) {
+            for(int y = roih - 1; y >= 0; y--) {
+                for(int x = roiw - 1; x >= 0; x--) {
+                    for(int indR = depthR - 1; indR >= 0; indR--) {
+                        if(pSrc[(x + roix) + (y + roiy) * imw] != 0) {
+                            for(int k = lutSize - 1; k >= 0; k--) {
                                 int a1 = x + cosLut[k * depthR + indR];
                                 int b1 = y + sinLut[k * depthR + indR];
 
-                                if ((b1 >= 0) && (b1 < roih) && (a1 >= 0) && (a1 < roiw))
-                                {
+                                if((b1 >= 0) && (b1 < roih) && (a1 >= 0) && (a1 < roiw)) {
                                     int cond = indR * roih * roiw + b1 * roiw + a1;
                                     pHoughValues[cond] += 1;
                                 }
@@ -265,8 +254,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                                 int a2 = x + cosLut[k * depthR + indR];
                                 int b2 = y - sinLut[k * depthR + indR];
 
-                                if ((b2 >= 0) && (b2 < roih) && (a2 >= 0) && (a2 < roiw))
-                                {
+                                if((b2 >= 0) && (b2 < roih) && (a2 >= 0) && (a2 < roiw)) {
                                     int cond = indR * roih * roiw + b2 * roiw + a2;
                                     pHoughValues[cond] += 1;
                                 }
@@ -274,8 +262,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                                 int a3 = x - cosLut[k * depthR + indR];
                                 int b3 = y + sinLut[k * depthR + indR];
 
-                                if ((b3 >= 0) && (b3 < roih) && (a3 >= 0) && (a3 < roiw))
-                                {
+                                if((b3 >= 0) && (b3 < roih) && (a3 >= 0) && (a3 < roiw)) {
                                     int cond = indR * roih * roiw + b3 * roiw + a3;
                                     pHoughValues[cond] += 1;
                                 }
@@ -283,8 +270,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                                 int a4 = x - cosLut[k * depthR + indR];
                                 int b4 = y - sinLut[k * depthR + indR];
 
-                                if ((b4 >= 0) && (b4 < roih) && (a4 >= 0) && (a4 < roiw))
-                                {
+                                if((b4 >= 0) && (b4 < roih) && (a4 >= 0) && (a4 < roiw)) {
                                     int cond = indR * roih * roiw + b4 * roiw + a4;
                                     pHoughValues[cond] += 1;
                                 }
@@ -298,15 +284,13 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         return err;
     }
 
-    private void showHoughImg(ImagePlus imp, Rectangle rect, int rmin, int rmax, String title)
-    {
+    private void showHoughImg(ImagePlus imp, Rectangle rect, int rmin, int rmax, String title) {
         imp.setDisplayRange(Short.MIN_VALUE, Short.MAX_VALUE);
 
         ImageStack ims = new ImageStack(rect.width, rect.height);
 
-        for (int i = 0; i <= rmax - rmin; i++)
-        {
-            ImagePlus buf = new ImagePlus ("buf", new ShortProcessor(rect.width, rect.height));
+        for(int i = 0; i <= rmax - rmin; i++) {
+            ImagePlus buf = new ImagePlus("buf", new ShortProcessor(rect.width, rect.height));
             imp.setRoi(0, rect.height * i, rect.width, rect.height);
             buf = imp.duplicate();
             ims.addSlice("R = " + Integer.toString(i + rmin), buf.getProcessor());
@@ -319,16 +303,14 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         mr.runMacro("run(\"Enhance Contrast\", \"saturated=0.35\");", "");
     }
 
-    private void showData(short[] arr_hough_img)
-    {
+    private void showData(short[] arr_hough_img) {
         // prepare the ResultsTable
         ResultsTable rt = getResultsTable(true);
-        
+
         // prepare the ROI Manager
         RoiManager roiMan = null;
-        
-        if(enAddRoi)
-        {
+
+        if(enAddRoi) {
             roiMan = getRoiManager(true, true);
         }
 
@@ -338,26 +320,21 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
         int numAll = arr_hough_img.length;
         int num_res = 0;
 
-        for(int i = 0; i < numAll; i++)
-        {
-            if(minVotes < arr_hough_img[i])
-            {
+        for(int i = 0; i < numAll; i++) {
+            if(minVotes < arr_hough_img[i]) {
                 int x = i % w;
                 int y = i / w % h;
                 int r = i / w / h + rmin;
                 int vt = (int)arr_hough_img[i];
-                
+
                 num_res = res.size();
                 boolean chkMatch = false;
 
-                if(num_res != 0)
-                {
-                    for(int i_res = 0; i_res < num_res; i_res++)
-                    {
+                if(num_res != 0) {
+                    for(int i_res = 0; i_res < num_res; i_res++) {
                         double[] res_ar = res.get(i_res);
-                        
-                        if(res_ar[IR] == r && res_ar[IXMIN] <= x && x <= res_ar[IXMAX] && res_ar[IYMIN] <= y && y <= res_ar[IYMAX])
-                        {
+
+                        if(res_ar[IR] == r && res_ar[IXMIN] <= x && x <= res_ar[IXMAX] && res_ar[IYMIN] <= y && y <= res_ar[IYMAX]) {
                             res_ar[IXSUM] += (double)x;
                             res_ar[IYSUM] += (double)y;
                             res_ar[IN] += 1;
@@ -367,39 +344,36 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
                             res_ar[IXMAX] = xave + rngSame;
                             res_ar[IYMIN] = yave - rngSame;
                             res_ar[IYMAX] = yave + rngSame;
-                            
-                            if(res_ar[IVOTE] < vt)
-                            {
+
+                            if(res_ar[IVOTE] < vt) {
                                 res_ar[IVOTE] = vt;
                             }
-                            
+
                             chkMatch = true;
                             break;
-                        }                    
+                        }
                     }
                 }
-                
-                if(!chkMatch)
-                {
-                    res.add(new double[]{ (double)r, (double)vt, (double)(x - rngSame), (double)(x + rngSame), (double)(y - rngSame), (double)(y + rngSame), x, y, 1});
+
+                if(!chkMatch) {
+                    res.add(new double[] { (double)r, (double)vt, (double)(x - rngSame), (double)(x + rngSame), (double)(y - rngSame), (double)(y + rngSame), x, y, 1});
                 }
             }
         }
-        
+
         // show
         num_res = res.size();
-        
-        for(int i = 0; i < num_res; i++)
-        {
+
+        for(int i = 0; i < num_res; i++) {
             double[] res_ar = res.get(i);
-            
+
             double xave = res_ar[IXSUM] / res_ar[IN];
             double yave = res_ar[IYSUM] / res_ar[IN];
             double r = res_ar[IR];
             double dia = 2 * r;
             int vt = (int)res_ar[IVOTE];
             int n = (int)res_ar[IN];
-            
+
             rt.incrementCounter();
             rt.addValue("CenterX", xave);
             rt.addValue("CenterY", yave);
@@ -407,8 +381,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
             rt.addValue("MaxVotes", vt);
             rt.addValue("NumOfSame", n);
 
-            if(enAddRoi && (null != roiMan))
-            {
+            if(enAddRoi && (null != roiMan)) {
                 OvalRoi roi = new OvalRoi((xave - r), (yave - r), dia, dia);
                 roiMan.addRoi(roi);
             }
@@ -422,17 +395,14 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
      * @param enReset reset or not
      * @return ResultsTable
      */
-    private ResultsTable getResultsTable(boolean enReset)
-    {
+    private ResultsTable getResultsTable(boolean enReset) {
         ResultsTable rt = ResultsTable.getResultsTable();
 
-        if(rt == null || rt.getCounter() == 0)
-        {
+        if(rt == null || rt.getCounter() == 0) {
             rt = new ResultsTable();
         }
 
-        if(enReset)
-        {
+        if(enReset) {
             rt.reset();
         }
 
@@ -440,38 +410,33 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener
 
         return rt;
     }
-    
+
     /**
      * get the RoiManager or create a new RoiManager
      * @param enReset reset or not
      * @param enShowNone show none or not
      * @return RoiManager
      */
-    private RoiManager getRoiManager(boolean enReset, boolean enShowNone)
-    {
+    private RoiManager getRoiManager(boolean enReset, boolean enShowNone) {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;        
-        
-        if (frame == null)
-        {
+        RoiManager rm = null;
+
+        if(frame == null) {
             rm = new RoiManager();
             rm.setVisible(true);
         }
-        else
-        {
-            rm = (RoiManager)frame;       
+        else {
+            rm = (RoiManager)frame;
         }
-        
-        if(enReset)
-        {
+
+        if(enReset) {
             rm.reset();
         }
-        
-        if(enShowNone)
-        {
+
+        if(enShowNone) {
             rm.runCommand("Show None");
         }
-        
+
         return rm;
     }
 }
