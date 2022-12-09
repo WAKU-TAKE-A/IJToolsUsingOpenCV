@@ -65,9 +65,10 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     private static int ind_det = -1;
     private static int ind_match = 0;
     private static double max_dist = 100;
-    private static boolean enDrawMatches = true;
     private static boolean enDetectQuery = true;
+    private static int min_key_points = 4;
     private static double ransacReprojThreshold = 3;
+    private static boolean enDrawMatches = true;
 
     // var.
     private String fname = "";
@@ -80,9 +81,10 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         gd.addMessage("Type of feature detector is " + OCV__LoadLibrary.FeatDetType + ".");
         gd.addChoice("descriptor_matcher", TYPE_STR_MATCH, TYPE_STR_MATCH[ind_match]);
         gd.addNumericField("max_distance", max_dist, 2);
-        gd.addCheckbox("enable_draw_matches", enDrawMatches);
         gd.addCheckbox("enable_detect_query", enDetectQuery);
-        gd.addNumericField("RANSAC_Reproj_Threshold", ransacReprojThreshold, 2);
+        gd.addNumericField("min_key_points", min_key_points, 0);
+        gd.addNumericField("RANSAC_reproj_threshold", ransacReprojThreshold, 2);
+    	gd.addCheckbox("enable_draw_matches", enDrawMatches);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -99,9 +101,10 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         ind_match = (int)gd.getNextChoiceIndex();
         max_dist = (double)gd.getNextNumber();
-        enDrawMatches = (boolean)gd.getNextBoolean();
         enDetectQuery = (boolean)gd.getNextBoolean();
+        min_key_points = (int)gd.getNextNumber();
         ransacReprojThreshold = (double)gd.getNextNumber();
+        enDrawMatches = (boolean)gd.getNextBoolean();
 
         fname = TYPE_STR_DET[ind_det] + ".xml";
 
@@ -262,8 +265,8 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     }
 
     private void showData(
-        MatOfKeyPoint key_query,
-        MatOfKeyPoint key_train,
+        MatOfKeyPoint pnts_query,
+        MatOfKeyPoint pnts_train,
         MatOfDMatch dmatch,
         Mat mskOfRansac) {
         int num = dmatch.rows();
@@ -281,20 +284,20 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             int trainidx = (int)ele_match[1];
             float distance = ele_match[3];
 
-            double query_x = key_query.get(queryidx, 0)[0];
-            double query_y = key_query.get(queryidx, 0)[1];
-            double query_size = key_query.get(queryidx, 0)[2];
-            double query_angle = key_query.get(queryidx, 0)[3];
-            double query_response = key_query.get(queryidx, 0)[4];
-            double query_octave = key_query.get(queryidx, 0)[5];
-            double query_class_id = key_query.get(queryidx, 0)[6];
-            double train_x = key_train.get(trainidx, 0)[0];
-            double train_y = key_train.get(trainidx, 0)[1];
-            double train_size = key_train.get(trainidx, 0)[2];
-            double train_angle = key_train.get(trainidx, 0)[3];
-            double train_response = key_train.get(trainidx, 0)[4];
-            double train_octave = key_train.get(trainidx, 0)[5];
-            double train_class_id = key_train.get(trainidx, 0)[6];
+            double query_x = pnts_query.get(queryidx, 0)[0];
+            double query_y = pnts_query.get(queryidx, 0)[1];
+            double query_size = pnts_query.get(queryidx, 0)[2];
+            double query_angle = pnts_query.get(queryidx, 0)[3];
+            double query_response = pnts_query.get(queryidx, 0)[4];
+            double query_octave = pnts_query.get(queryidx, 0)[5];
+            double query_class_id = pnts_query.get(queryidx, 0)[6];
+            double train_x = pnts_train.get(trainidx, 0)[0];
+            double train_y = pnts_train.get(trainidx, 0)[1];
+            double train_size = pnts_train.get(trainidx, 0)[2];
+            double train_angle = pnts_train.get(trainidx, 0)[3];
+            double train_response = pnts_train.get(trainidx, 0)[4];
+            double train_octave = pnts_train.get(trainidx, 0)[5];
+            double train_class_id = pnts_train.get(trainidx, 0)[6];
             double ransac = existMsk ? mskOfRansac.get(i, 0)[0] : 1;
 
             dst_rt.incrementCounter();
@@ -320,6 +323,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
 
         dst_rt.show("Results");
     }
+    
     private void drawMatches(
         Mat mat_query,
         MatOfKeyPoint key_query,
@@ -347,7 +351,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         int num_query = pnts_query.rows();
         int num_train = pnts_train.rows();
 
-        if(num_query < 4 || num_train < 4) {
+        if(num_query < min_key_points || num_train < min_key_points) {
             return;
         }
 
