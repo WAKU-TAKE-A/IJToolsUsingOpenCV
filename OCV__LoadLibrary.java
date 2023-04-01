@@ -9,6 +9,7 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 import java.awt.Rectangle;
+import java.lang.reflect.Field;
 import java.util.ArrayList;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -43,7 +44,7 @@ import org.opencv.core.Point;
  * Load OpenCV library.
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.38.0";
+    public static final String VERSION = "0.9.39.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -73,6 +74,21 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     @Override
     public void run(ImageProcessor arg0) {
         try {
+            // add "." and "./dll" to java.library.path
+            String key_java_library_path = "java.library.path";
+            String val_java_library_path = System.getProperty(key_java_library_path);
+            
+            if ("".equals(val_java_library_path)) {
+                val_java_library_path = ".;./dll";
+            } else {
+                val_java_library_path += ";.;./dll";
+            }
+
+            System.setProperty(key_java_library_path, val_java_library_path);            
+            Field sys_paths = ClassLoader.class.getDeclaredField("sys_paths");
+            sys_paths.setAccessible(true);
+            sys_paths.set(null, null);
+            
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
             IJ.showStatus("Loading succeeded.(" + VERSION + ")");
             disposed = false;
