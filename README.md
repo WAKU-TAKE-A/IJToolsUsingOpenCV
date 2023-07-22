@@ -16,7 +16,19 @@ I have made plugins for ImageJ that uses a part of OpenCV's functions.
 
 ## How to build
 
-The above files can be built with NetBeans. Please refer to [this site](https://waku-take-a.github.io/How%2520to%2520use%2520OpenCV%2520from%2520ImageJ.html).
+Copy this repository to the "NetBeansProjects" folder.
+
+Copy "ij.jar", "opencv-000.jar" and "opencv_java000.dll" to the root of this repository.
+
+Start NetBeans.
+
+File ⇒ Open Project
+
+Select the folder you copied earlier.
+
+Add "ij.jar" and "opencv-000.jar" to the "Classpath" in Properties - Libraries.
+
+Please run the build.
 
 ## Binaries
 
@@ -34,7 +46,19 @@ OpenCVの関数の一部を利用するImageJ用プラグインを作りまし�
 
 ## ビルド方法
 
-上のファイルはNetBeansでビルドできます。[こちら](https://waku-take-a.github.io/NetBeans%25E3%2581%25AB%25E3%2582%2588%25E3%2582%258BPlugin%25E4%25BD%259C%25E6%2588%2590.html)のサイトを参考にしてください。
+本リポジトリを「NetBeansProjects」のフォルダにコピーします。
+
+本リポジトリのルートに「ij.jar」「opencv-000.jar」「opencv_java000.dll」をコピーします。
+
+NetBeansを起動します。
+
+ファイル⇒プロジェクトを開く
+
+先ほどコピーしたフォルダを選択します。
+
+プロパティ－ライブラリのコンパイル時ライブラリの「Classpath」に「ij.jar」「opencv-000.jar」を追加します。
+
+ビルドを実行してください。
 
 ## バイナリー
 
