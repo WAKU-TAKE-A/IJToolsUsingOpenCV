@@ -1,3 +1,13 @@
+# Release v0.9.40.0
+
+Latest update: July 23th 2023
+
+Confirmed with ImageJ 1.53t + JDK8 + OpenCV4.6.0.
+
+## Changes
+
+* Manage the project itself, not just the source.
+
 # Release v0.9.37.0
 
 Latest update: October 19th 2021

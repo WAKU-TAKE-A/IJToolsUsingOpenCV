@@ -1,4 +1,4 @@
-Please add the following to <target name="-post-compile"> 
+Please open ./nbproject/build-impl.xml and add the following to <target name="-post-compile"> .
 
         <move todir="plugins">
             <fileset dir="${build.classes.dir}" includes="OCV_*.class"/>
