@@ -37,7 +37,7 @@ import java.util.ArrayList;
  */
 
 /**
- * minEnclosingCircle (OpenCV4.5.3).
+ * minEnclosingCircle.
  */
 public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
     // static var.

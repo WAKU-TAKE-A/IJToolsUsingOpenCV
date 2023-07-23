@@ -37,7 +37,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * blur (OpenCV4.5.3).
+ * blur.
  */
 public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.

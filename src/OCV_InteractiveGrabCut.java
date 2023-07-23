@@ -45,7 +45,7 @@ import org.opencv.core.Rect;
  */
 
 /**
- * grabCut (OpenCV4.5.3).
+ * grabCut.
  */
 public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFilter {
     // constant var.
