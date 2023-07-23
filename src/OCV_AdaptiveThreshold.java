@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * adaptiveThreshold (OpenCV4.5.3).
+ * adaptiveThreshold.
  */
 public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.

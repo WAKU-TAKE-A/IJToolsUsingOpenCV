@@ -1,3 +1,20 @@
+# Release v0.9.41.0
+
+Latest update: August 17th 2023
+
+Confirmed with ImageJ 1.54h9 + JDK17 + OpenCV4.8.0.
+
+# Release v0.9.101.0
+
+Latest update: July 23th 2023
+
+Confirmed with ImageJ 1.53t + JDK11 + OpenCV4.8.0.
+
+## Changes
+
+* Compatible with OpenCV4.8.0.
+* Requires a custom ImageJ to load opencv_java000.dll.
+
 # Release v0.9.40.0
 
 Latest update: July 23th 2023

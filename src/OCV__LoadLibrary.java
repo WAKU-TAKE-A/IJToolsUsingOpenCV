@@ -44,7 +44,7 @@ import org.opencv.core.Point;
  * Load OpenCV library.
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.39.0";
+    public static final String VERSION = "0.9.41.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -73,28 +73,13 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor arg0) {
-        try {
-            // add "." and "./dll" to java.library.path
-            String key_java_library_path = "java.library.path";
-            String val_java_library_path = System.getProperty(key_java_library_path);
-            
-            if ("".equals(val_java_library_path)) {
-                val_java_library_path = ".;./dll";
-            } else {
-                val_java_library_path += ";.;./dll";
-            }
-
-            System.setProperty(key_java_library_path, val_java_library_path);            
-            Field sys_paths = ClassLoader.class.getDeclaredField("sys_paths");
-            sys_paths.setAccessible(true);
-            sys_paths.set(null, null);
-            
+        try {           
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
             IJ.showStatus("Loading succeeded.(" + VERSION + ")");
             disposed = false;
         }
         catch(Throwable ex) {
-            IJ.error("ERR : " + ex.getMessage() + "\nThe recovering method : Restart ImageJ, especially after 'Refresh Menus'.");
+            IJ.error("ERR : " + ex.toString());
             disposed = true;
         }
     }
@@ -103,17 +88,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     public int setup(String arg0, ImagePlus imp) {
         disposed = !isLoadOpenCV();
         return NO_IMAGE_REQUIRED;
-    }
-
-    // finalize
-    @Override
-    protected void finalize() throws Throwable {
-        try {
-            super.finalize();
-        }
-        finally {
-            dispose();
-        }
     }
 
     private void dispose() {

@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * fitEllipse (OpenCV4.5.3).
+ * fitEllipse.
  */
 public class OCV_FitEllipse implements ExtendedPlugInFilter {
     // static var.

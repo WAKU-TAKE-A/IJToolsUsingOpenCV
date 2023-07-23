@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * warpPolar (OpenCV4.5.3).
+ * warpPolar.
  */
 public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
     // constant var.
