@@ -36,7 +36,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- *  cornerHarris (OpenCV4.5.3).
+ *  cornerHarris.
  */
 public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.

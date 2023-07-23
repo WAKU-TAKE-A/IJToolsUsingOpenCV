@@ -34,7 +34,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * distanceTransform (OpenCV4.5.3).
+ * distanceTransform.
  */
 public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.

@@ -31,7 +31,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * equalizeHist (OpenCV4.5.3).
+ * equalizeHist.
  */
 public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
     // constant var.
