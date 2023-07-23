@@ -43,7 +43,7 @@ import org.xml.sax.SAXException;
  */
 
 /**
- * Setting a query in FeatureDetection (OpenCV4.5.3).
+ * Setting a query in FeatureDetection.
  *
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
  * * AKAZE, BRISK, ORB

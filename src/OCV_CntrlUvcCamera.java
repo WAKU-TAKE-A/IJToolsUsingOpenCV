@@ -46,7 +46,7 @@ import org.opencv.videoio.VideoCapture;
  */
 
 /**
- * Control UVC camera using VideoCapture function (OpenCV4.5.3).
+ * Control UVC camera using VideoCapture function.
  */
 public class OCV_CntrlUvcCamera implements ExtendedPlugInFilter {
     // const var.
