@@ -9,7 +9,6 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 import java.awt.Rectangle;
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import org.opencv.core.Core;
 import org.opencv.core.Mat;
@@ -44,7 +43,7 @@ import org.opencv.core.Point;
  * Load OpenCV library.
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.41.0";
+    public static final String VERSION = "0.9.42.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -79,7 +78,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             disposed = false;
         }
         catch(Throwable ex) {
-            IJ.error("ERR : " + ex.toString());
+            IJ.log("ERR : " + ex.toString());
             disposed = true;
         }
     }
@@ -89,11 +88,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         disposed = !isLoadOpenCV();
         return NO_IMAGE_REQUIRED;
     }
-
-    private void dispose() {
-        disposed = !isLoadOpenCV();
-    }
-
+    
     // for check
     private boolean isLoadOpenCV() {
         try {
