@@ -1,6 +1,9 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.Prefs;
 import ij.WindowManager;
+import ij.gui.Plot;
+import ij.gui.ProfilePlot;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
@@ -244,5 +247,27 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         catch(InterruptedException e) {
             // do nothing
         }
+    }
+    
+    /**
+     * plot profile
+     * @param imp
+     * @return
+     */
+    public static Plot GetProfilePlot(ImagePlus imp) {
+        ProfilePlot profPlot = new ProfilePlot(imp, Prefs.verticalProfile);
+        double[] prof = profPlot.getProfile();
+
+        if(prof == null || prof.length < 2) {
+            return null;
+        }
+
+        String xLabel = "Distance (pixels)";
+        String yLabel = "Value";
+
+        Plot output_plot = new Plot("Profile", xLabel, yLabel);
+        output_plot.add("line", prof);
+
+        return output_plot;
     }
 }
