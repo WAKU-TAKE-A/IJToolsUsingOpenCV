@@ -41,7 +41,7 @@ import org.opencv.imgproc.Imgproc;
 /**
  * blur.
  */
-public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
+public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
 
@@ -68,6 +68,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
     private static int indBorderType = 2;     // Border type
 
     // var.
+    private String className;
     private int bitDepth = 0;
     private Size small_ksize = null;
     private Size large_ksize = null;
@@ -75,7 +76,8 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("small_ksize_x", small_ksize_x, 4);
         gd.addNumericField("small_ksize_y", small_ksize_y, 4);
@@ -132,7 +134,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
 
         small_ksize = new Size(small_ksize_x, small_ksize_y);
         large_ksize = new Size(large_ksize_x, large_ksize_y);
-        IJ.showStatus("OcvUtil_BluredImageDiff");
+        IJ.showStatus(className);
         return true;
     }
 

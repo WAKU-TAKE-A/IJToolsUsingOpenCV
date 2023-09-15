@@ -3,7 +3,6 @@ import ij.ImagePlus;
 import ij.Prefs;
 import ij.gui.GenericDialog;
 import ij.gui.Plot;
-import ij.gui.ProfilePlot;
 import ij.gui.Roi;
 import ij.measure.Measurements;
 import ij.measure.ResultsTable;
@@ -48,7 +47,7 @@ import org.opencv.videoio.VideoCapture;
 /**
  * Control UVC camera using VideoCapture function.
  */
-public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
+public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     // const var.
     private final int FLAGS = NO_IMAGE_REQUIRED;
     // from /sources/modules/videoio/include/opencv2/videoio/videoio_c.h
@@ -79,7 +78,7 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     private static boolean enOneShot = false;
 
     // var.
-    private String title = null;
+    private String className = null;
     public JDialog diag_free = null;
     private ResultsTable tblResults = null;
     private Plot plot = null;
@@ -95,8 +94,8 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
 
     @Override
     public int showDialog(ImagePlus arg0, String cmd, PlugInFilterRunner arg2) {
-        title = cmd.trim();
-        GenericDialog gd = new GenericDialog(title + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
 
         gd.addNumericField("device", device, 0);
         gd.addNumericField("width", width, 0);
@@ -158,7 +157,7 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
         boolean bret = true;
 
         // ----- stop dialog during continuous grabbing -----
-        diag_free = new JDialog(diag_free, title, false);
+        diag_free = new JDialog(diag_free, className, false);
         JButton but_stop_cont = new JButton("Stop");
 
         but_stop_cont.addMouseListener(new MouseAdapter() {
@@ -198,7 +197,7 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             width = (int) src_cap.get(CV_CAP_PROP_FRAME_WIDTH);
             height = (int) src_cap.get(CV_CAP_PROP_FRAME_HEIGHT);
 
-            imp_dsp = IJ.createImage(title, width, height, 1, 24);
+            imp_dsp = IJ.createImage(className, width, height, 1, 24);
             impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
             imp_dsp.show();
         }
@@ -219,7 +218,7 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             // grab
             imp_dsp.startTiming();
             bret = src_cap.read(src_mat);
-            IJ.showTime(imp_dsp, imp_dsp.getStartTime(), title + " : ");
+            IJ.showTime(imp_dsp, imp_dsp.getStartTime(), className + " : ");
 
             if(!bret) {
                 IJ.error("Error occurred in grabbing.");
@@ -236,7 +235,7 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             // display
             if(!imp_dsp.isVisible()) {
                 imp_dsp.close();
-                imp_dsp = IJ.createImage(title, width, height, 1, 24);
+                imp_dsp = IJ.createImage(className, width, height, 1, 24);
                 impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
                 imp_dsp.show();
             }
@@ -300,8 +299,8 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             if(enProfile) {
                 Roi roi = imp_dsp.getRoi();
 
-                if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE)) {
-                    plot = getProfilePlot(imp_dsp);
+                if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE || roi.getType() != Roi.FREEROI)) {
+                    plot = OCV__LoadLibrary.GetProfilePlot(imp_dsp);
                 }
                 else {
                     if(plot != null) {
@@ -332,22 +331,5 @@ public class OcvUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
 
         Prefs.verticalProfile = ini_verticalProfile;
         diag_free.dispose();
-    }
-
-    private Plot getProfilePlot(ImagePlus imp) {
-        ProfilePlot profPlot = new ProfilePlot(imp, Prefs.verticalProfile);
-        double[] prof = profPlot.getProfile();
-
-        if(prof == null || prof.length < 2) {
-            return null;
-        }
-
-        String xLabel = "Distance (pixels)";
-        String yLabel = "Value";
-
-        Plot output_plot = new Plot("Profile", xLabel, yLabel);
-        output_plot.add("line", prof);
-
-        return output_plot;
     }
 }
