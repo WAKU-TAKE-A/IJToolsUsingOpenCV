@@ -165,8 +165,8 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
         
         ImageProcessor ip_small = ip.duplicate();
         ImageProcessor ip_large = ip.duplicate();
-        blur(ip_small, small_ksize);
-        blur(ip_large, large_ksize);
+        blur(ip_small, small_ksize, INT_BORDERTYPE[indBorderType]);
+        blur(ip_large, large_ksize, INT_BORDERTYPE[indBorderType]);
         ImagePlus imp_small = new ImagePlus("small_blur", ip_small);
         ImagePlus imp_large = new ImagePlus("largel_blur", ip_large);
 
@@ -212,7 +212,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
         ImageConverter.setDoScaling(curDoScal);
     }
    
-    public void blur(ImageProcessor ip, Size ksize) {
+    public void blur(ImageProcessor ip, Size ksize, int borderType) {
         if(ip.getBitDepth() == 8) {
             // srcdst
             int imw = ip.getWidth();
@@ -225,7 +225,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
 
             // run
             src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
             dst_mat.get(0, 0, srcdst_bytes);
         }
         else if(ip.getBitDepth() == 16) {
@@ -240,7 +240,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
 
             // run
             src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
             dst_mat.get(0, 0, srcdst_shorts);
         }
         else if(ip.getBitDepth() == 24) {
@@ -255,7 +255,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
 
             // run
             OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
             OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
         }
         else if(ip.getBitDepth() == 32) {
@@ -270,7 +270,7 @@ public class OcvUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInF
 
             // run
             src_mat.put(0, 0, srcdst_floats);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), INT_BORDERTYPE[indBorderType]);
+            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
             dst_mat.get(0, 0, srcdst_floats);
         }
         else {
