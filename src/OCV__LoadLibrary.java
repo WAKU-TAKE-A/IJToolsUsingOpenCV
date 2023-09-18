@@ -270,4 +270,44 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
         return output_plot;
     }
+    
+    /**
+     * copy array
+     * @param src
+     * @param dst
+     */    
+    public static void ArrayCopy(ImageProcessor src, ImageProcessor dst) {
+        if(src.getBitDepth() == 8) {
+            int imw = src.getWidth();
+            int imh = src.getHeight();
+            byte[] src_bytes = (byte[])src.getPixels();
+            byte[] dst_bytes = (byte[])dst.getPixels();
+            System.arraycopy(src_bytes, 0, dst_bytes, 0, imw*imh);
+        }
+        else if(src.getBitDepth() == 16) {
+            int imw = src.getWidth();
+            int imh = src.getHeight();
+            short[] src_shorts = (short[])src.getPixels();
+            short[] dst_shorts = (short[])dst.getPixels();            
+            System.arraycopy(src_shorts, 0, dst_shorts, 0, imw*imh);
+        }
+        else if(src.getBitDepth() == 24) {
+            int imw = src.getWidth();
+            int imh = src.getHeight();
+            int[] src_ints = (int[])src.getPixels();
+            int[] dst_ints = (int[])dst.getPixels();
+            System.arraycopy(src_ints, 0, dst_ints, 0, imw*imh);
+        }
+        else if(src.getBitDepth() == 32) {
+            // srcdst
+            int imw = src.getWidth();
+            int imh = src.getHeight();
+            float[] src_floats = (float[])src.getPixels();
+            float[] dst_floats = (float[])dst.getPixels();
+            System.arraycopy(src_floats, 0, dst_floats, 0, imw*imh);
+        }
+        else {
+            IJ.error("Wrong image format");
+        }
+    }
 }

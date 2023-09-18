@@ -126,8 +126,8 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             indCapApi = (int)gd.getNextChoiceIndex();
             enCalcStat = gd.getNextBoolean();
             max_results = (int)gd.getNextNumber();
-            enProfile = gd.getNextBoolean();
-            Prefs.verticalProfile = gd.getNextBoolean();
+            enProfile = (boolean)gd.getNextBoolean();
+            Prefs.verticalProfile = (boolean)gd.getNextBoolean();
             wait_time = (int)gd.getNextNumber();
             enOneShot = (boolean)gd.getNextBoolean();
 
