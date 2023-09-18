@@ -16,15 +16,6 @@ import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
 /*
-バーティカルプロファイルも必要
-0⇒1で基準ベクトルの計算（ただし、レクタングルの場合は、バーティカルプロファイルONで1⇒2）
-中心を求める
-プロファイルから求めた値を中心からの座標に変換する。元は左、上。
-後は中心から基準ベクトル×上記の座標で+中心座標で絶対座標がでる。はず
-あとはポイントをプロット。
-*/
-
-/*
  * The MIT License
  *
  * Copyright 2016 Takehito Nishida.
@@ -64,22 +55,22 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private static int ind_size = 0; // aperture size for the Sobel operator.
     private static boolean l2grad = false; // L2gradient;
     private static int ind_leftside = 0;
+    private static double thr_le = 100;
     private static int ind_rightside = 0;
-    private static double plot_threshold = 50;
+    private static double thr_ri = 100;
     private static boolean dispCanny = true;
     private static boolean dispProf = true;
     private static boolean dispTable = true;
     private static boolean dispRoi = true;
     private static ImagePlus impPlot_canny = null;
     private static ImagePlus img_canny = null;
-
     // var.
     private String className;
     private ImagePlus img;
     private Roi roiImg;
     private String lescan;
     private String riscan;
-    private double[] roi_vec = new double[2];
+    private final double[] roi_vec = new double[2];
     private double[] roi_cen = new double[2];
     private double roi_len;
     private RoiManager roiMan = null;
@@ -90,13 +81,14 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         className = command.trim();
         GenericDialog gd = new GenericDialog(className + " ...");
 
-        gd.addNumericField("threshold1", thr1, 4);
-        gd.addNumericField("threshold2", thr2, 4);
-        gd.addChoice("apertureSize", SIZE_STR, SIZE_STR[ind_size]);
+        gd.addNumericField("Threshold1", thr1, 4);
+        gd.addNumericField("Threshold2", thr2, 4);
+        gd.addChoice("ApertureSize", SIZE_STR, SIZE_STR[ind_size]);
         gd.addCheckbox("L2gradient", l2grad);
         gd.addChoice("LeftSideScan", LEFTSIDESCAN_STR, LEFTSIDESCAN_STR[ind_leftside]);
+        gd.addNumericField("ThresholdLeft", thr_le, 4);
         gd.addChoice("RightSideScan", RIGHTSIDESCAN_STR, RIGHTSIDESCAN_STR[ind_rightside]);
-        gd.addNumericField("PlotThreshold", plot_threshold, 4);
+        gd.addNumericField("ThresholdRight", thr_ri, 4);
         gd.addCheckbox("DisplayCanny", dispCanny);
         gd.addCheckbox("DisplayProfile", dispProf);
         gd.addCheckbox("DisplayTable", dispTable);
@@ -121,8 +113,9 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         ind_size = (int)gd.getNextChoiceIndex();
         l2grad = (boolean)gd.getNextBoolean();
         ind_leftside = (int)gd.getNextChoiceIndex();
+        thr_le = (double)gd.getNextNumber();
         ind_rightside = (int)gd.getNextChoiceIndex();
-        plot_threshold = (double)gd.getNextNumber();
+        thr_ri = (double)gd.getNextNumber();
         dispCanny =  (boolean)gd.getNextBoolean();
         dispProf =  (boolean)gd.getNextBoolean();
         dispTable =  (boolean)gd.getNextBoolean();
@@ -226,13 +219,13 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
 
         if(lescan == "left->right"){
             for (le = 0; le < prf_len; le++) {
-                if (plot_threshold <= ypoints[le]) {
+                if (thr_le <= ypoints[le]) {
                     break;
                 }
             }
         }else{
             for (le = prf_len/2; 0 <= le; le--) {
-                if (plot_threshold <= ypoints[le]) {
+                if (thr_le <= ypoints[le]) {
                     break;
                 }
             }
@@ -240,13 +233,13 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
 
         if(riscan == "right->left"){
             for (ri = prf_len-1; 0 <= ri; ri--) {
-                if (plot_threshold <= ypoints[ri]) {
+                if (thr_ri <= ypoints[ri]) {
                     break;
                 }
             }
         }else{
             for (ri = prf_len/2; ri < prf_len; ri++) {
-                 if (plot_threshold <= ypoints[ri]) {
+                 if (thr_ri <= ypoints[ri]) {
                     break;
                 }
             }
