@@ -1134,7 +1134,7 @@ is divided into following sections:
             <fileset dir="${build.classes.dir}" includes="OCV_*.class"/>
         </move>
         <move todir="plugins">
-            <fileset dir="${build.classes.dir}" includes="OcvUtil_*.class"/>
+            <fileset dir="${build.classes.dir}" includes="OCUtil_*.class"/>
         </move>
         <move todir="plugins">
             <fileset dir="${build.classes.dir}" includes="WK_*.class"/>
@@ -1144,7 +1144,7 @@ is divided into following sections:
         </move>
         <jar jarfile="IJTools_UsingOpenCV.jar">
             <fileset dir="plugins" includes="OCV_*.class"/>
-            <fileset dir="plugins" includes="OcvUtil_*.class"/>
+            <fileset dir="plugins" includes="OCUtil_*.class"/>
             <fileset dir="plugins" includes="My*.class"/>
             <manifest>
                 <attribute name="Main-Class" value="Main" />

@@ -3,14 +3,26 @@ import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.gui.Plot;
+import ij.gui.PointRoi;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.PlugInFilterRunner;
+import ij.plugin.frame.RoiManager;
+import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
+
+/*
+バーティカルプロファイルも必要
+0⇒1で基準ベクトルの計算（ただし、レクタングルの場合は、バーティカルプロファイルONで1⇒2）
+中心を求める
+プロファイルから求めた値を中心からの座標に変換する。元は左、上。
+後は中心から基準ベクトル×上記の座標で+中心座標で絶対座標がでる。はず
+あとはポイントをプロット。
+*/
 
 /*
  * The MIT License
@@ -47,22 +59,31 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private final String[] LEFTSIDESCAN_STR = new String[] { "left->right", "center->left" };
     private final String[] RIGHTSIDESCAN_STR = new String[] { "right->left", "center->right" };
     // staic var.
-    private static double thr1  = 0; // first threshold for the hysteresis procedure.
-    private static double thr2  = 0; // second threshold for the hysteresis procedure.
+    private static double thr1  = 30; // first threshold for the hysteresis procedure.
+    private static double thr2  = 40; // second threshold for the hysteresis procedure.
     private static int ind_size = 0; // aperture size for the Sobel operator.
     private static boolean l2grad = false; // L2gradient;
     private static int ind_leftside = 0;
     private static int ind_rightside = 0;
-    private static double plot_threshold = 100;
-    private static boolean onlyresult = false;
+    private static double plot_threshold = 50;
+    private static boolean dispCanny = true;
+    private static boolean dispProf = true;
+    private static boolean dispTable = true;
+    private static boolean dispRoi = true;
     private static ImagePlus impPlot_canny = null;
-    
+    private static ImagePlus img_canny = null;
+
     // var.
     private String className;
     private ImagePlus img;
     private Roi roiImg;
     private String lescan;
-    private String riscan; 
+    private String riscan;
+    private double[] roi_vec = new double[2];
+    private double[] roi_cen = new double[2];
+    private double roi_len;
+    private RoiManager roiMan = null;
+    private boolean ini_verticalProfile = false;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -76,7 +97,11 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         gd.addChoice("LeftSideScan", LEFTSIDESCAN_STR, LEFTSIDESCAN_STR[ind_leftside]);
         gd.addChoice("RightSideScan", RIGHTSIDESCAN_STR, RIGHTSIDESCAN_STR[ind_rightside]);
         gd.addNumericField("PlotThreshold", plot_threshold, 4);
-        gd.addCheckbox("DisplayOnlyResult", onlyresult);
+        gd.addCheckbox("DisplayCanny", dispCanny);
+        gd.addCheckbox("DisplayProfile", dispProf);
+        gd.addCheckbox("DisplayTable", dispTable);
+        gd.addCheckbox("DisplayRoi", dispRoi);
+        gd.addCheckbox("VerticalProfileWhenRectangle", Prefs.verticalProfile);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -97,12 +122,16 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         l2grad = (boolean)gd.getNextBoolean();
         ind_leftside = (int)gd.getNextChoiceIndex();
         ind_rightside = (int)gd.getNextChoiceIndex();
-        plot_threshold = (double)gd.getNextNumber(); 
-        onlyresult =  (boolean)gd.getNextBoolean();
-        
+        plot_threshold = (double)gd.getNextNumber();
+        dispCanny =  (boolean)gd.getNextBoolean();
+        dispProf =  (boolean)gd.getNextBoolean();
+        dispTable =  (boolean)gd.getNextBoolean();
+        dispRoi =  (boolean)gd.getNextBoolean();
+        Prefs.verticalProfile = (boolean)gd.getNextBoolean();
+
         lescan = LEFTSIDESCAN_STR[ind_leftside];
-        riscan = RIGHTSIDESCAN_STR[ind_rightside];                
-                
+        riscan = RIGHTSIDESCAN_STR[ind_rightside];
+
         if(Double.isNaN(thr1) || Double.isNaN(thr2)) {
             IJ.showStatus("ERR : NaN");
             return false;
@@ -118,6 +147,23 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             return false;
         }
 
+        FloatPolygon fp = roiImg.getFloatPolygon();
+        roi_cen = roiImg.getContourCentroid();
+
+        if (roiImg.getType() == Roi.LINE || roiImg.getType() == Roi.FREEROI || (roiImg.getType() == Roi.RECTANGLE && !Prefs.verticalProfile)) {
+            roi_len = CalculateDistance(
+                    fp.xpoints[0], fp.ypoints[0],
+                    fp.xpoints[1], fp.ypoints[1]);
+            roi_vec[0] = (fp.xpoints[1] - fp.xpoints[0]) / roi_len;
+            roi_vec[1] = (fp.ypoints[1] - fp.ypoints[0]) / roi_len;
+        } else {
+            roi_len = CalculateDistance(
+                    fp.xpoints[1], fp.ypoints[1],
+                    fp.xpoints[2], fp.ypoints[2]);
+            roi_vec[0] = (fp.xpoints[2] - fp.xpoints[1]) / roi_len;
+            roi_vec[1] = (fp.ypoints[2] - fp.ypoints[1]) / roi_len;                
+        }
+        
         IJ.showStatus(className);
         return true;
     }
@@ -141,11 +187,14 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         else {
             img = imp;
             roiImg = imp.getRoi();
-            
-            if (roiImg == null || (roiImg.getType() != Roi.LINE && roiImg.getType() != Roi.RECTANGLE) && roiImg.getType() != Roi.FREEROI) {
+
+            if (roiImg == null || (roiImg.getType() != Roi.LINE && roiImg.getType() != Roi.RECTANGLE && roiImg.getType() != Roi.FREEROI)) {
+                IJ.error("A line, rectangle, or rotated rectangle ROI is necessary.");
                 return DONE;
             }
             
+            ini_verticalProfile = Prefs.verticalProfile;
+
             return FLAGS;
         }
     }
@@ -153,58 +202,74 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     @Override
     public void run(ImageProcessor ip) {
         IJ.run(img, "Select All", "");
+
+        if (img_canny == null) {
+            img_canny = img.duplicate();
+        } else {
+            if (ip.getWidth() != img_canny.getWidth() || ip.getHeight() != img_canny.getHeight()) {
+                img_canny.close();
+                img_canny = img.duplicate();
+            } else {
+                OCV__LoadLibrary.ArrayCopy(ip, img_canny.getProcessor());
+            }
+        }
         
-        ImagePlus img_canny = img.duplicate();        
         Canny(img_canny, thr1, thr2, SIZE_VAL[ind_size], l2grad);
-        
+
         img_canny.setRoi(roiImg);
         Plot plot_canny = OCV__LoadLibrary.GetProfilePlot(img_canny);
         float[] xpoints = plot_canny.getXValues();
         float[] ypoints = plot_canny.getYValues();
-        int length = xpoints.length;
+        int prf_len = xpoints.length;
         int le;
-        int ri;        
-        
+        int ri;
+
         if(lescan == "left->right"){
-            le = 0;
-            while(ypoints[le] <= plot_threshold && le < length - 1){
-                le++;
+            for (le = 0; le < prf_len; le++) {
+                if (plot_threshold <= ypoints[le]) {
+                    break;
+                }
             }
         }else{
-            le = length / 2;
-            while(ypoints[le] <= plot_threshold && 0 < le){
-                le--;
+            for (le = prf_len/2; 0 <= le; le--) {
+                if (plot_threshold <= ypoints[le]) {
+                    break;
+                }
             }
         }
-        
+
         if(riscan == "right->left"){
-            ri = length-1;
-            while(ypoints[ri] <= plot_threshold && 0 < ri){
-                ri--;
+            for (ri = prf_len-1; 0 <= ri; ri--) {
+                if (plot_threshold <= ypoints[ri]) {
+                    break;
+                }
             }
         }else{
-            ri = length/2;
-            while(ypoints[ri] <= plot_threshold && ri  <length - 1){
-                ri++;
+            for (ri = prf_len/2; ri < prf_len; ri++) {
+                 if (plot_threshold <= ypoints[ri]) {
+                    break;
+                }
             }
         }
+
+        double center = (double)prf_len / 2;
+        double le_from_center = ((double)le - center) * roi_len / (double)prf_len;
+        double ri_from_center = ((double)ri - center) * roi_len / (double)prf_len;
+        double[] pnt_le = new double[] { (roi_cen[0] + roi_vec[0] * le_from_center), (roi_cen[1] + roi_vec[1] * le_from_center) };
+        double[] pnt_ri = new double[] { (roi_cen[0] + roi_vec[0] * ri_from_center), (roi_cen[1] + roi_vec[1] * ri_from_center) };
+        double len = CalculateDistance(pnt_le[0], pnt_le[1], pnt_ri[0], pnt_ri[1]);
         
-        ResultsTable tblResults = OCV__LoadLibrary.GetResultsTable(false);
-        
-        if(tblResults == null) {
-            tblResults = new ResultsTable();
+        // Display Canny.
+        if (dispCanny) {
+            img_canny.show();
         }
-        
-        int nrow = tblResults.size();
-        tblResults.setValue("Left", nrow, le);
-        tblResults.setValue("Right", nrow, ri);
-        tblResults.setValue("Width", nrow, ri-le);
-        
-        img.setRoi(roiImg);
-        img_canny.show();
-        tblResults.show("Results");
-        
-        if(plot_canny != null) {
+        else
+        {
+            img_canny.close();
+        }
+
+        // Display profile.
+        if(plot_canny != null && dispProf) {
             if(impPlot_canny == null) {
                 impPlot_canny = new ImagePlus(className + " Profile", plot_canny.getProcessor());
             }
@@ -214,11 +279,53 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
 
             impPlot_canny.show();
         }
+        
+        // Display table.
+        if (dispTable) {
+            ResultsTable tblResults = OCV__LoadLibrary.GetResultsTable(false);
+
+            if(tblResults == null) {
+                tblResults = new ResultsTable();
+            }
+
+            int nrow = tblResults.size();
+            tblResults.setValue("LeftX", nrow, pnt_le[0]);
+            tblResults.setValue("LeftY", nrow, pnt_le[1]);
+            tblResults.setValue("RightX", nrow, pnt_ri[0]);
+            tblResults.setValue("RightY", nrow, pnt_ri[1]);
+            tblResults.setValue("Width", nrow, len);
+
+            tblResults.show("Results");
+        }
+
+        // Add roi.
+        if (dispRoi) {
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+
+            if (0 < roiMan.getCount()) {
+                roiMan.select(roiMan.getCount() - 1);
+                roiMan.runCommand(img, "Delete");
+            }
+            
+            PointRoi pnts = new PointRoi();
+            pnts.addPoint(pnt_le[0], pnt_le[1]);
+            pnts.addPoint(pnt_ri[0], pnt_ri[1]);
+            roiMan.addRoi(pnts);
+            roiMan.addRoi(roiImg);
+            
+            IJ.selectWindow(img.getID());
+            roiMan.select(roiMan.getCount() - 1);
+        } else {
+            IJ.selectWindow(img.getID());
+            img.setRoi(roiImg);
+        }
+        
+        Prefs.verticalProfile = ini_verticalProfile;
     }
-    
+
     public void Canny(ImagePlus imp, double threshold1, double threshold2, int apertureSize, boolean L2gradient) {
         ImageProcessor ip = imp.getProcessor();
-        
+
         // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
@@ -231,6 +338,13 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         // run
         src_mat.put(0, 0, srcdst_bytes);
         Imgproc.Canny(src_mat, dst_mat, threshold1, threshold2, apertureSize, L2gradient);
-        dst_mat.get(0, 0, srcdst_bytes);    
+        dst_mat.get(0, 0, srcdst_bytes);
+    }
+
+    public double CalculateDistance(double x1, double y1, double x2, double y2) {
+        double dlt_len_x = x2 - x1;
+        double dlt_len_y = y2 - y1;
+        double len2 = Math.pow(dlt_len_x, 2) + Math.pow(dlt_len_y, 2);
+        return Math.sqrt(len2);
     }
 }
