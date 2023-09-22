@@ -2,6 +2,7 @@ import ij.*;
 import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
+import ij.gui.Line;
 import ij.gui.Plot;
 import ij.gui.PointRoi;
 import ij.gui.Roi;
@@ -49,6 +50,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private final int[] SIZE_VAL = new int[] { 3, 5, 7 };
     private final String[] LEFTSIDESCAN_STR = new String[] { "left->right", "center->left" };
     private final String[] RIGHTSIDESCAN_STR = new String[] { "right->left", "center->right" };
+    private final String[] ROI_STR = new String[] { "line", "point" };
     // staic var.
     private static double thr1  = 30; // first threshold for the hysteresis procedure.
     private static double thr2  = 40; // second threshold for the hysteresis procedure.
@@ -62,6 +64,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private static boolean dispProf = true;
     private static boolean dispTable = true;
     private static boolean dispRoi = true;
+    private static int ind_roi = 0;
     private static boolean enVertical = false;
     private static ImagePlus impPlot_canny = null;
     private static ImagePlus img_canny = null;
@@ -75,6 +78,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private double[] roi_cen = new double[2];
     private double roi_len;
     private RoiManager roiMan = null;
+    private String typeRoi;
     private boolean ini_verticalProfile = false;
 
     @Override
@@ -94,6 +98,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         gd.addCheckbox("DisplayProfile", dispProf);
         gd.addCheckbox("DisplayTable", dispTable);
         gd.addCheckbox("DisplayRoi", dispRoi);
+        gd.addChoice("TypeOfRoi", ROI_STR, ROI_STR[ind_roi]);
         gd.addCheckbox("VerticalProfileWhenRectangle", enVertical);
         gd.addDialogListener(this);
 
@@ -121,10 +126,12 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         dispProf =  (boolean)gd.getNextBoolean();
         dispTable =  (boolean)gd.getNextBoolean();
         dispRoi =  (boolean)gd.getNextBoolean();
+        ind_roi = (int)gd.getNextChoiceIndex();
         enVertical = (boolean)gd.getNextBoolean();        
 
         lescan = LEFTSIDESCAN_STR[ind_leftside];
         riscan = RIGHTSIDESCAN_STR[ind_rightside];
+        typeRoi = ROI_STR[ind_roi];
         Prefs.verticalProfile = enVertical;
         
         if(Double.isNaN(thr1) || Double.isNaN(thr2)) {
@@ -309,11 +316,20 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         img.show();
         
         // Add roi.
-        if (dispRoi) {          
-            PointRoi pnts = new PointRoi();
-            pnts.addPoint(pnt_le[0], pnt_le[1]);
-            pnts.addPoint(pnt_ri[0], pnt_ri[1]);
-            roiMan.addRoi(pnts);
+        if (dispRoi) {
+            if (typeRoi == "line")
+            {
+                Line line = new Line(pnt_le[0], pnt_le[1],pnt_ri[0], pnt_ri[1]);
+                roiMan.addRoi(line);
+            }
+            else
+            {
+                PointRoi pnts = new PointRoi();
+                pnts.addPoint(pnt_le[0], pnt_le[1]);
+                pnts.addPoint(pnt_ri[0], pnt_ri[1]);
+                roiMan.addRoi(pnts);
+            }
+            
             roiMan.addRoi(roiImg);
             
             IJ.selectWindow(img.getID());
