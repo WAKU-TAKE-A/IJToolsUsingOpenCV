@@ -62,6 +62,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private static boolean dispProf = true;
     private static boolean dispTable = true;
     private static boolean dispRoi = true;
+    private static boolean enVertical = false;
     private static ImagePlus impPlot_canny = null;
     private static ImagePlus img_canny = null;
     // var.
@@ -93,7 +94,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         gd.addCheckbox("DisplayProfile", dispProf);
         gd.addCheckbox("DisplayTable", dispTable);
         gd.addCheckbox("DisplayRoi", dispRoi);
-        gd.addCheckbox("VerticalProfileWhenRectangle", Prefs.verticalProfile);
+        gd.addCheckbox("VerticalProfileWhenRectangle", enVertical);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -120,11 +121,12 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         dispProf =  (boolean)gd.getNextBoolean();
         dispTable =  (boolean)gd.getNextBoolean();
         dispRoi =  (boolean)gd.getNextBoolean();
-        Prefs.verticalProfile = (boolean)gd.getNextBoolean();
+        enVertical = (boolean)gd.getNextBoolean();        
 
         lescan = LEFTSIDESCAN_STR[ind_leftside];
         riscan = RIGHTSIDESCAN_STR[ind_rightside];
-
+        Prefs.verticalProfile = enVertical;
+        
         if(Double.isNaN(thr1) || Double.isNaN(thr2)) {
             IJ.showStatus("ERR : NaN");
             return false;
@@ -143,7 +145,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         FloatPolygon fp = roiImg.getFloatPolygon();
         roi_cen = roiImg.getContourCentroid();
 
-        if (roiImg.getType() == Roi.LINE || roiImg.getType() == Roi.FREEROI || (roiImg.getType() == Roi.RECTANGLE && !Prefs.verticalProfile)) {
+        if (roiImg.getType() == Roi.LINE || roiImg.getType() == Roi.FREEROI || (roiImg.getType() == Roi.RECTANGLE && !enVertical)) {
             roi_len = CalculateDistance(
                     fp.xpoints[0], fp.ypoints[0],
                     fp.xpoints[1], fp.ypoints[1]);
@@ -194,12 +196,23 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
 
     @Override
     public void run(ImageProcessor ip) {
+        if (dispRoi) {
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+
+            if (0 < roiMan.getCount()) {
+                roiMan.select(roiMan.getCount() - 1);
+                roiMan.runCommand(img, "Delete");
+            }
+            
+            roiMan.deselect();
+        }
+        
         IJ.run(img, "Select All", "");
 
         if (img_canny == null) {
             img_canny = img.duplicate();
         } else {
-            if (ip.getWidth() != img_canny.getWidth() || ip.getHeight() != img_canny.getHeight()) {
+            if (ip.getWidth() != img_canny.getWidth() || ip.getHeight() != img_canny.getHeight() || !img_canny.isVisible()) {
                 img_canny.close();
                 img_canny = img.duplicate();
             } else {
@@ -253,6 +266,8 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         double len = CalculateDistance(pnt_le[0], pnt_le[1], pnt_ri[0], pnt_ri[1]);
         
         // Display Canny.
+        img_canny.resetRoi();
+        
         if (dispCanny) {
             img_canny.show();
         }
@@ -291,15 +306,10 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             tblResults.show("Results");
         }
 
+        img.show();
+        
         // Add roi.
-        if (dispRoi) {
-            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
-
-            if (0 < roiMan.getCount()) {
-                roiMan.select(roiMan.getCount() - 1);
-                roiMan.runCommand(img, "Delete");
-            }
-            
+        if (dispRoi) {          
             PointRoi pnts = new PointRoi();
             pnts.addPoint(pnt_le[0], pnt_le[1]);
             pnts.addPoint(pnt_ri[0], pnt_ri[1]);
