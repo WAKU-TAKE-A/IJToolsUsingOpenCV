@@ -2,11 +2,13 @@ import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
 import ij.gui.OvalRoi;
+import ij.gui.Roi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import java.awt.Polygon;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
@@ -48,6 +50,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
     private int countNPass = 0;
+    private Roi roiSrc = null;
 
     /*
      * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
@@ -74,10 +77,32 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
-        byte[] byteArray = (byte[])ip.getPixels();
-        int w = ip.getWidth();
-        int h = ip.getHeight();
         int num_slice = ip.getSliceNumber();
+        
+        byte[] byteArray;
+        int w;
+        int h;
+        int offsetx;
+        int offsety;
+        
+        if (roiSrc == null) {
+            byteArray = (byte[])ip.getPixels();
+            w = ip.getWidth();
+            h = ip.getHeight();
+            offsetx = 0;
+            offsety = 0;
+        }
+        else
+        {
+            ImageProcessor ip_crop = ip.crop();
+            byteArray = (byte[])ip_crop.getPixels();
+            w = ip_crop.getWidth();
+            h = ip_crop.getHeight();
+            Polygon pol = roiSrc.getPolygon();
+            offsetx = pol.xpoints[0];
+            offsety = pol.ypoints[0];
+        }
+
 
         ArrayList<Point> lstPt = new ArrayList<Point>();
         MatOfPoint2f pts = new MatOfPoint2f();
@@ -85,7 +110,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
         for(int y = 0; y < h; y++) {
             for(int x = 0; x < w; x++) {
                 if(byteArray[x + w * y] != 0) {
-                    lstPt.add(new Point((double)x, (double)y));
+                    lstPt.add(new Point((double)x+(double)offsetx, (double)y+(double)offsety));
                 }
             }
         }
@@ -123,6 +148,12 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
         }
         else {
             impSrc = imp;
+            roiSrc = imp.getRoi();
+            
+            if (roiSrc == null || roiSrc.getType() != Roi.RECTANGLE) {
+                roiSrc = null;
+            } 
+            
             return DOES_8G;
         }
     }
