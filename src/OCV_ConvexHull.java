@@ -8,6 +8,7 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
+import java.awt.Polygon;
 import java.util.ArrayList;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
@@ -47,6 +48,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
 
     // var.
     private int countNPass = 0;
+    private Roi roiSrc = null;
 
     @Override
     public void setNPasses(int arg0) {
@@ -70,9 +72,29 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
-        byte[] byteArray = (byte[])ip.getPixels();
-        int w = ip.getWidth();
-        int h = ip.getHeight();
+        byte[] byteArray;
+        int w;
+        int h;
+        int offsetx;
+        int offsety;
+        
+        if (roiSrc == null) {
+            byteArray = (byte[])ip.getPixels();
+            w = ip.getWidth();
+            h = ip.getHeight();
+            offsetx = 0;
+            offsety = 0;
+        }
+        else
+        {
+            ImageProcessor ip_crop = ip.crop();
+            byteArray = (byte[])ip_crop.getPixels();
+            w = ip_crop.getWidth();
+            h = ip_crop.getHeight();
+            Polygon pol = roiSrc.getPolygon();
+            offsetx = pol.xpoints[0];
+            offsety = pol.ypoints[0];
+        }
 
         ArrayList<Point> lstPt = new ArrayList<Point>();
         MatOfPoint pts = new MatOfPoint();
@@ -80,7 +102,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
         for(int y = 0; y < h; y++) {
             for(int x = 0; x < w; x++) {
                 if(byteArray[x + w * y] != 0) {
-                    lstPt.add(new Point((double)x, (double)y));
+                    lstPt.add(new Point((double)x+(double)offsetx, (double)y+(double)offsety));
                 }
             }
         }
@@ -107,6 +129,12 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             return DONE;
         }
         else {
+            roiSrc = imp.getRoi();
+            
+            if (roiSrc == null || roiSrc.getType() != Roi.RECTANGLE) {
+                roiSrc = null;
+            }
+            
             return DOES_8G;
         }
     }
