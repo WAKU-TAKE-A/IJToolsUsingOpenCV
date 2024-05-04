@@ -45,10 +45,13 @@ import org.opencv.imgproc.Imgproc;
 public class OCV_ConvexHull implements ExtendedPlugInFilter {
     // static var.
     private static boolean enCW = true;
+    private static boolean enRefData = false;
 
     // var.
     private int countNPass = 0;
     private Roi roiSrc = null;
+    private ResultsTable rt = null;
+    private RoiManager roiMan = null;
 
     @Override
     public void setNPasses(int arg0) {
@@ -59,6 +62,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         GenericDialog gd = new GenericDialog(cmd.trim() + "...");
         gd.addCheckbox("enable_clockwise", enCW);
+        gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
         if(gd.wasCanceled()) {
@@ -66,6 +70,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
         }
         else {
             enCW = (boolean)gd.getNextBoolean();
+            enRefData = (boolean)gd.getNextBoolean();
             return DOES_8G;
         }
     }
@@ -114,7 +119,19 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
         pts.fromList(lstPt);
         MatOfInt hull = new MatOfInt();
         Imgproc.convexHull(pts, hull, enCW);
-        showData(pts, hull);
+        
+        if(pts != null) {
+            rt = OCV__LoadLibrary.GetResultsTable(false);
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+
+            rt.reset();
+            
+            if(enRefData) {
+                roiMan.reset();
+            }
+
+            showData(pts, hull);
+        }
     }
 
     @Override
@@ -141,8 +158,6 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
 
     private void showData(MatOfPoint pts, MatOfInt hull) {
         // set the ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-
         int num_hull = (int)hull.size().height;
         float[] xPoints = new float[num_hull];
         float[] yPoints = new float[num_hull];
@@ -160,7 +175,6 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
         rt.show("Results");
 
         // set the ROI
-        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
         PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
         proi.setPosition(countNPass + 1); // Start from one.
         countNPass++;
