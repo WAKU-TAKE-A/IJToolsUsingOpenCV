@@ -83,10 +83,10 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + " ...");
 
-        gd.addChoice("shape", STR_OPERATION, STR_OPERATION[indOperation]);
+        gd.addChoice("operation", STR_OPERATION, STR_OPERATION[indOperation]);
+        gd.addChoice("shape", STR_SHAPERTYPE, STR_SHAPERTYPE[indShapeType]);
         gd.addNumericField("ksize_x", ksize_x, 0);
         gd.addNumericField("ksize_y", ksize_y, 0);
-        gd.addChoice("operation", STR_SHAPERTYPE, STR_SHAPERTYPE[indShapeType]);
         gd.addNumericField("iterations", iterations, 0);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -104,9 +104,9 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         indOperation = (int)gd.getNextChoiceIndex();
+        indShapeType = (int)gd.getNextChoiceIndex();
         ksize_x = (int)gd.getNextNumber();
         ksize_y = (int)gd.getNextNumber();
-        indShapeType = (int)gd.getNextChoiceIndex();
         iterations = (int)gd.getNextNumber();
 
         if(ksize_x < 0 || ksize_y < 0) {
