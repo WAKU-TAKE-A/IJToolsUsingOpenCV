@@ -49,8 +49,7 @@ import org.opencv.core.Rect;
  */
 public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFilter {
     // constant var.
-    private final int FLAGS = DOES_RGB;
-    private final Macro_Runner MR = new Macro_Runner();
+    private static final int FLAGS = DOES_RGB;
 
     // static var.
     private static int iter = 3;
@@ -58,33 +57,33 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     private static boolean enRepMskWithOut = false;
 
     // var.
-    private String title_cmd = null;
+    private String titleCmd = null;
+    private ImagePlus impSrc = null;
+    private ImagePlus impOv = null;
+    private Mat matSrcOrg = null;
+    private int imwSrc = 0;
+    private int imhSrc = 0;
+    private String titleSrc = "";
+    private Macro_Runner MR = new Macro_Runner();
 
-    private ImagePlus imp_src = null;
-    private ImagePlus imp_ov = null;
-    private Mat mat_src_org  = null;
-    private int imw_src = 0;
-    private int imh_src = 0;
-    private String title_src = "";
-
-    private ImagePlus imp_msk = null;
-    private Mat mat_msk = null;
-    private String title_msk = "";
+    private ImagePlus impMsk = null;
+    private Mat matMsk = null;
+    private String titleMsk = "";
 
     private Roi roi = null;
     private Rect rect = null;
 
-    public JDialog diag_free = null;
-    boolean flag_fin_loop  = false;
-    boolean flag_bgcol = false;
-    boolean flag_fgcol = false;
-    boolean flag_run = false;
-    boolean flag_cancel = false;
+    public JDialog diagFree = null;
+    boolean flagFinLoop = false;
+    boolean flagBgcol = false;
+    boolean flagFgcol = false;
+    boolean flagRun = false;
+    boolean flagCancel = false;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        title_cmd = command.trim();
-        GenericDialog gd = new GenericDialog(title_cmd + "...");
+        titleCmd = command.trim();
+        GenericDialog gd = new GenericDialog(titleCmd + "...");
 
         gd.addNumericField("iterCount", iter, 0);
         gd.addNumericField("opacity", opacity, 1);
@@ -93,7 +92,8 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            imp_src.setRoi(roi);
+            impSrc.setRoi(roi);
+            releaseResources();
             return DONE;
         }
         else {
@@ -126,182 +126,241 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
             return DONE;
         }
 
-        imp_src = imp;
-        imw_src = imp_src.getWidth();
-        imh_src = imp_src.getHeight();
-        title_src = imp.getTitle();
+        impSrc = imp;
+        imwSrc = impSrc.getWidth();
+        imhSrc = impSrc.getHeight();
+        titleSrc = imp.getTitle();
         roi = imp.getRoi();
         imp.killRoi();
-        imp_ov = imp.duplicate();
-        Rectangle rect_java = roi.getBounds();
-        rect = new Rect(rect_java.x , rect_java.y, rect_java.width, rect_java.height);
+        impOv = imp.duplicate();
+        Rectangle rectJava = roi.getBounds();
+        rect = new Rect(rectJava.x, rectJava.y, rectJava.width, rectJava.height);
 
         return FLAGS;
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        // ----- Dialog -----
-        diag_free = new JDialog(diag_free, title_cmd, false);
-        JButton but_bg_cont = new JButton("Background color");
-        JButton but_fg_cont = new JButton("Foreground color");
-        JButton but_run_cont = new JButton("Run");
-        JButton but_cancel_cont = new JButton("Cancel");
-        JButton but_fin_cont = new JButton("Finish");
+        try {
+            // ----- Dialog -----
+            diagFree = new JDialog(diagFree, titleCmd, false);
+            JButton butBgCont = new JButton("Background color");
+            JButton butFgCont = new JButton("Foreground color");
+            JButton butRunCont = new JButton("Run");
+            JButton butCancelCont = new JButton("Cancel");
+            JButton butFinCont = new JButton("Finish");
 
-        but_fg_cont.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                flag_fgcol = true;
+            butFgCont.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    flagFgcol = true;
+                }
+            });
+
+            butBgCont.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    flagBgcol = true;
+                }
+            });
+
+            butRunCont.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    flagRun = true;
+                }
+            });
+
+            butCancelCont.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    flagCancel = true;
+                    diagFree.dispose();
+                }
+            });
+
+            diagFree.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    flagFinLoop = true;
+                }
+            });
+
+            butFinCont.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    flagFinLoop = true;
+                    diagFree.dispose();
+                }
+            });
+
+            diagFree.setLayout(new GridLayout(5, 1));
+            diagFree.add(butFgCont);
+            diagFree.add(butBgCont);
+            diagFree.add(butRunCont);
+            diagFree.add(butCancelCont);
+            diagFree.add(butFinCont);
+            diagFree.pack();
+            diagFree.setSize(200, 240);
+            // ----- End of dialog -----
+
+            //  Create a new mask
+            IJ.showStatus("Create new mask. (GC_INIT_WITH_RECT)");
+
+            matSrcOrg = convertRgbImage(impSrc);
+            createNewMask();
+
+            // Show dialog
+            diagFree.setVisible(true);
+
+            // Edit mask
+            IJ.showStatus("Start editing mask.");
+
+            for(;;) {
+                if(flagFinLoop) {
+                    copyMat2ImpGray(matMsk, impMsk);
+                    impMsk.repaintWindow();
+                    break;
+                }
+
+                if(flagFgcol) {
+                    MR.runMacro("setForegroundColor(253, 253, 253);", "");
+                    IJ.showStatus("Set foreground color(253).");
+                    flagFgcol = false;
+                }
+
+                if(flagBgcol) {
+                    MR.runMacro("setForegroundColor(60, 60, 60);", "");
+                    IJ.showStatus("Set background color(60).");
+                    flagBgcol = false;
+                }
+
+                if(flagRun && impSrc.isVisible() && impMsk.isVisible()) {
+                    IJ.showStatus("Do GrabCut with mask.");
+                    doGrabCutWithMask();
+                    flagRun = false;
+                }
+
+                if(flagCancel) {
+                    int[] arrSrc = (int[])impSrc.getProcessor().getPixels();
+                    OCV__LoadLibrary.mat2intarray(matSrcOrg, arrSrc, imwSrc, imhSrc);
+                    impSrc.setRoi(roi);
+                    impSrc.repaintWindow();
+                    break;
+                }
+
+                if(!impSrc.isVisible()) {
+                    IJ.showStatus("Restore " + titleSrc + ".");
+                    restoreSrc();
+                }
+
+                if(!impMsk.isVisible()) {
+                    IJ.showStatus("Restore " + titleMsk + ".");
+                    createNewMask();
+                }
+
+                OCV__LoadLibrary.Wait(100);
             }
-        });
-
-        but_bg_cont.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                flag_bgcol = true;
-            }
-        });
-
-        but_run_cont.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                flag_run = true;
-            }
-        });
-
-        but_cancel_cont.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                flag_cancel = true;
-                diag_free.dispose();
-            }
-        });
-
-        diag_free.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                flag_fin_loop = true;
-            }
-        });
-
-        but_fin_cont.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                flag_fin_loop = true;
-                diag_free.dispose();
-            }
-        });
-
-        diag_free.setLayout(new GridLayout(5, 1));
-        diag_free.add(but_fg_cont);
-        diag_free.add(but_bg_cont);
-        diag_free.add(but_run_cont);
-        diag_free.add(but_cancel_cont);
-        diag_free.add(but_fin_cont);
-        diag_free.pack();
-        diag_free.setSize(200, 240);
-        // ----- End of dialog -----
-
-        //  Create a new mask
-        IJ.showStatus("Create new mask. (GC_INIT_WITH_RECT)");
-
-        mat_src_org = convertRgbImage(imp_src);
-        createNewMask();
-
-        // Show dialog
-        diag_free.setVisible(true);
-
-        // Edit mask
-        IJ.showStatus("Start editing mask.");
-
-        for(;;) {
-            if(flag_fin_loop) {
-                copyMat2Imp_Gray(mat_msk, imp_msk);
-                imp_msk.repaintWindow();
-                break;
-            }
-
-            if(flag_fgcol) {
-                MR.runMacro("setForegroundColor(253, 253, 253);", "");
-                IJ.showStatus("Set foreground color(253).");
-                flag_fgcol = false;
-            }
-
-            if(flag_bgcol) {
-                MR.runMacro("setForegroundColor(60, 60, 60);", "");
-                IJ.showStatus("Set background color(60).");
-                flag_bgcol = false;
-            }
-
-            if(flag_run && imp_src.isVisible() && imp_msk.isVisible()) {
-                IJ.showStatus("Do GrabCut with mask.");
-                doGrabCut_WithMask();
-                flag_run = false;
-            }
-
-            if(flag_cancel) {
-                int[] arr_src = (int[])imp_src.getProcessor().getPixels();
-                OCV__LoadLibrary.mat2intarray(mat_src_org, arr_src, imw_src, imh_src);
-                imp_src.setRoi(roi);
-                imp_src.repaintWindow();
-                break;
-            }
-
-            if(!imp_src.isVisible()) {
-                IJ.showStatus("Restore " + title_src + ".");
-                restoreSrc();
-            }
-
-            if(!imp_msk.isVisible()) {
-                IJ.showStatus("Restore " + title_msk + ".");
-                createNewMask();
-            }
-
-            OCV__LoadLibrary.Wait(100);
+        }
+        catch(Exception e) {
+            IJ.log("Interactive GrabCut failed: " + e.getMessage());
+        }
+        finally {
+            releaseResources();
         }
     }
 
     private void createNewMask() {
-        imp_msk = null;
-        title_msk = WindowManager.getUniqueName("GrabCut_Mask");
-        imp_msk = IJ.createImage(title_msk, imw_src, imh_src, 1, 8);
-        byte[] arr_msk = (byte[])imp_msk.getProcessor().getPixels();
-        mat_msk = new Mat(imh_src, imw_src, CvType.CV_8UC1);
+        Mat bgdModel = null;
+        Mat fgdModel = null;
 
-        Mat bgdModel = new Mat();
-        Mat fgdModel = new Mat();
-        Imgproc.grabCut(mat_src_org, mat_msk, rect, bgdModel, fgdModel, iter, Imgproc.GC_INIT_WITH_RECT);
-        mat_msk.get(0, 0, arr_msk);
+        try {
+            impMsk = null;
+            titleMsk = WindowManager.getUniqueName("GrabCut_Mask");
+            impMsk = IJ.createImage(titleMsk, imwSrc, imhSrc, 1, 8);
+            byte[] arrMsk = (byte[])impMsk.getProcessor().getPixels();
+            
+            if(matMsk != null) {
+                matMsk.release();
+            }
+            matMsk = new Mat(imhSrc, imwSrc, CvType.CV_8UC1);
 
-        ImageRoi imroi = new ImageRoi(0, 0, imp_ov.getProcessor());
-        ((ImageRoi)imroi).setOpacity(opacity / 100.0);
-        imp_msk.setRoi(imroi);
+            bgdModel = new Mat();
+            fgdModel = new Mat();
+            Imgproc.grabCut(matSrcOrg, matMsk, rect, bgdModel, fgdModel, iter, Imgproc.GC_INIT_WITH_RECT);
+            matMsk.get(0, 0, arrMsk);
 
-        imp_msk.show();
-        AND(imp_src, mat_msk);
+            ImageRoi imroi = new ImageRoi(0, 0, impOv.getProcessor());
+            ((ImageRoi)imroi).setOpacity(opacity / 100.0);
+            impMsk.setRoi(imroi);
+
+            impMsk.show();
+            AND(impSrc, matMsk);
+        }
+        catch(Exception e) {
+            IJ.log("Create new mask failed: " + e.getMessage());
+        }
+        finally {
+            if(bgdModel != null) {
+                bgdModel.release();
+            }
+            if(fgdModel != null) {
+                fgdModel.release();
+            }
+        }
     }
 
-    private void doGrabCut_WithMask() {
-        mat_msk = convertMask(imp_msk);
+    private void doGrabCutWithMask() {
+        Mat bgdModel = null;
+        Mat fgdModel = null;
+        Mat tempMask = null;
 
-        Mat bgdModel = new Mat();
-        Mat fgdModel = new Mat();
-        Imgproc.grabCut(mat_src_org, mat_msk, rect, bgdModel, fgdModel, iter, Imgproc.GC_INIT_WITH_MASK);
+        try {
+            tempMask = convertMask(impMsk);
+            
+            if(matMsk != null) {
+                matMsk.release();
+            }
+            matMsk = tempMask;
+            tempMask = null;
 
-        copyMat2Imp_RGB(mat_src_org, imp_src);
-        AND(imp_src, mat_msk);
+            bgdModel = new Mat();
+            fgdModel = new Mat();
+            Imgproc.grabCut(matSrcOrg, matMsk, rect, bgdModel, fgdModel, iter, Imgproc.GC_INIT_WITH_MASK);
 
-        imp_src.repaintWindow();
-        imp_msk.repaintWindow();
+            copyMat2ImpRGB(matSrcOrg, impSrc);
+            AND(impSrc, matMsk);
+
+            impSrc.repaintWindow();
+            impMsk.repaintWindow();
+        }
+        catch(Exception e) {
+            IJ.log("GrabCut with mask failed: " + e.getMessage());
+        }
+        finally {
+            if(bgdModel != null) {
+                bgdModel.release();
+            }
+            if(fgdModel != null) {
+                fgdModel.release();
+            }
+            if(tempMask != null) {
+                tempMask.release();
+            }
+        }
     }
 
     private void restoreSrc() {
-        imp_src = null;
-        imp_src = IJ.createImage(title_src, imw_src, imh_src, 1, 24);
-        imp_src.show();
+        try {
+            impSrc = null;
+            impSrc = IJ.createImage(titleSrc, imwSrc, imhSrc, 1, 24);
+            impSrc.show();
 
-        doGrabCut_WithMask();
+            doGrabCutWithMask();
+        }
+        catch(Exception e) {
+            IJ.log("Restore source failed: " + e.getMessage());
+        }
     }
 
     //  "0000 0001(1)", "0000 00011(3)" and  "1111 1101(253)" are 0xffffffff.
@@ -326,10 +385,10 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     private Mat convertRgbImage(ImagePlus src) {
         int w = src.getWidth();
         int h = src.getHeight();
-        int[]  arrSrc = (int[])src.getProcessor().getPixels();
-        Mat mat_dst = new Mat(h, w, CvType.CV_8UC3);
-        OCV__LoadLibrary.intarray2mat(arrSrc, mat_dst, w, h);
-        return mat_dst;
+        int[] arrSrc = (int[])src.getProcessor().getPixels();
+        Mat matDst = new Mat(h, w, CvType.CV_8UC3);
+        OCV__LoadLibrary.intarray2mat(arrSrc, matDst, w, h);
+        return matDst;
     }
 
     // "0000 0000(0)" and  "0011 1100(60)" are 0.
@@ -353,15 +412,26 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         return matDst;
     }
 
-    private void copyMat2Imp_RGB(Mat src, ImagePlus dst) {
+    private void copyMat2ImpRGB(Mat src, ImagePlus dst) {
         int w = dst.getWidth();
         int h = dst.getHeight();
         int[] arrDst = (int[])dst.getProcessor().getPixels();
         OCV__LoadLibrary.mat2intarray(src, arrDst, w, h);
     }
 
-    private void copyMat2Imp_Gray(Mat src, ImagePlus dst) {
+    private void copyMat2ImpGray(Mat src, ImagePlus dst) {
         byte[] arrDst = (byte[])dst.getProcessor().getPixels();
         src.get(0, 0, arrDst);
+    }
+
+    private void releaseResources() {
+        if(matSrcOrg != null) {
+            matSrcOrg.release();
+            matSrcOrg = null;
+        }
+        if(matMsk != null) {
+            matMsk.release();
+            matMsk = null;
+        }
     }
 }

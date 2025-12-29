@@ -2,9 +2,7 @@ import ij.*;
 import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import ij.plugin.ImageCalculator;
 import ij.plugin.filter.PlugInFilterRunner;
-import ij.process.ImageConverter;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import org.opencv.core.Core;
@@ -39,7 +37,7 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * blur.
+ * blur - Improved version with OpenCV-based processing.
  */
 public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
@@ -59,11 +57,11 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
     private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
     private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
 
-    // staic var.
-    private static double small_ksize_x = 3;  // small blurring kernel size of x
-    private static double small_ksize_y = 3;  // small blurring kernel size of y
-    private static double large_ksize_x = 31; // large blurring kernel size of x
-    private static double large_ksize_y = 31; // large blurring kernel size of y
+    // static var. - kernel sizes as integers
+    private static int small_ksize_x = 3;     // small blurring kernel size of x
+    private static int small_ksize_y = 3;     // small blurring kernel size of y
+    private static int large_ksize_x = 31;    // large blurring kernel size of x
+    private static int large_ksize_y = 31;    // large blurring kernel size of y
     private static double offset = 128;
     private static int indBorderType = 2;     // Border type
 
@@ -72,17 +70,28 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
     private int bitDepth = 0;
     private Size small_ksize = null;
     private Size large_ksize = null;
-    private final ImageCalculator ic = new ImageCalculator();
+    
+    // Variables for Mat reuse
+    private int lastWidth = 0;
+    private int lastHeight = 0;
+    private int lastBitDepth = 0;
+    private Mat src_mat = null;
+    private Mat blur_small = null;
+    private Mat blur_large = null;
+    private Mat blur_small_32f = null;
+    private Mat blur_large_32f = null;
+    private Mat diff_mat = null;
+    private Mat result_mat = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         className = command.trim();
         GenericDialog gd = new GenericDialog(className + " ...");
 
-        gd.addNumericField("small_ksize_x", small_ksize_x, 4);
-        gd.addNumericField("small_ksize_y", small_ksize_y, 4);
-        gd.addNumericField("large_ksize_x", large_ksize_x, 4);
-        gd.addNumericField("large_ksize_y", large_ksize_y, 4);
+        gd.addNumericField("small_ksize_x", small_ksize_x, 0);
+        gd.addNumericField("small_ksize_y", small_ksize_y, 0);
+        gd.addNumericField("large_ksize_x", large_ksize_x, 0);
+        gd.addNumericField("large_ksize_y", large_ksize_y, 0);
         gd.addNumericField("offset", offset, 4);
         gd.addChoice("borderType", STR_BORDERTYPE, STR_BORDERTYPE[indBorderType]);
         gd.addPreviewCheckbox(pfr);
@@ -91,6 +100,7 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
         gd.showDialog();
 
         if(gd.wasCanceled()) {
+            releaseAllMats();
             return DONE;
         }
         else {
@@ -100,14 +110,14 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        small_ksize_x = (double)gd.getNextNumber();
-        small_ksize_y = (double)gd.getNextNumber();
-        large_ksize_x = (double)gd.getNextNumber();
-        large_ksize_y = (double)gd.getNextNumber();
+        small_ksize_x = (int)gd.getNextNumber();
+        small_ksize_y = (int)gd.getNextNumber();
+        large_ksize_x = (int)gd.getNextNumber();
+        large_ksize_y = (int)gd.getNextNumber();
         offset = (double)gd.getNextNumber();
         indBorderType = (int)gd.getNextChoiceIndex();
 
-        if(Double.isNaN(small_ksize_x) || Double.isNaN(small_ksize_y) || Double.isNaN(large_ksize_x) || Double.isNaN(large_ksize_y) || Double.isNaN(offset)) {
+        if(Double.isNaN(offset)) {
             IJ.showStatus("ERR : NaN");
             return false;
         }
@@ -130,6 +140,26 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
         if(large_ksize_y <= 0) {
             IJ.showStatus("'0 < large_ksize_y' is necessary.");
             return false;
+        }
+
+        // Check offset range based on bit depth
+        switch(bitDepth) {
+            case 8:
+            case 24:
+                if(offset < 0 || offset > 255) {
+                    IJ.showStatus("Offset for 8bit/RGB should be 0-255 (current: " + offset + ")");
+                    return false;
+                }
+                break;
+            case 16:
+                if(offset < 0 || offset > 65535) {
+                    IJ.showStatus("Offset for 16bit should be 0-65535 (current: " + offset + ")");
+                    return false;
+                }
+                break;
+            case 32:
+                // No restriction for 32bit
+                break;
         }
 
         small_ksize = new Size(small_ksize_x, small_ksize_y);
@@ -162,121 +192,180 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
 
     @Override
     public void run(ImageProcessor ip) {
-        Boolean curDoScal = ImageConverter.getDoScaling();
-        ImageConverter.setDoScaling(false);
+        int imw = 0;
+        int imh = 0;
         
-        ImageProcessor ip_small = ip.duplicate();
-        ImageProcessor ip_large = ip.duplicate();
-        blur(ip_small, small_ksize, INT_BORDERTYPE[indBorderType]);
-        blur(ip_large, large_ksize, INT_BORDERTYPE[indBorderType]);
-        ImagePlus imp_small = new ImagePlus("small_blur", ip_small);
-        ImagePlus imp_large = new ImagePlus("largel_blur", ip_large);
-
-        if (bitDepth == 24) {
-            IJ.run(imp_small, "RGB Stack", "");
-            IJ.run(imp_large, "RGB Stack", "");
-            IJ.run(imp_small, "32-bit", "");
-            IJ.run(imp_large, "32-bit", "");
-            ImagePlus imp_dst = ic.run("Subtract create 32-bit stack", imp_small, imp_large);
-            IJ.run(imp_dst, "Add...", "value=" + String.valueOf(offset) + " stack");
-            IJ.run(imp_dst, "8-bit", "");
-            IJ.run(imp_dst, "RGB Color", "");
+        try {
+            imw = ip.getWidth();
+            imh = ip.getHeight();
+            int borderType = INT_BORDERTYPE[indBorderType];
             
-            OCV__LoadLibrary.ArrayCopy(imp_dst.getProcessor(), ip);
-            
-            imp_small.close();
-            imp_large.close();
-            imp_dst.close();
-        }
-        else {
-            new ImageConverter(imp_small).convertToGray32();
-            new ImageConverter(imp_large).convertToGray32();
-            ImagePlus imp_dst = ic.run("Subtract create 32-bit", imp_small, imp_large);
-            IJ.run(imp_dst, "Add...", "value=" + String.valueOf(offset));
-            
-            if (ip.getBitDepth() == 8) {
-                new ImageConverter(imp_dst).convertToGray8();
+            // Reallocate Mats if image size or bit depth changed
+            if (imw != lastWidth || imh != lastHeight || bitDepth != lastBitDepth) {
+                releaseAllMats();
+                allocateMats(imw, imh, bitDepth);
+                lastWidth = imw;
+                lastHeight = imh;
+                lastBitDepth = bitDepth;
             }
-            else if (ip.getBitDepth() == 16) {
-                new ImageConverter(imp_dst).convertToGray16();
+            
+            if (bitDepth == 24) {
+                // RGB processing fully implemented with OpenCV
+                processRGBWithOpenCV(ip, imw, imh, borderType);
+            } else {
+                // Grayscale processing
+                processGrayscaleWithOpenCV(ip, borderType);
             }
-            else if (ip.getBitDepth() == 32) {
-                // do nothing
-            }          
-            
-            OCV__LoadLibrary.ArrayCopy(imp_dst.getProcessor(), ip);
-            
-            imp_small.close();
-            imp_large.close();
-            imp_dst.close();
+        } catch (Exception e) {
+            IJ.error(className, "Error during processing: " + e.getMessage());
         }
-        
-        ImageConverter.setDoScaling(curDoScal);
+        finally {
+            allocateMats(imw, imh, bitDepth);
+        }
     }
-   
-    public void blur(ImageProcessor ip, Size ksize, int borderType) {
-        if(ip.getBitDepth() == 8) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            byte[] srcdst_bytes = (byte[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
-            // run
-            src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
-            dst_mat.get(0, 0, srcdst_bytes);
+    
+    /**
+     * Allocate Mats (for reuse)
+     */
+    private void allocateMats(int imw, int imh, int bitDepth) {
+        if (bitDepth == 24) {
+            src_mat = new Mat(imh, imw, CvType.CV_8UC3);
+            blur_small = new Mat(imh, imw, CvType.CV_8UC3);
+            blur_large = new Mat(imh, imw, CvType.CV_8UC3);
+            blur_small_32f = new Mat(imh, imw, CvType.CV_32FC3);
+            blur_large_32f = new Mat(imh, imw, CvType.CV_32FC3);
+            diff_mat = new Mat(imh, imw, CvType.CV_32FC3);
+            result_mat = new Mat(imh, imw, CvType.CV_8UC3);
+        } else {
+            int cvType = getCvType(bitDepth);
+            if (cvType != -1) {
+                src_mat = new Mat(imh, imw, cvType);
+                blur_small = new Mat(imh, imw, cvType);
+                blur_large = new Mat(imh, imw, cvType);
+                blur_small_32f = new Mat(imh, imw, CvType.CV_32F);
+                blur_large_32f = new Mat(imh, imw, CvType.CV_32F);
+                diff_mat = new Mat(imh, imw, CvType.CV_32F);
+                result_mat = new Mat(imh, imw, cvType);
+            }
         }
-        else if(ip.getBitDepth() == 16) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            short[] srcdst_shorts = (short[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-
-            // run
-            src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
-            dst_mat.get(0, 0, srcdst_shorts);
+    }
+    
+    /**
+     * Release all Mats
+     */
+    private void releaseAllMats() {
+        if (src_mat != null) { src_mat.release(); src_mat = null; }
+        if (blur_small != null) { blur_small.release(); blur_small = null; }
+        if (blur_large != null) { blur_large.release(); blur_large = null; }
+        if (blur_small_32f != null) { blur_small_32f.release(); blur_small_32f = null; }
+        if (blur_large_32f != null) { blur_large_32f.release(); blur_large_32f = null; }
+        if (diff_mat != null) { diff_mat.release(); diff_mat = null; }
+        if (result_mat != null) { result_mat.release(); result_mat = null; }
+    }
+    
+    /**
+     * RGB image processing (fully OpenCV-based, no ImageJ commands)
+     */
+    private void processRGBWithOpenCV(ImageProcessor ip, int imw, int imh, int borderType) {
+        int[] pixels = (int[])ip.getPixels();
+        
+        // Convert to OpenCV Mat
+        OCV__LoadLibrary.intarray2mat(pixels, src_mat, imw, imh);
+        
+        // Blur processing
+        Imgproc.blur(src_mat, blur_small, small_ksize, new Point(-1, -1), borderType);
+        Imgproc.blur(src_mat, blur_large, large_ksize, new Point(-1, -1), borderType);
+        
+        // Convert to 32F and calculate difference
+        blur_small.convertTo(blur_small_32f, CvType.CV_32FC3);
+        blur_large.convertTo(blur_large_32f, CvType.CV_32FC3);
+        
+        Core.subtract(blur_small_32f, blur_large_32f, diff_mat);
+        Core.add(diff_mat, new org.opencv.core.Scalar(offset, offset, offset), diff_mat);
+        
+        // Convert back to 8UC (explicit arguments)
+        diff_mat.convertTo(result_mat, CvType.CV_8UC3, 1.0, 0.0);
+        
+        // Convert back to ImageJ
+        OCV__LoadLibrary.mat2intarray(result_mat, pixels, imw, imh);
+    }
+    
+    /**
+     * Grayscale image processing (fully OpenCV-based)
+     */
+    private void processGrayscaleWithOpenCV(ImageProcessor ip, int borderType) {
+        int cvType = getCvType(bitDepth);
+        if (cvType == -1) {
+            return;
         }
-        else if(ip.getBitDepth() == 24) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            int[] srcdst_ints = (int[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-
-            // run
-            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
-            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
+        
+        // Transfer data to Mat
+        putPixelsToMat(ip, src_mat);
+        
+        // Blur processing
+        Imgproc.blur(src_mat, blur_small, small_ksize, new Point(-1, -1), borderType);
+        Imgproc.blur(src_mat, blur_large, large_ksize, new Point(-1, -1), borderType);
+        
+        // Calculate difference in 32F (to maintain tonal consistency)
+        blur_small.convertTo(blur_small_32f, CvType.CV_32F);
+        blur_large.convertTo(blur_large_32f, CvType.CV_32F);
+        
+        Core.subtract(blur_small_32f, blur_large_32f, diff_mat);
+        Core.add(diff_mat, new org.opencv.core.Scalar(offset), diff_mat);
+        
+        // Convert back to original type (explicit arguments)
+        diff_mat.convertTo(result_mat, cvType, 1.0, 0.0);
+        
+        // Transfer back to ImageJ
+        getPixelsFromMat(result_mat, ip);
+    }
+    
+    /**
+     * Get OpenCV CvType from ImageJ bit depth
+     */
+    private int getCvType(int bitDepth) {
+        switch(bitDepth) {
+            case 8:
+                return CvType.CV_8UC1;
+            case 16:
+                return CvType.CV_16UC1;  // Use unsigned, not CV_16S
+            case 32:
+                return CvType.CV_32F;
+            default:
+                IJ.error(className + " error: Unsupported bit depth: " + bitDepth);
+                return -1;
         }
-        else if(ip.getBitDepth() == 32) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            float[] srcdst_floats = (float[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-
-            // run
-            src_mat.put(0, 0, srcdst_floats);
-            Imgproc.blur(src_mat, dst_mat, ksize, new Point(-1, -1), borderType);
-            dst_mat.get(0, 0, srcdst_floats);
+    }
+    
+    /**
+     * Transfer pixel data from ImageProcessor to Mat
+     */
+    private void putPixelsToMat(ImageProcessor ip, Mat mat) {
+        if (ip.getBitDepth() == 8) {
+            byte[] pixels = (byte[])ip.getPixels();
+            mat.put(0, 0, pixels);
+        } else if (ip.getBitDepth() == 16) {
+            short[] pixels = (short[])ip.getPixels();
+            mat.put(0, 0, pixels);
+        } else if (ip.getBitDepth() == 32) {
+            float[] pixels = (float[])ip.getPixels();
+            mat.put(0, 0, pixels);
         }
-        else {
-            IJ.error("Wrong image format");
+    }
+    
+    /**
+     * Transfer data from Mat to ImageProcessor
+     */
+    private void getPixelsFromMat(Mat mat, ImageProcessor ip) {
+        if (ip.getBitDepth() == 8) {
+            byte[] pixels = (byte[])ip.getPixels();
+            mat.get(0, 0, pixels);
+        } else if (ip.getBitDepth() == 16) {
+            short[] pixels = (short[])ip.getPixels();
+            mat.get(0, 0, pixels);
+        } else if (ip.getBitDepth() == 32) {
+            float[] pixels = (float[])ip.getPixels();
+            mat.get(0, 0, pixels);
         }
     }
 }

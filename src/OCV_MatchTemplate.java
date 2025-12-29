@@ -45,33 +45,33 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private final int FLAGS = DOES_8G;
-    private final String[] TYPE_STR = new String[] { "1 - TM_SQDIFF_NORMED", "TM_CCORR_NORMED", "TM_CCOEFF_NORMED"};
-    private final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF_NORMED };
+    private static final int FLAGS = DOES_8G;
+    private static final String[] TYPE_STR = new String[] { "1 - TM_SQDIFF_NORMED", "TM_CCORR_NORMED", "TM_CCOEFF_NORMED" };
+    private static final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF_NORMED };
 
     // static var.
-    private static int ind_src = 0;
-    private static int ind_tmp = 1;
-    private static int ind_type = 1;
-    private static float thr_res = (float)0.5;
+    private static int indSrc = 0;
+    private static int indTmp = 1;
+    private static int indType = 1;
+    private static float thrRes = (float)0.5;
     private static boolean enResult = true;
     private static boolean enSearchMax = false;
 
     // var.
-    private String title_src = null;
-    private ImagePlus imp_src = null;
-    private ImagePlus imp_tmp = null;
-    private int[] lst_wid;
+    private String titleSrc = null;
+    private ImagePlus impSrc = null;
+    private ImagePlus impTmp = null;
+    private int[] lstWid;
     private String[] titles;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog(command.trim() + "...");
 
-        gd.addChoice("src", titles, titles[ind_src]);
-        gd.addChoice("template", titles, titles[ind_tmp]);
-        gd.addChoice("method", TYPE_STR, TYPE_STR[ind_type]);
-        gd.addNumericField("threshold_of_results", thr_res, 4);
+        gd.addChoice("src", titles, titles[indSrc]);
+        gd.addChoice("template", titles, titles[indTmp]);
+        gd.addChoice("method", TYPE_STR, TYPE_STR[indType]);
+        gd.addNumericField("threshold_of_results", thrRes, 4);
         gd.addCheckbox("enable_results_table", enResult);
         gd.addCheckbox("enable_search_max_point_in_blob", enSearchMax);
         gd.addDialogListener(this);
@@ -88,33 +88,33 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        ind_src = (int)gd.getNextChoiceIndex();
-        ind_tmp = (int)gd.getNextChoiceIndex();
-        ind_type = (int)gd.getNextChoiceIndex();
-        thr_res = (float)gd.getNextNumber();
+        indSrc = (int)gd.getNextChoiceIndex();
+        indTmp = (int)gd.getNextChoiceIndex();
+        indType = (int)gd.getNextChoiceIndex();
+        thrRes = (float)gd.getNextNumber();
         enResult = (boolean)gd.getNextBoolean();
         enSearchMax = (boolean)gd.getNextBoolean();
 
-        if(Float.isNaN(thr_res)) {
+        if(Float.isNaN(thrRes)) {
             IJ.showStatus("ERR : NaN");
             return false;
         }
 
-        if(ind_src == ind_tmp) {
+        if(indSrc == indTmp) {
             IJ.showStatus("The same image can not be selected.");
             return false;
         }
 
-        imp_src = WindowManager.getImage(lst_wid[ind_src]);
-        imp_tmp = WindowManager.getImage(lst_wid[ind_tmp]);
-        title_src = imp_src.getShortTitle();
+        impSrc = WindowManager.getImage(lstWid[indSrc]);
+        impTmp = WindowManager.getImage(lstWid[indTmp]);
+        titleSrc = impSrc.getShortTitle();
 
-        if(imp_src.getBitDepth() != 8 || imp_tmp.getBitDepth() != 8) {
+        if(impSrc.getBitDepth() != 8 || impTmp.getBitDepth() != 8) {
             IJ.showStatus("The both images should be 8bit gray");
             return false;
         }
 
-        if(imp_src.getWidth() < imp_tmp.getWidth() || imp_src.getHeight() < imp_tmp.getHeight()) {
+        if(impSrc.getWidth() < impTmp.getWidth() || impSrc.getHeight() < impTmp.getHeight()) {
             IJ.showStatus("The size of src should be larger than the size of template.");
             return false;
         }
@@ -144,17 +144,17 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             return DONE;
         }
         else {
-            lst_wid = WindowManager.getIDList();
+            lstWid = WindowManager.getIDList();
 
-            if(lst_wid == null || lst_wid.length < 2) {
+            if(lstWid == null || lstWid.length < 2) {
                 IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
-            titles = new String[lst_wid.length];
+            titles = new String[lstWid.length];
 
-            for(int i = 0; i < lst_wid.length; i++) {
-                ImagePlus imp2 = WindowManager.getImage(lst_wid[i]);
+            for(int i = 0; i < lstWid.length; i++) {
+                ImagePlus imp2 = WindowManager.getImage(lstWid[i]);
                 titles[i] = imp2 != null ? imp2.getTitle() : "";
             }
 
@@ -164,171 +164,209 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
 
     @Override
     public void run(ImageProcessor ip) {
-        // src
-        byte[] arr_src = (byte[])imp_src.getChannelProcessor().getPixels();
-        int imw_src = imp_src.getWidth();
-        int imh_src = imp_src.getHeight();
-        Mat mat_src = new Mat(imh_src, imw_src, CvType.CV_8UC1);
-        mat_src.put(0, 0, arr_src);
+        Mat matSrc = null;
+        Mat matTmp = null;
+        Mat matDst = null;
 
-        // tmp
-        byte[] arr_tmp = (byte[])imp_tmp.getChannelProcessor().getPixels();
-        int imw_tmp = imp_tmp.getWidth();
-        int imh_tmp = imp_tmp.getHeight();
-        Mat mat_tmp = new Mat(imh_tmp, imw_tmp, CvType.CV_8UC1);
-        mat_tmp.put(0, 0, arr_tmp);
+        try {
+            // src
+            byte[] arrSrc = (byte[])impSrc.getChannelProcessor().getPixels();
+            int imwSrc = impSrc.getWidth();
+            int imhSrc = impSrc.getHeight();
+            matSrc = new Mat(imhSrc, imwSrc, CvType.CV_8UC1);
+            matSrc.put(0, 0, arrSrc);
 
-        // dst
-        String title_dst = WindowManager.getUniqueName(title_src + "_MatchTemplate");
-        int imw_dst = imw_src - imw_tmp + 1;
-        int imh_dst = imh_src - imh_tmp + 1;
-        ImagePlus imp_dst = new ImagePlus(title_dst, new FloatProcessor(imw_dst, imh_dst));
-        float[] arr_dst = (float[]) imp_dst.getChannelProcessor().getPixels();
-        Mat mat_dst = new Mat();
+            // tmp
+            byte[] arrTmp = (byte[])impTmp.getChannelProcessor().getPixels();
+            int imwTmp = impTmp.getWidth();
+            int imhTmp = impTmp.getHeight();
+            matTmp = new Mat(imhTmp, imwTmp, CvType.CV_8UC1);
+            matTmp.put(0, 0, arrTmp);
 
-        // run
-        Imgproc.matchTemplate(mat_src, mat_tmp, mat_dst, TYPE_VAL[ind_type]);
-        mat_dst.get(0, 0, arr_dst);
-        imp_dst.show();
+            // dst
+            String titleDst = WindowManager.getUniqueName(titleSrc + "_MatchTemplate");
+            int imwDst = imwSrc - imwTmp + 1;
+            int imhDst = imhSrc - imhTmp + 1;
+            ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(imwDst, imhDst));
+            float[] arrDst = (float[])impDst.getChannelProcessor().getPixels();
+            matDst = new Mat();
 
-        if(TYPE_VAL[ind_type] == Imgproc.TM_SQDIFF_NORMED) {
-            substracted_from_one(arr_dst);
-        }
+            // run
+            Imgproc.matchTemplate(matSrc, matTmp, matDst, TYPE_VAL[indType]);
+            matDst.get(0, 0, arrDst);
+            impDst.show();
 
-        //IJ.run(imp_dst, "Enhance Contrast", "saturated=0.35");
-
-        // show data
-        if(enResult) {
-            if(enSearchMax) {
-                showData_enSearchMaxPoint(imp_dst, arr_dst, thr_res, imw_tmp, imh_tmp);
+            if(TYPE_VAL[indType] == Imgproc.TM_SQDIFF_NORMED) {
+                substractedFromOne(arrDst);
             }
-            else {
-                showData(arr_dst, imw_dst, imh_dst, imw_tmp, imh_tmp);
-            }
-        }
-    }
 
-    private void showData(float[] arr_dst, int imw_dst, int imh_dst, int imw_tmp, int imh_tmp) {
-        // prepare the ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+            //IJ.run(impDst, "Enhance Contrast", "saturated=0.35");
 
-        // prepare the ROI Manager
-        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
-
-        // show
-        Macro_Runner mr = new Macro_Runner();
-        mr.runMacro("setBatchMode(true);", "");
-        ArrayList<float[]> res = new ArrayList<float[]>();
-
-        for(int y = 0; y < imh_dst; y++) {
-            for(int x = 0; x < imw_dst; x++) {
-                if(thr_res <= arr_dst[x + y * imw_dst]) {
-                    res.add(new float[] { (float)x, (float)y, arr_dst[x + y * imw_dst]});
+            // show data
+            if(enResult) {
+                if(enSearchMax) {
+                    showDataEnSearchMaxPoint(impDst, arrDst, thrRes, imwTmp, imhTmp);
+                }
+                else {
+                    showData(arrDst, imwDst, imhDst, imwTmp, imhTmp);
                 }
             }
         }
-
-        int num_match = res.size();
-
-        for(int i = 0; i < num_match; i++) {
-            int bx = (int)res.get(i)[0];
-            int by = (int)res.get(i)[1];
-            float match = res.get(i)[2];
-
-            Roi roi = new Roi(bx, by, imw_tmp, imh_tmp);
-            imp_src.setRoi(roi);
-
-            roiMan.addRoi(roi);
-            int idx_last = roiMan.getCount() - 1;
-            roiMan.select(idx_last);
-            roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
-
-            rt.incrementCounter();
-            rt.addValue("No", i + 1);
-            rt.addValue("BX", bx);
-            rt.addValue("BY", by);
-            rt.addValue("Width", imw_tmp);
-            rt.addValue("Height", imh_tmp);
-            rt.addValue("Match", String.valueOf(match));
-            rt.show("Results");
+        catch(Exception e) {
+            IJ.log("Match template failed: " + e.getMessage());
         }
-
-        mr.runMacro("setBatchMode(false);", "");
-        roiMan.runCommand("Show All");
+        finally {
+            if(matSrc != null) {
+                matSrc.release();
+            }
+            if(matTmp != null) {
+                matTmp.release();
+            }
+            if(matDst != null) {
+                matDst.release();
+            }
+        }
     }
 
-    private void showData_enSearchMaxPoint(ImagePlus imp_dst, float[] arr_dst, float thr, int imw_tmp, int imh_tmp) {
-        int imw = imp_dst.getWidth();
+    private void showData(float[] arrDst, int imwDst, int imhDst, int imwTmp, int imhTmp) {
+        try {
+            // prepare the ResultsTable
+            ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
 
-        ImagePlus imp_bin = imp_dst.duplicate();
-        imp_bin.setTitle("__bin");
-        float[] arr_bin = (float[]) imp_bin.getChannelProcessor().getPixels();
-        binary_float(arr_bin, thr);
+            // prepare the ROI Manager
+            RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
 
-        IJ.run(imp_bin, "8-bit", "");
-        IJ.run(imp_bin, "OCV ConnectedComponentsWithStats", "connectivity=8-connected enable_output_labeled_image");
-        ImagePlus imp_lab = WindowManager.getImage("__bin_Connect8-1");
+            // show
+            Macro_Runner mr = new Macro_Runner();
+            mr.runMacro("setBatchMode(true);", "");
+            ArrayList<float[]> res = new ArrayList<float[]>();
 
-        ResultsTable rt = ResultsTable.getResultsTable();
-        int col_x = rt.getColumnIndex("BX");
-        int col_y = rt.getColumnIndex("BY");
-        int col_w = rt.getColumnIndex("Width");
-        int col_h = rt.getColumnIndex("Height");
-        ArrayList<float[]> arr_point_max = new ArrayList<float[]>();
+            for(int y = 0; y < imhDst; y++) {
+                for(int x = 0; x < imwDst; x++) {
+                    if(thrRes <= arrDst[x + y * imwDst]) {
+                        res.add(new float[] { (float)x, (float)y, arrDst[x + y * imwDst] });
+                    }
+                }
+            }
 
-        for(int i = 0; i < rt.size(); i++) {
-            int bx = (int)(rt.getValueAsDouble(col_x, i));
-            int by = (int)(rt.getValueAsDouble(col_y, i));
-            int w = (int)(rt.getValueAsDouble(col_w, i));
-            int h = (int)(rt.getValueAsDouble(col_h, i));
-            float[] point_max = new float[3];
+            int numMatch = res.size();
 
-            search_max_point(arr_dst, bx, by, w, h, imw, point_max);
-            arr_point_max.add(point_max);
+            for(int i = 0; i < numMatch; i++) {
+                int bx = (int)res.get(i)[0];
+                int by = (int)res.get(i)[1];
+                float match = res.get(i)[2];
+
+                Roi roi = new Roi(bx, by, imwTmp, imhTmp);
+                impSrc.setRoi(roi);
+
+                roiMan.addRoi(roi);
+                int idxLast = roiMan.getCount() - 1;
+                roiMan.select(idxLast);
+                roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
+
+                rt.incrementCounter();
+                rt.addValue("No", i + 1);
+                rt.addValue("BX", bx);
+                rt.addValue("BY", by);
+                rt.addValue("Width", imwTmp);
+                rt.addValue("Height", imhTmp);
+                rt.addValue("Match", String.valueOf(match));
+                rt.show("Results");
+            }
+
+            mr.runMacro("setBatchMode(false);", "");
+            roiMan.runCommand("Show All");
         }
-
-        imp_bin.close();
-        imp_lab.close();
-
-        // prepare the ResultsTable
-        rt.reset();
-
-        // prepare the ROI Manager
-        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
-
-        // show
-        Macro_Runner mr = new Macro_Runner();
-        mr.runMacro("setBatchMode(true);", "");
-        int num_match = arr_point_max.size();
-
-        for(int i = 0; i < num_match; i++) {
-            int bx = (int)arr_point_max.get(i)[0];
-            int by = (int)arr_point_max.get(i)[1];
-            float match = arr_point_max.get(i)[2];
-
-            Roi roi = new Roi(bx, by, imw_tmp, imh_tmp);
-            imp_src.setRoi(roi);
-
-            roiMan.addRoi(roi);
-            int idx_last = roiMan.getCount() - 1;
-            roiMan.select(idx_last);
-            roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
-
-            rt.incrementCounter();
-            rt.addValue("No", i + 1);
-            rt.addValue("BX", bx);
-            rt.addValue("BY", by);
-            rt.addValue("Width", imw_tmp);
-            rt.addValue("Height", imh_tmp);
-            rt.addValue("Match", String.valueOf(match));
-            rt.show("Results");
+        catch(Exception e) {
+            IJ.log("Show data failed: " + e.getMessage());
         }
-
-        mr.runMacro("setBatchMode(false);", "");
-        roiMan.runCommand("Show All");
     }
 
-    private void substracted_from_one(float[] srcdst) {
+    private void showDataEnSearchMaxPoint(ImagePlus impDst, float[] arrDst, float thr, int imwTmp, int imhTmp) {
+        ImagePlus impBin = null;
+        ImagePlus impLab = null;
+
+        try {
+            int imw = impDst.getWidth();
+
+            impBin = impDst.duplicate();
+            impBin.setTitle("__bin");
+            float[] arrBin = (float[])impBin.getChannelProcessor().getPixels();
+            binaryFloat(arrBin, thr);
+
+            IJ.run(impBin, "8-bit", "");
+            IJ.run(impBin, "OCV ConnectedComponentsWithStats", "connectivity=8-connected enable_output_labeled_image");
+            impLab = WindowManager.getImage("__bin_Connect8-1");
+
+            ResultsTable rt = ResultsTable.getResultsTable();
+            int colX = rt.getColumnIndex("BX");
+            int colY = rt.getColumnIndex("BY");
+            int colW = rt.getColumnIndex("Width");
+            int colH = rt.getColumnIndex("Height");
+            ArrayList<float[]> arrPointMax = new ArrayList<float[]>();
+
+            for(int i = 0; i < rt.size(); i++) {
+                int bx = (int)(rt.getValueAsDouble(colX, i));
+                int by = (int)(rt.getValueAsDouble(colY, i));
+                int w = (int)(rt.getValueAsDouble(colW, i));
+                int h = (int)(rt.getValueAsDouble(colH, i));
+                float[] pointMax = new float[3];
+
+                searchMaxPoint(arrDst, bx, by, w, h, imw, pointMax);
+                arrPointMax.add(pointMax);
+            }
+
+            // prepare the ResultsTable
+            rt.reset();
+
+            // prepare the ROI Manager
+            RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
+
+            // show
+            Macro_Runner mr = new Macro_Runner();
+            mr.runMacro("setBatchMode(true);", "");
+            int numMatch = arrPointMax.size();
+
+            for(int i = 0; i < numMatch; i++) {
+                int bx = (int)arrPointMax.get(i)[0];
+                int by = (int)arrPointMax.get(i)[1];
+                float match = arrPointMax.get(i)[2];
+
+                Roi roi = new Roi(bx, by, imwTmp, imhTmp);
+                impSrc.setRoi(roi);
+
+                roiMan.addRoi(roi);
+                int idxLast = roiMan.getCount() - 1;
+                roiMan.select(idxLast);
+                roiMan.runCommand("Rename", "no" + String.valueOf(i + 1) + "-" + String.valueOf(match));
+
+                rt.incrementCounter();
+                rt.addValue("No", i + 1);
+                rt.addValue("BX", bx);
+                rt.addValue("BY", by);
+                rt.addValue("Width", imwTmp);
+                rt.addValue("Height", imhTmp);
+                rt.addValue("Match", String.valueOf(match));
+                rt.show("Results");
+            }
+
+            mr.runMacro("setBatchMode(false);", "");
+            roiMan.runCommand("Show All");
+        }
+        catch(Exception e) {
+            IJ.log("Show data (search max point) failed: " + e.getMessage());
+        }
+        finally {
+            if(impBin != null) {
+                impBin.close();
+            }
+            if(impLab != null) {
+                impLab.close();
+            }
+        }
+    }
+
+    private void substractedFromOne(float[] srcdst) {
         int num = srcdst.length;
 
         for(int i = 0; i < num; i++) {
@@ -336,7 +374,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         }
     }
 
-    private void binary_float(float[] srcdst, float thr) {
+    private void binaryFloat(float[] srcdst, float thr) {
         int num = srcdst.length;
 
         for(int i = 0; i < num; i++) {
@@ -349,20 +387,19 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
         }
     }
 
-    private void search_max_point(float[] src, int bx, int by, int w, int h, int imw, float[] point_max) {
-        int num = src.length;
-        point_max[0] = (float)bx;
-        point_max[1] = (float)by;
-        point_max[2] = (float)src[bx + by * imw];
+    private void searchMaxPoint(float[] src, int bx, int by, int w, int h, int imw, float[] pointMax) {
+        pointMax[0] = (float)bx;
+        pointMax[1] = (float)by;
+        pointMax[2] = (float)src[bx + by * imw];
 
         for(int y = by; y < by + h; y++) {
             for(int x = bx; x < bx + w; x++) {
                 float s = src[x + y * imw];
 
-                if(point_max[2] < s) {
-                    point_max[0] = (float)bx;
-                    point_max[1] = (float)by;
-                    point_max[2] = s;
+                if(pointMax[2] < s) {
+                    pointMax[0] = (float)x;
+                    pointMax[1] = (float)y;
+                    pointMax[2] = s;
                 }
             }
         }

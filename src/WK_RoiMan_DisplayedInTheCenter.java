@@ -10,8 +10,6 @@ import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 import java.awt.Rectangle;
-import java.util.ArrayList;
-import org.opencv.core.Point;
 
 /*
  * The MIT License
@@ -44,10 +42,26 @@ import org.opencv.core.Point;
 public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
     // const var.
     private static final int FLAGS = DOES_ALL;
+    private static final int ZOOM_SCALE = 100;
 
     // var.
     private ImagePlus impSrc = null;
     private RoiManager roiMan = null;
+
+    /**
+     * Helper class to store coordinate sum and count
+     */
+    private static class CoordinateSum {
+        double sumX;
+        double sumY;
+        int count;
+
+        CoordinateSum(double sumX, double sumY, int count) {
+            this.sumX = sumX;
+            this.sumY = sumY;
+            this.count = count;
+        }
+    }
 
     @Override
     public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr) {
@@ -66,11 +80,13 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
             return DONE;
         }
         else {
-            // get the ImagePlus
             impSrc = imp;
-
-            // get the ROI Manager
             roiMan = getRoiManager(false, true);
+
+            if(roiMan == null) {
+                IJ.error("Failed to get ROI Manager");
+                return DONE;
+            }
 
             return FLAGS;
         }
@@ -78,110 +94,143 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
-        int num_roi = roiMan.getCount();
-        int[] selectedIndexes = roiMan.getSelectedIndexes();
-        int num_slctd = selectedIndexes == null ? 0 : selectedIndexes.length;
-        Macro_Runner mr = new Macro_Runner();
-        ImageCanvas ic = impSrc.getCanvas();
-        int cx;
-        int cy;
-        int zm;
+        try {
+            int roiCount = roiMan.getCount();
+            int[] selectedIndexes = roiMan.getSelectedIndexes();
+            boolean hasSelection = (selectedIndexes != null && selectedIndexes.length > 0);
 
-        if(num_roi == 0 || num_slctd == 0) {
-            Rectangle roi = ip.getRoi();
-
-            if(roi == null) {
-                cx = (int)((double)ip.getWidth() / 2 + 0.5);
-                cy = (int)((double)ip.getHeight() / 2 + 0.5);
-                zm = (int)(ic.getMagnification() * 100);
-
-                mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
-            }
-            else {
-                cx = (int)((double)roi.getX() + (double)roi.getWidth() / 2 + 0.5);
-                cy = (int)((double)roi.getY() + (double)roi.getHeight() / 2 + 0.5);
-                zm = (int)(ic.getMagnification() * 100);
-
-                mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
-            }
-        }
-        else {
-            int num_all = 0;
-            double sx = 0;
-            double sy = 0;
-            ArrayList<Point> lstPt = new ArrayList<Point>();
-
-            for(int i = 0; i < num_slctd; i++) {
-                Roi roi = roiMan.getRoi(selectedIndexes[i]);
-                getCoordinates(roi, lstPt);
+            ImageCanvas canvas = impSrc.getCanvas();
+            if(canvas == null) {
+                IJ.log("Canvas is not available");
+                return;
             }
 
-            num_all = lstPt.size();
+            int centerX;
+            int centerY;
 
-            for(int i = 0; i < num_all; i++) {
-                double x = lstPt.get(i).x;
-                double y = lstPt.get(i).y;
+            if(roiCount == 0 || !hasSelection) {
+                // No ROI or no selection: center on image or current ROI
+                Rectangle roi = ip.getRoi();
 
-                sx += x;
-                sy += y;
-            }
-
-            cx = (int)(sx / (double)num_all + 0.5);
-            cy = (int)(sy / (double)num_all + 0.5);
-            zm = (int)(ic.getMagnification() * 100);
-
-            mr.runMacro("run(\"Set... \", \"zoom=" + Double.toString(zm) + " x=" + Integer.toString(cx) + " y=" + Integer.toString(cy) + "\");", "");
-        }
-    }
-
-    /**
-     * get the RoiManager or create a new RoiManager
-     * @param enReset reset or not
-     * @param enShowNone show none or not
-     * @return RoiManager
-     */
-    private RoiManager getRoiManager(boolean enReset, boolean enShowNone) {
-        Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;
-
-        if(frame == null) {
-            rm = new RoiManager();
-            rm.setVisible(true);
-        }
-        else {
-            rm = (RoiManager)frame;
-        }
-
-        if(enReset) {
-            rm.reset();
-        }
-
-        if(enShowNone) {
-            rm.runCommand("Show None");
-        }
-
-        return rm;
-    }
-
-    /**
-     * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
-     * @param roi
-     * @param lstPt
-     */
-    private void getCoordinates(Roi roi, ArrayList<Point> lstPt) {
-        ImageProcessor mask = roi.getMask();
-        Rectangle r = roi.getBounds();
-        int pos_x = 0;
-        int pos_y = 0;
-
-        for(int y = 0; y < r.height; y++) {
-            for(int x = 0; x < r.width; x++) {
-                if(mask == null || mask.getPixel(x, y) != 0) {
-                    pos_x = r.x + x;
-                    pos_y = r.y + y;
-                    lstPt.add(new Point(pos_x, pos_y));
+                if(roi == null) {
+                    centerX = Math.round(ip.getWidth() / 2.0f);
+                    centerY = Math.round(ip.getHeight() / 2.0f);
+                }
+                else {
+                    centerX = Math.round(roi.x + roi.width / 2.0f);
+                    centerY = Math.round(roi.y + roi.height / 2.0f);
                 }
             }
+            else {
+                // Calculate center of selected ROIs
+                double sumX = 0;
+                double sumY = 0;
+                int totalPoints = 0;
+
+                for(int i = 0; i < selectedIndexes.length; i++) {
+                    Roi roi = roiMan.getRoi(selectedIndexes[i]);
+                    if(roi != null) {
+                        CoordinateSum sum = calculateCoordinateSum(roi);
+                        sumX += sum.sumX;
+                        sumY += sum.sumY;
+                        totalPoints += sum.count;
+                    }
+                }
+
+                if(totalPoints > 0) {
+                    centerX = (int)Math.round(sumX / totalPoints);
+                    centerY = (int)Math.round(sumY / totalPoints);
+                }
+                else {
+                    IJ.log("No valid coordinates found in selected ROIs");
+                    return;
+                }
+            }
+
+            int zoomPercent = (int)(canvas.getMagnification() * ZOOM_SCALE);
+            setViewCenter(centerX, centerY, zoomPercent);
+        }
+        catch(Exception e) {
+            IJ.log("Error in WK_RoiMan_DisplayedInTheCenter: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Set the view center using macro command
+     */
+    private void setViewCenter(int centerX, int centerY, int zoomPercent) {
+        try {
+            String macro = String.format(
+                "run(\"Set... \", \"zoom=%d x=%d y=%d\");",
+                zoomPercent,
+                centerX,
+                centerY
+            );
+
+            Macro_Runner macroRunner = new Macro_Runner();
+            macroRunner.runMacro(macro, "");
+        }
+        catch(Exception e) {
+            IJ.log("Failed to set view center: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Calculate the sum of coordinates and count of points in ROI
+     * This avoids storing all points in memory
+     */
+    private CoordinateSum calculateCoordinateSum(Roi roi) {
+        ImageProcessor mask = roi.getMask();
+        Rectangle bounds = roi.getBounds();
+        double sumX = 0;
+        double sumY = 0;
+        int count = 0;
+
+        for(int y = 0; y < bounds.height; y++) {
+            for(int x = 0; x < bounds.width; x++) {
+                if(mask == null || mask.getPixel(x, y) != 0) {
+                    sumX += bounds.x + x;
+                    sumY += bounds.y + y;
+                    count++;
+                }
+            }
+        }
+
+        return new CoordinateSum(sumX, sumY, count);
+    }
+
+    /**
+     * Get the RoiManager or create a new RoiManager
+     * @param shouldReset reset or not
+     * @param shouldShowNone show none or not
+     * @return RoiManager or null if failed
+     */
+    private RoiManager getRoiManager(boolean shouldReset, boolean shouldShowNone) {
+        try {
+            Frame frame = WindowManager.getFrame("ROI Manager");
+            RoiManager roiManager = null;
+
+            if(frame == null) {
+                roiManager = new RoiManager();
+                roiManager.setVisible(true);
+            }
+            else {
+                roiManager = (RoiManager)frame;
+            }
+
+            if(shouldReset) {
+                roiManager.reset();
+            }
+
+            if(shouldShowNone) {
+                roiManager.runCommand("Show None");
+            }
+
+            return roiManager;
+        }
+        catch(Exception e) {
+            IJ.log("Failed to get ROI Manager: " + e.getMessage());
+            return null;
         }
     }
 }

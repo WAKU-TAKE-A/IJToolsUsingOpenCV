@@ -35,12 +35,11 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
     // constant var.
-    private static final int FLAGS = DOES_8G; // 8-bit single channel image.
+    private static final int FLAGS = DOES_8G | NO_CHANGES; // 8-bit single channel image.
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        // do nothing
-        return IJ.setupDialog(imp, FLAGS);
+        return FLAGS;
     }
 
     @Override
@@ -66,18 +65,31 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
-        // srcdst
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        byte[] srcdst_bytes = (byte[])ip.getPixels();
+        Mat srcMat = null;
+        Mat dstMat = null;
 
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        try {
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            byte[] srcdstBytes = (byte[])ip.getPixels();
 
-        // run
-        src_mat.put(0, 0, srcdst_bytes);
-        Imgproc.equalizeHist(src_mat, dst_mat);
-        dst_mat.get(0, 0, srcdst_bytes);
+            srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+            dstMat = new Mat(imh, imw, CvType.CV_8UC1);
+
+            srcMat.put(0, 0, srcdstBytes);
+            Imgproc.equalizeHist(srcMat, dstMat);
+            dstMat.get(0, 0, srcdstBytes);
+        }
+        catch(Exception e) {
+            IJ.log("Equalize histogram failed: " + e.getMessage());
+        }
+        finally {
+            if(srcMat != null) {
+                srcMat.release();
+            }
+            if(dstMat != null) {
+                dstMat.release();
+            }
+        }
     }
 }

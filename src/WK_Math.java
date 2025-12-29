@@ -45,19 +45,41 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
     private static final String EQUAL_ZERO = "equal_zero";
     private static final String NOT_ZERO = "not_zero";
     private static final String[] TYPE_COND = { ALL, EQUAL_ZERO, NOT_ZERO };
+    private static final int DECIMAL_PLACES = 4;
+    private static final float EPSILON = 1e-6f;
 
     // static var.
-    private static int ind_math = 0;
-    private static int ind_cond = 0;
+    private static int selectedMathIndex = 0;
+    private static int selectedConditionIndex = 0;
     private static float value = 0;
+    
+    // var.
+    private String className;
+
+    /**
+     * Functional interface for pixel operations
+     */
+    @FunctionalInterface
+    private interface PixelOperation {
+        float apply(float pixel, float value);
+    }
+
+    /**
+     * Functional interface for condition checking
+     */
+    @FunctionalInterface
+    private interface PixelCondition {
+        boolean test(float pixel);
+    }
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(cmd + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
-        gd.addChoice("math", TYPE_MATH, TYPE_MATH[ind_math]);
-        gd.addNumericField("value", value, 4);
-        gd.addChoice("conditions", TYPE_COND, TYPE_COND[ind_cond]);
+        gd.addChoice("math", TYPE_MATH, TYPE_MATH[selectedMathIndex]);
+        gd.addNumericField("value", value, DECIMAL_PLACES);
+        gd.addChoice("conditions", TYPE_COND, TYPE_COND[selectedConditionIndex]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -73,9 +95,9 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        ind_math = (int)gd.getNextChoiceIndex();
+        selectedMathIndex = gd.getNextChoiceIndex();
         value = (float)gd.getNextNumber();
-        ind_cond = (int)gd.getNextChoiceIndex();
+        selectedConditionIndex = gd.getNextChoiceIndex();
 
         IJ.showStatus("WK_Math");
         return true;
@@ -99,165 +121,69 @@ public class WK_Math implements ij.plugin.filter.ExtendedPlugInFilter, DialogLis
 
     @Override
     public void run(ImageProcessor ip) {
-        // srcdst
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        float[] srcdst_floats = (float[])ip.getPixels();
+        int imageWidth = ip.getWidth();
+        int imageHeight = ip.getHeight();
+        float[] pixels = (float[])ip.getPixels();
 
-        // run
-        String type_cond = TYPE_COND[ind_cond];
-        String type_math = TYPE_MATH[ind_math];
+        String conditionType = TYPE_COND[selectedConditionIndex];
+        String mathType = TYPE_MATH[selectedMathIndex];
 
-        if(type_math.equals(ADD)) {
-            math_add(srcdst_floats, imw, imh, value, type_cond);
-        }
-        else if(type_math.equals(SUB)) {
-            math_sub(srcdst_floats, imw, imh, value, type_cond);
-        }
-        else if(type_math.equals(MUL)) {
-            math_mul(srcdst_floats, imw, imh, value, type_cond);
-        }
-        else if(type_math.equals(SET)) {
-            math_set(srcdst_floats, imw, imh, value, type_cond);
+        PixelOperation operation = getPixelOperation(mathType);
+        PixelCondition condition = getPixelCondition(conditionType);
+
+        applyOperation(pixels, imageWidth, imageHeight, value, operation, condition);
+    }
+
+    /**
+     * Get pixel operation based on math type
+     */
+    private PixelOperation getPixelOperation(String mathType) {
+        switch(mathType) {
+            case ADD:
+                return (pixel, val) -> pixel + val;
+            case SUB:
+                return (pixel, val) -> pixel - val;
+            case MUL:
+                return (pixel, val) -> pixel * val;
+            case SET:
+                return (pixel, val) -> val;
+            default:
+                return (pixel, val) -> pixel;
         }
     }
 
-    private void math_add(float[] srcdst, int imw, int imh, float value, String type) {
-        int k = 0;
-
-        if(type.equals(ALL)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-                    srcdst[k] = srcdst[k] + value;
-                }
-            }
-        }
-        else if(type.equals(EQUAL_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] == 0) {
-                        srcdst[k] = srcdst[k] + value;
-                    }
-                }
-            }
-        }
-        else if(type.equals(NOT_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] != 0) {
-                        srcdst[k] = srcdst[k] + value;
-                    }
-                }
-            }
+    /**
+     * Get pixel condition based on condition type
+     */
+    private PixelCondition getPixelCondition(String conditionType) {
+        switch(conditionType) {
+            case ALL:
+                return pixel -> true;
+            case EQUAL_ZERO:
+                return pixel -> Math.abs(pixel) < EPSILON;
+            case NOT_ZERO:
+                return pixel -> Math.abs(pixel) >= EPSILON;
+            default:
+                return pixel -> true;
         }
     }
 
-    private void math_sub(float[] srcdst, int imw, int imh, float value, String type) {
-        int k = 0;
+    /**
+     * Apply operation to pixels that match the condition
+     */
+    private void applyOperation(
+        float[] pixels, 
+        int imageWidth, 
+        int imageHeight, 
+        float value,
+        PixelOperation operation,
+        PixelCondition condition) {
+        
+        int numPixels = imageWidth * imageHeight;
 
-        if(type.equals(ALL)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-                    srcdst[k] = srcdst[k] - value;
-                }
-            }
-        }
-        else if(type.equals(EQUAL_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] == 0) {
-                        srcdst[k] = srcdst[k] - value;
-                    }
-                }
-            }
-        }
-        else if(type.equals(NOT_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] != 0) {
-                        srcdst[k] = srcdst[k] - value;
-                    }
-                }
-            }
-        }
-    }
-
-    private void math_mul(float[] srcdst, int imw, int imh, float value, String type) {
-        int k = 0;
-
-        if(type.equals(ALL)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-                    srcdst[k] = srcdst[k] * value;
-                }
-            }
-        }
-        else if(type.equals(EQUAL_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] == 0) {
-                        srcdst[k] = srcdst[k] * value;
-                    }
-                }
-            }
-        }
-        else if(type.equals(NOT_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] != 0) {
-                        srcdst[k] = srcdst[k] * value;
-                    }
-                }
-            }
-        }
-    }
-
-    private void math_set(float[] srcdst, int imw, int imh, float value, String type) {
-        int k = 0;
-
-        if(type.equals(ALL)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-                    srcdst[k] = value;
-                }
-            }
-        }
-        else if(type.equals(EQUAL_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] == 0) {
-                        srcdst[k] = value;
-                    }
-                }
-            }
-        }
-        else if(type.equals(NOT_ZERO)) {
-            for(int y = 0; y < imh; y++) {
-                for(int x = 0; x < imw; x++) {
-                    k = x + imw * y;
-
-                    if(srcdst[k] != 0) {
-                        srcdst[k] = value;
-                    }
-                }
+        for(int i = 0; i < numPixels; i++) {
+            if(condition.test(pixels[i])) {
+                pixels[i] = operation.apply(pixels[i], value);
             }
         }
     }

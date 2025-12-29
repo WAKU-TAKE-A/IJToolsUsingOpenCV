@@ -39,24 +39,26 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private final int FLAGS = DOES_32 | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 32-bit single-channel map.
+    private static final int FLAGS = DOES_32 | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 32-bit single-channel map.
 
     // static var.
-    private static int ind_src = 0;
-    private static int ind_msk = 1;
+    private static int indSrc = 0;
+    private static int indMsk = 1;
 
     // var.
-    private ImagePlus imp_src = null;
-    private ImagePlus imp_map = null;
-    private int[] lst_wnd;
-    private String[] titles_wnd;
+    private String className;
+    private ImagePlus impSrc = null;
+    private ImagePlus impMap = null;
+    private int[] lstWnd;
+    private String[] titlesWnd;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
-        gd.addChoice("src", titles_wnd, titles_wnd[ind_src]);
-        gd.addChoice("mask", titles_wnd, titles_wnd[ind_msk]);
+        gd.addChoice("src", titlesWnd, titlesWnd[indSrc]);
+        gd.addChoice("mask", titlesWnd, titlesWnd[indMsk]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
@@ -72,23 +74,23 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        ind_src = (int)gd.getNextChoiceIndex();
-        ind_msk = (int)gd.getNextChoiceIndex();
+        indSrc = (int)gd.getNextChoiceIndex();
+        indMsk = (int)gd.getNextChoiceIndex();
 
-        if(ind_src == ind_msk) {
+        if(indSrc == indMsk) {
             IJ.showStatus("The same image can not be selected.");
             return false;
         }
 
-        imp_src = WindowManager.getImage(lst_wnd[ind_src]);
-        imp_map = WindowManager.getImage(lst_wnd[ind_msk]);
+        impSrc = WindowManager.getImage(lstWnd[indSrc]);
+        impMap = WindowManager.getImage(lstWnd[indMsk]);
 
-        if(imp_src.getBitDepth() != 24 || imp_map.getBitDepth() != 32) {
+        if(impSrc.getBitDepth() != 24 || impMap.getBitDepth() != 32) {
             IJ.showStatus("The image should be RGB, and the mask should be 32bit.");
             return false;
         }
 
-        if(imp_src.getWidth() != imp_map.getWidth() || imp_src.getHeight() != imp_map.getHeight()) {
+        if(impSrc.getWidth() != impMap.getWidth() || impSrc.getHeight() != impMap.getHeight()) {
             IJ.showStatus("The size of src should be same as the size of mask.");
             return false;
         }
@@ -115,18 +117,18 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         }
         else {
             // get the windows
-            lst_wnd = WindowManager.getIDList();
+            lstWnd = WindowManager.getIDList();
 
-            if(lst_wnd == null || lst_wnd.length < 2) {
+            if(lstWnd == null || lstWnd.length < 2) {
                 IJ.error("At least more than 2 images are needed.");
                 return DONE;
             }
 
-            titles_wnd = new String[lst_wnd.length];
+            titlesWnd = new String[lstWnd.length];
 
-            for(int i = 0; i < lst_wnd.length; i++) {
-                ImagePlus imp2 = WindowManager.getImage(lst_wnd[i]);
-                titles_wnd[i] = imp2 != null ? imp2.getTitle() : "";
+            for(int i = 0; i < lstWnd.length; i++) {
+                ImagePlus imp2 = WindowManager.getImage(lstWnd[i]);
+                titlesWnd[i] = imp2 != null ? imp2.getTitle() : "";
             }
 
             return FLAGS;
@@ -135,27 +137,47 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
     @Override
     public void run(ImageProcessor ip) {
-        // src (RGB)
-        int[] arr_src_rgb = (int[])imp_src.getChannelProcessor().getPixels();
-        int imw_src = imp_src.getWidth();
-        int imh_src = imp_src.getHeight();
-        Mat mat_src_rgb = new Mat(imh_src, imw_src, CvType.CV_8UC3);
+        Mat matSrcRgb = null;
+        Mat matMap32f = null;
+        Mat matMap32s = null;
 
-        // map (32bit)
-        float[] arr_map_32f = (float[])imp_map.getChannelProcessor().getPixels();
-        int imw_map = imp_map.getWidth();
-        int imh_map = imp_map.getHeight();
-        Mat mat_map_32f = new Mat(imh_map, imw_map, CvType.CV_32FC1);
-        Mat mat_map_32s = new Mat(imh_map, imw_map, CvType.CV_32SC1);
+        try {
+            // src (RGB)
+            int[] arrSrcRgb = (int[])impSrc.getChannelProcessor().getPixels();
+            int imwSrc = impSrc.getWidth();
+            int imhSrc = impSrc.getHeight();
+            matSrcRgb = new Mat(imhSrc, imwSrc, CvType.CV_8UC3);
 
-        // run
-        OCV__LoadLibrary.intarray2mat(arr_src_rgb, mat_src_rgb, imw_src, imh_src);
-        mat_map_32f.put(0, 0, arr_map_32f);
-        mat_map_32f.convertTo(mat_map_32s, CvType.CV_32SC1);
+            // map (32bit)
+            float[] arrMap32f = (float[])impMap.getChannelProcessor().getPixels();
+            int imwMap = impMap.getWidth();
+            int imhMap = impMap.getHeight();
+            matMap32f = new Mat(imhMap, imwMap, CvType.CV_32FC1);
+            matMap32s = new Mat(imhMap, imwMap, CvType.CV_32SC1);
 
-        Imgproc.watershed(mat_src_rgb, mat_map_32s);
+            // run
+            OCV__LoadLibrary.intarray2mat(arrSrcRgb, matSrcRgb, imwSrc, imhSrc);
+            matMap32f.put(0, 0, arrMap32f);
+            matMap32f.convertTo(matMap32s, CvType.CV_32SC1);
 
-        mat_map_32s.convertTo(mat_map_32f, CvType.CV_32FC1);
-        mat_map_32f.get(0, 0, arr_map_32f);
+            Imgproc.watershed(matSrcRgb, matMap32s);
+
+            matMap32s.convertTo(matMap32f, CvType.CV_32FC1);
+            matMap32f.get(0, 0, arrMap32f);
+        }
+        catch(Exception e) {
+            IJ.log(className + " error: Watershed failed. (" + e.getMessage() + ")");
+        }
+        finally {
+            if(matSrcRgb != null) {
+                matSrcRgb.release();
+            }
+            if(matMap32f != null) {
+                matMap32f.release();
+            }
+            if(matMap32s != null) {
+                matMap32s.release();
+            }
+        }
     }
 }

@@ -47,18 +47,20 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
     private static final String[] TYPE_STR = { "4-connected", "8-connected" };
 
     // static var.
-    private static int type_ind = 1;
+    private static int typeInd = 1;
     private static boolean enOutImg = false;
     private static boolean enWand = false;
 
     // var.
+    private String className;
     private ImagePlus impSrc = null;
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pifr) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
-        gd.addChoice("connectivity", TYPE_STR, TYPE_STR[type_ind]);
+        gd.addChoice("connectivity", TYPE_STR, TYPE_STR[typeInd]);
         gd.addCheckbox("enable_output_labeled_image", enOutImg);
         gd.addCheckbox("enable_select_roi_by_dowand", enWand);
 
@@ -68,7 +70,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
             return DONE;
         }
         else {
-            type_ind = (int)gd.getNextChoiceIndex();
+            typeInd = (int)gd.getNextChoiceIndex();
             enOutImg = (boolean)gd.getNextBoolean();
             enWand = (boolean)gd.getNextBoolean();
 
@@ -77,12 +79,12 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
     }
 
     @Override
-    public void setNPasses(int i) {
+    public void setNPasses(int nPasses) {
         // do nothing
     }
 
     @Override
-    public int setup(String string, ImagePlus imp) {
+    public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
@@ -100,104 +102,169 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
-        // src
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        byte[] src_arr = (byte[])ip.getPixels();
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        Mat srcMat = null;
+        Mat dstMat32s = null;
+        Mat dstMat32f = null;
+        Mat statsMat = null;
+        Mat censMat = null;
+        ImagePlus impDst = null;
 
-        // dst
-        String titleDst = WindowManager.getUniqueName(impSrc.getTitle() + "_Connect" + String.valueOf(TYPE_INT[type_ind]));
-        ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(imw, imh));
-        float[] dst_arr = (float[]) impDst.getChannelProcessor().getPixels();
-        Mat dst_mat_32s = new Mat(imh, imw, CvType.CV_32S);
-        Mat dst_mat_32f = new Mat(imh, imw, CvType.CV_32F);
-        Mat stats_mat = new Mat();
-        Mat cens_mat = new Mat();
+        try {
+            // src
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            byte[] srcArr = (byte[])ip.getPixels();
+            srcMat = new Mat(imh, imw, CvType.CV_8UC1);
 
-        // run
-        src_mat.put(0, 0, src_arr);
-        int output_con = Imgproc.connectedComponentsWithStats(src_mat, dst_mat_32s, stats_mat, cens_mat, TYPE_INT[type_ind], CvType.CV_32S);
-        dst_mat_32s.convertTo(dst_mat_32f, CvType.CV_32F);
-        dst_mat_32f.get(0, 0, dst_arr);
+            // dst
+            String titleDst = WindowManager.getUniqueName(impSrc.getTitle() + "_Connect" + String.valueOf(TYPE_INT[typeInd]));
+            impDst = new ImagePlus(titleDst, new FloatProcessor(imw, imh));
+            float[] dstArr = (float[])impDst.getChannelProcessor().getPixels();
+            dstMat32s = new Mat(imh, imw, CvType.CV_32S);
+            dstMat32f = new Mat(imh, imw, CvType.CV_32F);
+            statsMat = new Mat();
+            censMat = new Mat();
 
-        // show data
-        if(1 < output_con) {
-            showData(dst_arr, imw, imh, output_con, stats_mat, cens_mat);
+            // run
+            srcMat.put(0, 0, srcArr);
+            int outputCon = Imgproc.connectedComponentsWithStats(srcMat, dstMat32s, statsMat, censMat, TYPE_INT[typeInd], CvType.CV_32S);
+            dstMat32s.convertTo(dstMat32f, CvType.CV_32F);
+            dstMat32f.get(0, 0, dstArr);
+
+            // show data
+            if(1 < outputCon) {
+                showData(dstArr, imw, imh, outputCon, statsMat, censMat);
+            }
+
+            // finish
+            if(1 < outputCon && enOutImg) {
+                impDst.show();
+                impDst = null; // Prevent closing in finally
+            }
         }
-
-        // finish
-        if(1 < output_con && enOutImg) {
-            impDst.show();
+        catch(Exception e) {
+            IJ.log("Connected components analysis failed: " + e.getMessage());
         }
-        else {
-            impDst.close();
+        finally {
+            // Release OpenCV resources
+            if(srcMat != null) {
+                srcMat.release();
+            }
+            if(dstMat32s != null) {
+                dstMat32s.release();
+            }
+            if(dstMat32f != null) {
+                dstMat32f.release();
+            }
+            if(statsMat != null) {
+                statsMat.release();
+            }
+            if(censMat != null) {
+                censMat.release();
+            }
+            // Close ImagePlus if not shown
+            if(impDst != null) {
+                impDst.close();
+            }
         }
     }
 
-    private void showData(float[] dst_arr, int imw, int imh, int output_con, Mat stats_mat, Mat cens_mat) {
-        int num_lab = output_con - 1;
-        Rectangle[] rects = new Rectangle[output_con];
-        int[] areas = new int[output_con];
-        double[] cens = new double[output_con * 2];
+    private void showData(float[] dstArr, int imw, int imh, int outputCon, Mat statsMat, Mat censMat) {
+        try {
+            int numLab = outputCon - 1;
+            Rectangle[] rects = new Rectangle[outputCon];
+            int[] areas = new int[outputCon];
 
-        cens_mat.get(0, 0, cens);
-
-        for(int i = 0; i < output_con; i++) {
-            rects[i] = new Rectangle((int)(stats_mat.get(i, 0)[0]), (int)(stats_mat.get(i, 1)[0]), (int)(stats_mat.get(i, 2)[0]), (int)(stats_mat.get(i, 3)[0]));
-            areas[i] = (int)(stats_mat.get(i, 4)[0]);
-        }
-
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
-        Macro_Runner mr = new Macro_Runner();
-
-        mr.runMacro("setBatchMode(true);", "");
-
-        for(int i = 1; i < output_con; i++) {
-            rt.incrementCounter();
-            rt.addValue("No", i);
-            rt.addValue("Area", areas[i]);
-            rt.addValue("BX", rects[i].x);
-            rt.addValue("BY", rects[i].y);
-            rt.addValue("Width", rects[i].width);
-            rt.addValue("Height", rects[i].height);
-
-            if(!enWand) {
-                Roi roi = new Roi(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
-                roiManager.addRoi(roi);
-                roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
+            // Batch get stats data for efficiency
+            int statsRows = statsMat.rows();
+            int statsCols = statsMat.cols();
+            
+            if(statsRows != outputCon || statsCols < 5) {
+                IJ.log("Warning: Unexpected stats matrix size: " + statsRows + "x" + statsCols);
+                return;
             }
-        }
 
-        if(enWand) {
-            int[] chk = new int[num_lab + 1];
-            int[] x_doWand = new int[num_lab + 1];
-            int[] y_doWand = new int[num_lab + 1];
-            String type = TYPE_STR[type_ind];
+            int[] statsData = new int[statsRows * statsCols];
+            statsMat.get(0, 0, statsData);
+
+            for(int i = 0; i < outputCon; i++) {
+                int idx = i * statsCols;
+                int x = statsData[idx];
+                int y = statsData[idx + 1];
+                int width = statsData[idx + 2];
+                int height = statsData[idx + 3];
+                int area = statsData[idx + 4];
+                
+                rects[i] = new Rectangle(x, y, width, height);
+                areas[i] = area;
+            }
+
+            ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+            RoiManager roiManager = OCV__LoadLibrary.GetRoiManager(true, true);
+            Macro_Runner mr = new Macro_Runner();
+
+            mr.runMacro("setBatchMode(true);", "");
+
+            for(int i = 1; i < outputCon; i++) {
+                rt.incrementCounter();
+                rt.addValue("No", i);
+                rt.addValue("Area", areas[i]);
+                rt.addValue("BX", rects[i].x);
+                rt.addValue("BY", rects[i].y);
+                rt.addValue("Width", rects[i].width);
+                rt.addValue("Height", rects[i].height);
+
+                if(!enWand) {
+                    Roi roi = new Roi(rects[i].x, rects[i].y, rects[i].width, rects[i].height);
+                    roiManager.addRoi(roi);
+                    roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
+                }
+            }
+
+            if(enWand) {
+                processDoWand(dstArr, imw, imh, numLab, areas, mr, roiManager);
+            }
+
+            mr.runMacro("setBatchMode(false);", "");
+
+            rt.show("Results");
+            roiManager.runCommand("show all");
+        }
+        catch(Exception e) {
+            IJ.log("Show data failed: " + e.getMessage());
+        }
+    }
+
+    private void processDoWand(float[] dstArr, int imw, int imh, int numLab, int[] areas, Macro_Runner mr, RoiManager roiManager) {
+        try {
+            int[] chk = new int[numLab + 1];
+            int[] xDoWand = new int[numLab + 1];
+            int[] yDoWand = new int[numLab + 1];
+            String type = TYPE_STR[typeInd];
 
             for(int y = 0; y < imh; y++) {
                 for(int x = 0; x < imw; x++) {
-                    int val = (int)dst_arr[x + y * imw];
+                    int val = (int)dstArr[x + y * imw];
 
-                    if(val != 0 && chk[val] == 0) {
+                    if(val != 0 && val <= numLab && chk[val] == 0) {
                         chk[val] = 1;
-                        x_doWand[val] = x;
-                        y_doWand[val] = y;
+                        xDoWand[val] = x;
+                        yDoWand[val] = y;
                     }
                 }
             }
 
-            for(int i = 1; i < num_lab + 1; i++) {
-                mr.runMacro("doWand(" + String.valueOf(x_doWand[i]) + ", " + String.valueOf(y_doWand[i]) + ", 0.0, \"" + type + "\");", "");
-                roiManager.runCommand("add");
-                roiManager.rename(i - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
+            for(int i = 1; i <= numLab; i++) {
+                if(chk[i] == 1) {
+                    String macroCmd = String.format("doWand(%d, %d, 0.0, \"%s\");", xDoWand[i], yDoWand[i], type);
+                    mr.runMacro(macroCmd, "");
+                    roiManager.runCommand("add");
+                    roiManager.rename(roiManager.getCount() - 1, "no" + String.valueOf(i) + "-" + String.valueOf(areas[i]));
+                }
             }
         }
-
-        mr.runMacro("setBatchMode(false);", "");
-
-        rt.show("Results");
-        roiManager.runCommand("show all");
+        catch(Exception e) {
+            IJ.log("DoWand processing failed: " + e.getMessage());
+        }
     }
 }

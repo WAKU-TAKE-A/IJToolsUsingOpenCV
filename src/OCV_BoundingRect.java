@@ -7,7 +7,7 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
@@ -42,6 +42,9 @@ import org.opencv.imgproc.Imgproc;
  * boundingRect.
  */
 public class OCV_BoundingRect implements ExtendedPlugInFilter {
+    // constant var.
+    private static final int BACKGROUND_VALUE = 0;
+
     // static var.
     private static boolean enRefData = false;
 
@@ -53,8 +56,10 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
     private Roi roiSrc = null;
 
     @Override
-    public void setNPasses(int arg0) {
-        // do nothing
+    public void setNPasses(int nPasses) {
+        if(nPasses > 0 && enRefData) {
+            countNPass = 0;
+        }
     }
 
     @Override
@@ -67,67 +72,88 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
             return DONE;
         }
         else {
-            enRefData = (boolean)gd.getNextBoolean();
-            return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
+            enRefData = gd.getNextBoolean();
+            return IJ.setupDialog(imp, DOES_8G);
         }
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        int num_slice = ip.getSliceNumber();
-        
-        byte[] byteArray;
-        int w;
-        int h;
-        int offsetx;
-        int offsety;
-        
-        if (roiSrc == null) {
-            byteArray = (byte[])ip.getPixels();
-            w = ip.getWidth();
-            h = ip.getHeight();
-            offsetx = 0;
-            offsety = 0;
-        }
-        else
-        {
-            ImageProcessor ip_crop = ip.crop();
-            byteArray = (byte[])ip_crop.getPixels();
-            w = ip_crop.getWidth();
-            h = ip_crop.getHeight();
-            Polygon pol = roiSrc.getPolygon();
-            offsetx = pol.xpoints[0];
-            offsety = pol.ypoints[0];
-        }
-        
-        ArrayList<Point> lstPt = new ArrayList<Point>();
-        MatOfPoint pts = new MatOfPoint();
+        MatOfPoint pts = null;
+        ImageProcessor ipWork = null;
 
-        for(int y = 0; y < h; y++) {
-            for(int x = 0; x < w; x++) {
-                if(byteArray[x + w * y] != 0) {
-                    lstPt.add(new Point(x + offsetx, y + offsety));
+        try {
+            int numSlice = ip.getSliceNumber();
+            
+            byte[] byteArray;
+            int w;
+            int h;
+            int offsetX;
+            int offsetY;
+            
+            if(roiSrc == null) {
+                // Process entire image
+                byteArray = (byte[])ip.getPixels();
+                w = ip.getWidth();
+                h = ip.getHeight();
+                offsetX = 0;
+                offsetY = 0;
+            }
+            else {
+                // Process ROI region
+                ipWork = ip.duplicate();
+                ipWork.setColor(BACKGROUND_VALUE);
+                ipWork.setRoi(roiSrc);
+                ipWork.fillOutside(roiSrc);
+                
+                ImageProcessor ipCrop = ipWork.crop();
+                byteArray = (byte[])ipCrop.getPixels();
+                w = ipCrop.getWidth();
+                h = ipCrop.getHeight();
+                Rectangle bounds = roiSrc.getBounds();
+                offsetX = bounds.x;
+                offsetY = bounds.y;
+                
+                ipCrop = null;
+            }
+            
+            ArrayList<Point> lstPt = new ArrayList<Point>();
+
+            for(int y = 0; y < h; y++) {
+                for(int x = 0; x < w; x++) {
+                    if(byteArray[x + w * y] != BACKGROUND_VALUE) {
+                        lstPt.add(new Point(x + offsetX, y + offsetY));
+                    }
                 }
             }
-        }
 
-        if(lstPt.isEmpty()) {
-            return;
-        }
+            if(lstPt.isEmpty()) {
+                return;
+            }
 
-        pts.fromList(lstPt);
-        Rect rect = Imgproc.boundingRect(pts);
+            pts = new MatOfPoint();
+            pts.fromList(lstPt);
+            Rect rect = Imgproc.boundingRect(pts);
 
-        if(rect != null) {
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
 
-            if(enRefData) {
+            if(enRefData && countNPass == 0) {
                 rt.reset();
                 roiMan.reset();
             }
 
-            showData(rect, num_slice);
+            showData(rect, numSlice);
+        }
+        catch(Exception e) {
+            IJ.log("Bounding rect failed: " + e.getMessage());
+        }
+        finally {
+            if(pts != null) {
+                pts.release();
+            }
+            // Set to null to encourage garbage collection
+            ipWork = null;
         }
     }
 
@@ -145,16 +171,13 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
         else {
             impSrc = imp;
             roiSrc = imp.getRoi();
-            
-            if (roiSrc == null || roiSrc.getType() != Roi.RECTANGLE) {
-                roiSrc = null;
-            }           
+            countNPass = 0;
             
             return DOES_8G;
         }
     }
 
-    private void showData(Rect rect, int num_slice) {
+    private void showData(Rect rect, int numSlice) {
         // set the ResultsTable
         rt.incrementCounter();
         rt.addValue("BX", rect.x);
@@ -164,13 +187,13 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
         rt.show("Results");
 
         // set the ROI Manager
-        impSrc.setSlice(num_slice);
+        impSrc.setSlice(numSlice);
         Roi roi = new Roi(rect.x, rect.y, rect.width, rect.height);
-        roi.setPosition(countNPass + 1); // Start from one.
+        roi.setPosition(countNPass + 1);
         countNPass++;
 
         roiMan.addRoi(roi);
-        int num_roiMan = roiMan.getCount();
-        roiMan.select(num_roiMan - 1);
+        int numRoiMan = roiMan.getCount();
+        roiMan.select(numRoiMan - 1);
     }
 }

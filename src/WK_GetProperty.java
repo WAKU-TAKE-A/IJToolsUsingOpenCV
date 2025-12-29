@@ -35,7 +35,7 @@ import java.awt.datatransfer.StringSelection;
  */
 public class WK_GetProperty implements ExtendedPlugInFilter {
     // constant var.
-    private final int FLAGS = NO_IMAGE_REQUIRED;
+    private static final int FLAGS = NO_IMAGE_REQUIRED;
     private static final String[] LIST_KEYS = {
         "awt.toolkit",
         "file.encoding",
@@ -92,19 +92,23 @@ public class WK_GetProperty implements ExtendedPlugInFilter {
     };
 
     // static var.
-    private static int ind_list = 7;
+    private static int selectedIndex = 7;
+    
+    // var.
+    private String className;
 
     @Override
     public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
-        gd.addChoice("key", LIST_KEYS, LIST_KEYS[ind_list]);
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
+        gd.addChoice("key", LIST_KEYS, LIST_KEYS[selectedIndex]);
         gd.showDialog();
 
         if(gd.wasCanceled()) {
             return DONE;
         }
         else {
-            ind_list = (int)gd.getNextChoiceIndex();
+            selectedIndex = gd.getNextChoiceIndex();
             return FLAGS;
         }
     }
@@ -116,20 +120,30 @@ public class WK_GetProperty implements ExtendedPlugInFilter {
 
     @Override
     public int setup(String string, ImagePlus ip) {
-        // do nothing
         return FLAGS;
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        String key = LIST_KEYS[ind_list];
-        String val = System.getProperty(key);
-        val = val.replaceAll(";", "\r\n");
+        String key = LIST_KEYS[selectedIndex];
+        String value = System.getProperty(key);
+        
+        if(value == null) {
+            IJ.log("Property '" + key + "' is not available.");
+            return;
+        }
+        
+        value = value.replaceAll(";", "\r\n");
 
-        Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
-        StringSelection selection = new StringSelection(val);
-        clipboard.setContents(selection, null);
+        try {
+            Clipboard clipboard = Toolkit.getDefaultToolkit().getSystemClipboard();
+            StringSelection selection = new StringSelection(value);
+            clipboard.setContents(selection, null);
+        }
+        catch(Exception e) {
+            IJ.log("Failed to copy to clipboard: " + e.getMessage());
+        }
 
-        IJ.showMessageWithCancel(key, val);
+        IJ.showMessageWithCancel(key, value);
     }
 }

@@ -45,21 +45,25 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G | KEEP_PREVIEW; // 8-bit input image.
+    private static final int FLAGS = DOES_8G | KEEP_PREVIEW;
+    private static final double DEFAULT_THRESHOLD = 100.0;
+    private static final int PROFILE_CENTER_DIVIDER = 2;
+    
     private final String[] SIZE_STR = new String[] { "3", "5", "7" };
     private final int[] SIZE_VAL = new int[] { 3, 5, 7 };
     private final String[] LEFTSIDESCAN_STR = new String[] { "left->right", "center->left" };
     private final String[] RIGHTSIDESCAN_STR = new String[] { "right->left", "center->right" };
     private final String[] ROI_STR = new String[] { "line", "point" };
-    // staic var.
-    private static double thr1  = 30; // first threshold for the hysteresis procedure.
-    private static double thr2  = 40; // second threshold for the hysteresis procedure.
-    private static int ind_size = 0; // aperture size for the Sobel operator.
-    private static boolean l2grad = false; // L2gradient;
+    
+    // static var.
+    private static double thr1  = 30;
+    private static double thr2  = 40;
+    private static int ind_size = 0;
+    private static boolean l2grad = false;
     private static int ind_leftside = 0;
-    private static double thr_le = 100;
+    private static double thr_le = DEFAULT_THRESHOLD;
     private static int ind_rightside = 0;
-    private static double thr_ri = 100;
+    private static double thr_ri = DEFAULT_THRESHOLD;
     private static boolean dispCanny = true;
     private static boolean dispProf = true;
     private static boolean dispTable = true;
@@ -68,6 +72,8 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private static boolean enVertical = false;
     private static ImagePlus impPlot_canny = null;
     private static ImagePlus img_canny = null;
+    private static int lastMeasurementRoiIndex = -1;
+    
     // var.
     private String className;
     private ImagePlus img;
@@ -80,6 +86,10 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private RoiManager roiMan = null;
     private String typeRoi;
     private boolean ini_verticalProfile = false;
+    
+    // OpenCV Mat for reuse
+    private Mat src_mat = null;
+    private Mat dst_mat = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -152,18 +162,34 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         FloatPolygon fp = roiImg.getFloatPolygon();
         roi_cen = roiImg.getContourCentroid();
 
-        if (roiImg.getType() == Roi.LINE || roiImg.getType() == Roi.FREEROI || (roiImg.getType() == Roi.RECTANGLE && !enVertical)) {
-            roi_len = CalculateDistance(
-                    fp.xpoints[0], fp.ypoints[0],
-                    fp.xpoints[1], fp.ypoints[1]);
+        // Calculate direction vector based on ROI type
+        if (roiImg.getType() == Roi.LINE) {
+            // Line: start point to end point
+            roi_len = CalculateDistance(fp.xpoints[0], fp.ypoints[0], fp.xpoints[1], fp.ypoints[1]);
             roi_vec[0] = (fp.xpoints[1] - fp.xpoints[0]) / roi_len;
             roi_vec[1] = (fp.ypoints[1] - fp.ypoints[0]) / roi_len;
-        } else {
-            roi_len = CalculateDistance(
-                    fp.xpoints[1], fp.ypoints[1],
-                    fp.xpoints[2], fp.ypoints[2]);
+        } else if (roiImg.getType() == Roi.RECTANGLE && !enVertical) {
+            // Rectangle (horizontal): left edge to right edge
+            roi_len = CalculateDistance(fp.xpoints[0], fp.ypoints[0], fp.xpoints[1], fp.ypoints[1]);
+            roi_vec[0] = (fp.xpoints[1] - fp.xpoints[0]) / roi_len;
+            roi_vec[1] = (fp.ypoints[1] - fp.ypoints[0]) / roi_len;
+        } else if (roiImg.getType() == Roi.RECTANGLE && enVertical) {
+            // Rectangle (vertical): top edge to bottom edge
+            roi_len = CalculateDistance(fp.xpoints[1], fp.ypoints[1], fp.xpoints[2], fp.ypoints[2]);
             roi_vec[0] = (fp.xpoints[2] - fp.xpoints[1]) / roi_len;
-            roi_vec[1] = (fp.ypoints[2] - fp.ypoints[1]) / roi_len;                
+            roi_vec[1] = (fp.ypoints[2] - fp.ypoints[1]) / roi_len;
+        } else if (roiImg.getType() == Roi.FREEROI) {
+            // Rotated rectangle
+            if (fp.npoints < 4) {
+                IJ.showStatus("FREEROI requires at least 4 points");
+                return false;
+            }
+            roi_len = CalculateDistance(fp.xpoints[1], fp.ypoints[1], fp.xpoints[2], fp.ypoints[2]);
+            roi_vec[0] = (fp.xpoints[2] - fp.xpoints[1]) / roi_len;
+            roi_vec[1] = (fp.ypoints[2] - fp.ypoints[1]) / roi_len;
+        } else {
+            IJ.showStatus("Unsupported ROI type");
+            return false;
         }
         
         IJ.showStatus(className);
@@ -203,143 +229,170 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
 
     @Override
     public void run(ImageProcessor ip) {
-        if (dispRoi) {
-            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+        try {
+            // Prepare ROI Manager
+            if (dispRoi) {
+                roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
 
-            if (0 < roiMan.getCount()) {
-                roiMan.select(roiMan.getCount() - 1);
-                roiMan.runCommand(img, "Delete");
+                // Delete previous measurement ROI if exists
+                if (lastMeasurementRoiIndex >= 0 && lastMeasurementRoiIndex < roiMan.getCount()) {
+                    roiMan.select(lastMeasurementRoiIndex);
+                    roiMan.runCommand(img, "Delete");
+                    lastMeasurementRoiIndex = -1;
+                }
+                
+                roiMan.deselect();
             }
             
-            roiMan.deselect();
-        }
-        
-        IJ.run(img, "Select All", "");
+            IJ.run(img, "Select All", "");
 
-        if (img_canny == null) {
-            img_canny = img.duplicate();
-        } else {
-            if (ip.getWidth() != img_canny.getWidth() || ip.getHeight() != img_canny.getHeight() || !img_canny.isVisible()) {
-                img_canny.close();
+            // Prepare Canny image
+            if (img_canny == null) {
                 img_canny = img.duplicate();
             } else {
-                OCV__LoadLibrary.ArrayCopy(ip, img_canny.getProcessor());
-            }
-        }
-        
-        Canny(img_canny, thr1, thr2, SIZE_VAL[ind_size], l2grad);
-
-        img_canny.setRoi(roiImg);
-        Plot plot_canny = OCV__LoadLibrary.GetProfilePlot(img_canny);
-        float[] xpoints = plot_canny.getXValues();
-        float[] ypoints = plot_canny.getYValues();
-        int prf_len = xpoints.length;
-        int le;
-        int ri;
-
-        if(lescan == "left->right"){
-            for (le = 0; le < prf_len; le++) {
-                if (thr_le <= ypoints[le]) {
-                    break;
+                if (ip.getWidth() != img_canny.getWidth() || ip.getHeight() != img_canny.getHeight() || !img_canny.isVisible()) {
+                    img_canny.close();
+                    img_canny = img.duplicate();
+                } else {
+                    OCV__LoadLibrary.ArrayCopy(ip, img_canny.getProcessor());
                 }
-            }
-        }else{
-            for (le = prf_len/2; 0 <= le; le--) {
-                if (thr_le <= ypoints[le]) {
-                    break;
-                }
-            }
-        }
-
-        if(riscan == "right->left"){
-            for (ri = prf_len-1; 0 <= ri; ri--) {
-                if (thr_ri <= ypoints[ri]) {
-                    break;
-                }
-            }
-        }else{
-            for (ri = prf_len/2; ri < prf_len; ri++) {
-                 if (thr_ri <= ypoints[ri]) {
-                    break;
-                }
-            }
-        }
-
-        double center = (double)prf_len / 2;
-        double le_from_center = ((double)le - center) * roi_len / (double)prf_len;
-        double ri_from_center = ((double)ri - center) * roi_len / (double)prf_len;
-        double[] pnt_le = new double[] { (roi_cen[0] + roi_vec[0] * le_from_center), (roi_cen[1] + roi_vec[1] * le_from_center) };
-        double[] pnt_ri = new double[] { (roi_cen[0] + roi_vec[0] * ri_from_center), (roi_cen[1] + roi_vec[1] * ri_from_center) };
-        double len = CalculateDistance(pnt_le[0], pnt_le[1], pnt_ri[0], pnt_ri[1]);
-        
-        // Display Canny.
-        img_canny.resetRoi();
-        
-        if (dispCanny) {
-            img_canny.show();
-        }
-        else
-        {
-            img_canny.close();
-        }
-
-        // Display profile.
-        if(plot_canny != null && dispProf) {
-            if(impPlot_canny == null) {
-                impPlot_canny = new ImagePlus(className + " Profile", plot_canny.getProcessor());
-            }
-            else {
-                impPlot_canny.setProcessor(null, plot_canny.getProcessor());
-            }
-
-            impPlot_canny.show();
-        }
-        
-        // Display table.
-        if (dispTable) {
-            ResultsTable tblResults = OCV__LoadLibrary.GetResultsTable(false);
-
-            if(tblResults == null) {
-                tblResults = new ResultsTable();
-            }
-
-            int nrow = tblResults.size();
-            tblResults.setValue("LeftX", nrow, pnt_le[0]);
-            tblResults.setValue("LeftY", nrow, pnt_le[1]);
-            tblResults.setValue("RightX", nrow, pnt_ri[0]);
-            tblResults.setValue("RightY", nrow, pnt_ri[1]);
-            tblResults.setValue("Width", nrow, len);
-
-            tblResults.show("Results");
-        }
-
-        img.show();
-        
-        // Add roi.
-        if (dispRoi) {
-            if (typeRoi == "line")
-            {
-                Line line = new Line(pnt_le[0], pnt_le[1],pnt_ri[0], pnt_ri[1]);
-                roiMan.addRoi(line);
-            }
-            else
-            {
-                PointRoi pnts = new PointRoi();
-                pnts.addPoint(pnt_le[0], pnt_le[1]);
-                pnts.addPoint(pnt_ri[0], pnt_ri[1]);
-                roiMan.addRoi(pnts);
             }
             
-            roiMan.addRoi(roiImg);
+            Canny(img_canny, thr1, thr2, SIZE_VAL[ind_size], l2grad);
+
+            img_canny.setRoi(roiImg);
+            Plot plot_canny = OCV__LoadLibrary.GetProfilePlot(img_canny);
             
-            IJ.selectWindow(img.getID());
-            roiMan.select(roiMan.getCount() - 1);
-        } else {
-            IJ.selectWindow(img.getID());
-            img.setRoi(roiImg);
+            if (plot_canny == null) {
+                IJ.error("Failed to generate profile plot");
+                return;
+            }
+            
+            float[] xpoints = plot_canny.getXValues();
+            float[] ypoints = plot_canny.getYValues();
+            int prf_len = xpoints.length;
+            
+            if (prf_len == 0) {
+                IJ.error("Profile length is zero");
+                return;
+            }
+            
+            int le;
+            int ri;
+
+            // Detect left edge
+            if (lescan.equals("left->right")) {
+                for (le = 0; le < prf_len; le++) {
+                    if (thr_le <= ypoints[le]) {
+                        break;
+                    }
+                }
+            } else {
+                for (le = prf_len / PROFILE_CENTER_DIVIDER; 0 <= le; le--) {
+                    if (thr_le <= ypoints[le]) {
+                        break;
+                    }
+                }
+            }
+
+            // Detect right edge
+            if (riscan.equals("right->left")) {
+                for (ri = prf_len - 1; 0 <= ri; ri--) {
+                    if (thr_ri <= ypoints[ri]) {
+                        break;
+                    }
+                }
+            } else {
+                for (ri = prf_len / PROFILE_CENTER_DIVIDER; ri < prf_len; ri++) {
+                     if (thr_ri <= ypoints[ri]) {
+                        break;
+                    }
+                }
+            }
+
+            // Range check
+            if (le < 0 || le >= prf_len || ri < 0 || ri >= prf_len) {
+                IJ.error("Edge not found within threshold");
+                return;
+            }
+
+            if (le >= ri) {
+                IJ.error("Left edge is not before right edge");
+                return;
+            }
+
+            // Calculate coordinates
+            double center = (double)prf_len / PROFILE_CENTER_DIVIDER;
+            double le_from_center = ((double)le - center) * roi_len / (double)prf_len;
+            double ri_from_center = ((double)ri - center) * roi_len / (double)prf_len;
+            double[] pnt_le = new double[] { (roi_cen[0] + roi_vec[0] * le_from_center), (roi_cen[1] + roi_vec[1] * le_from_center) };
+            double[] pnt_ri = new double[] { (roi_cen[0] + roi_vec[0] * ri_from_center), (roi_cen[1] + roi_vec[1] * ri_from_center) };
+            double len = CalculateDistance(pnt_le[0], pnt_le[1], pnt_ri[0], pnt_ri[1]);
+            
+            // Display Canny
+            img_canny.resetRoi();
+            
+            if (dispCanny) {
+                img_canny.show();
+            } else {
+                img_canny.close();
+            }
+
+            // Display profile
+            if (plot_canny != null && dispProf) {
+                if (impPlot_canny == null) {
+                    impPlot_canny = new ImagePlus(className + " Profile", plot_canny.getProcessor());
+                } else {
+                    impPlot_canny.setProcessor(null, plot_canny.getProcessor());
+                }
+
+                impPlot_canny.show();
+            }
+            
+            // Display table
+            if (dispTable) {
+                ResultsTable tblResults = OCV__LoadLibrary.GetResultsTable(false);
+
+                if (tblResults == null) {
+                    tblResults = new ResultsTable();
+                }
+
+                int nrow = tblResults.size();
+                tblResults.setValue("LeftX", nrow, pnt_le[0]);
+                tblResults.setValue("LeftY", nrow, pnt_le[1]);
+                tblResults.setValue("RightX", nrow, pnt_ri[0]);
+                tblResults.setValue("RightY", nrow, pnt_ri[1]);
+                tblResults.setValue("Width", nrow, len);
+
+                tblResults.show("Results");
+            }
+
+            img.show();
+            
+            // Add roi
+            if (dispRoi) {
+                if (typeRoi.equals("line")) {
+                    Line line = new Line(pnt_le[0], pnt_le[1], pnt_ri[0], pnt_ri[1]);
+                    roiMan.addRoi(line);
+                } else {
+                    PointRoi pnts = new PointRoi();
+                    pnts.addPoint(pnt_le[0], pnt_le[1]);
+                    pnts.addPoint(pnt_ri[0], pnt_ri[1]);
+                    roiMan.addRoi(pnts);
+                }
+                
+                roiMan.addRoi(roiImg);
+                lastMeasurementRoiIndex = roiMan.getCount() - 1;
+                
+                IJ.selectWindow(img.getID());
+                roiMan.select(lastMeasurementRoiIndex);
+            } else {
+                IJ.selectWindow(img.getID());
+                img.setRoi(roiImg);
+            }
+        } finally {
+            Prefs.verticalProfile = ini_verticalProfile;
         }
-        
-        Prefs.verticalProfile = ini_verticalProfile;
     }
 
     public void Canny(ImagePlus imp, double threshold1, double threshold2, int apertureSize, boolean L2gradient) {
@@ -350,14 +403,22 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         int imh = ip.getHeight();
         byte[] srcdst_bytes = (byte[])ip.getPixels();
 
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        // Reuse Mat
+        if (src_mat == null || src_mat.rows() != imh || src_mat.cols() != imw) {
+            if (src_mat != null) src_mat.release();
+            if (dst_mat != null) dst_mat.release();
+            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        }
 
-        // run
-        src_mat.put(0, 0, srcdst_bytes);
-        Imgproc.Canny(src_mat, dst_mat, threshold1, threshold2, apertureSize, L2gradient);
-        dst_mat.get(0, 0, srcdst_bytes);
+        try {
+            // run
+            src_mat.put(0, 0, srcdst_bytes);
+            Imgproc.Canny(src_mat, dst_mat, threshold1, threshold2, apertureSize, L2gradient);
+            dst_mat.get(0, 0, srcdst_bytes);
+        } catch (Exception e) {
+            IJ.error("Canny processing failed: " + e.getMessage());
+        }
     }
 
     public double CalculateDistance(double x1, double y1, double x2, double y2) {

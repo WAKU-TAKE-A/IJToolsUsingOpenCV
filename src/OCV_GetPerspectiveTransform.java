@@ -1,17 +1,13 @@
 import ij.IJ;
 import ij.ImagePlus;
+import ij.gui.DialogListener;
+import ij.gui.GenericDialog;
 import ij.gui.Roi;
-import ij.measure.ResultsTable;
-import ij.plugin.Macro_Runner;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
-import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
-import java.util.ArrayList;
-import org.opencv.core.Mat;
-import org.opencv.core.MatOfPoint2f;
-import org.opencv.imgproc.Imgproc;
+import java.awt.AWTEvent;
 
 /*
  * The MIT License
@@ -40,50 +36,52 @@ import org.opencv.imgproc.Imgproc;
 /**
  * getPerspectiveTransform.
  */
-public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter {
+public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, DialogListener  {
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
+    private static final String[] TYPE_STR_CMD = new String[] { "compute", "compute_and_write", "compute_dst", "read"};
+
+    // static var.
+    private static MyPerspectiveTransform myPerspective = new MyPerspectiveTransform();
+    private static int indCmd = 0;
+    private static String targetName = "";
+    private static boolean enShowMat = false;
 
     // var.
+    private String className = "";
     private RoiManager roiMan = null;
-    private ArrayList<org.opencv.core.Point> lstPt_src = null;
-    private ArrayList<org.opencv.core.Point> lstPt_dst = null;
-
-    @Override
-    public void setNPasses(int arg0) {
-        // do nothing
-    }
-
+    
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        // do nothing
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
+        gd.addChoice("command", TYPE_STR_CMD, TYPE_STR_CMD[indCmd]);
+        gd.addStringField("target_name", targetName, 8);
+        gd.addCheckbox("enable_show_matrix", enShowMat);
+        gd.addDialogListener(this);
+
+        gd.showDialog();
         return FLAGS;
     }
 
     @Override
-    public void run(ImageProcessor ip) {
-        MatOfPoint2f matPt_src = new MatOfPoint2f();
-        MatOfPoint2f matPt_dst = new MatOfPoint2f();
-        matPt_src.fromList(lstPt_src);
-        matPt_dst.fromList(lstPt_dst);
+    public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
+        indCmd = (int)gd.getNextChoiceIndex();
+        targetName  = (String)gd.getNextString();
+        enShowMat = (boolean)gd.getNextBoolean();
 
-        Mat mat = Imgproc.getPerspectiveTransform(matPt_src, matPt_dst);
-
-        if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
-            IJ.showMessage("Output is null or error");
-            return;
+        if ((indCmd == 1 || indCmd == 3) && OCV__LoadLibrary.isNullOrEmpty(targetName)) {
+            IJ.showStatus("target_name is empty.");
+            return false;
         }
 
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+        IJ.showStatus(className);
+        return true;
+    }
 
-        for(int i = 0; i < 3; i++) {
-            rt.incrementCounter();
-            rt.addValue("Column01", String.valueOf(mat.get(i, 0)[0]));
-            rt.addValue("Column02", String.valueOf(mat.get(i, 1)[0]));
-            rt.addValue("Column03", String.valueOf(mat.get(i, 2)[0]));
-        }
-
-        rt.show("Results");
+    @Override
+    public void setNPasses(int arg0) {
+        // do nothing
     }
 
     @Override
@@ -93,49 +91,73 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter {
             return DONE;
         }
 
-        roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
-
-        if(roiMan == null || roiMan.getCount() < 2) {
-            IJ.error("'2 <= RoiManager.getCount()' is necessary.");
-            return DONE;
-        }
-
-        if(imp != null) {
-            Macro_Runner mr = new Macro_Runner();
-            mr.runMacro("run(\"Select None\");", "");
-        }
-
-        Roi roi_src = roiMan.getRoi(0);
-        Roi roi_dst = roiMan.getRoi(1);
-        //java.awt.Point[] pts_src = roi_src.getContainedPoints();
-        java.awt.Point[] pts_src = getContainedPoints(roi_src);
-        // java.awt.Point[] pts_dst = roi_dst.getContainedPoints();
-        java.awt.Point[] pts_dst = getContainedPoints(roi_dst);
-
-        if(pts_src.length != 4 || pts_dst.length != 4) {
-            IJ.error("It is necessary that the number of point is four.");
-            return DONE;
-        }
-
-        lstPt_src = new ArrayList<org.opencv.core.Point>();
-        lstPt_dst = new ArrayList<org.opencv.core.Point>();
-
-        for(int i = 0; i < 4; i++) {
-            lstPt_src.add(new org.opencv.core.Point(pts_src[i].getX(), pts_src[i].getY()));
-            lstPt_dst.add(new org.opencv.core.Point(pts_dst[i].getX(), pts_dst[i].getY()));
-        }
-
         return FLAGS;
     }
 
-    private java.awt.Point[] getContainedPoints(Roi roi) {
-        FloatPolygon p = roi.getFloatPolygon();
-        java.awt.Point[] points = new java.awt.Point[p.npoints];
+    @Override
+    public void run(ImageProcessor ip) {
+        try {
+            if (indCmd == 0 || indCmd == 1) {
+                // compute or compute_and_write: need 2 ROIs
+                roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+                int roiNum = roiMan.getCount();
+                if (roiNum < 2) {
+                    IJ.log(className + " error: At least two ROIs are required.");
+                    return;
+                }
+                Roi roiSrc = roiMan.getRoi(0);
+                Roi roiDst = roiMan.getRoi(1);
+                myPerspective.setRoi(roiSrc, roiDst);
+            } else if (indCmd == 2) {
+                // compute_dst: need existing src and 1 new ROI
+                if (!myPerspective.finSetRoi) {
+                    IJ.log(className + " error: Source ROI is not set. Use 'compute' first.");
+                    return;
+                }
+                
+                roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+                int roiNum = roiMan.getCount();
+                if (roiNum < 1) {
+                    IJ.log(className + " error: At least one ROI is required for new destination.");
+                    return;
+                }
+                
+                Roi roiSrc = myPerspective.PerspectiveSrc;
+                Roi roiDst = roiMan.getRoi(0);
+                myPerspective.setRoi(roiSrc, roiDst);
+            }
 
-        for(int i = 0; i < p.npoints; i++) {
-            points[i] = new java.awt.Point((int)Math.round(p.xpoints[i]), (int)Math.round(p.ypoints[i]));
+            // Execute command
+            if (indCmd == 0 || indCmd == 2) {
+                // compute or compute_dst
+                myPerspective.compute();
+            } else if (indCmd == 1) {
+                // compute_and_write
+                myPerspective.setFileName(targetName);
+                myPerspective.computeAndWrite();
+            } else if (indCmd == 3) {
+                // read
+                myPerspective.setFileName(targetName);
+                myPerspective.read();
+            } else {
+                IJ.log(className + " error: Invalid command index.");
+                return;
+            }
+
+            // Show matrix if requested
+            if (enShowMat) {
+                myPerspective.ShowData();
+            }
+            
+            // Copy to global instance
+            myPerspective.copyTo(OCV__LoadLibrary.MyPerspective);
+            
+        } catch(java.io.IOException e) {
+            IJ.log(className + " IO error: " + e.getMessage());
+        } catch(IllegalStateException | IllegalArgumentException e) {
+            IJ.log(className + " error: " + e.getMessage());
+        } catch(Exception e) {
+            IJ.log(className + " unexpected error: " + e.getMessage());
         }
-
-        return points;
     }
 }

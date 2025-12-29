@@ -32,15 +32,26 @@ import ij.plugin.filter.*;
  */
 public class WK_Wait implements ExtendedPlugInFilter {
     // constant var.
-    private final int FLAGS = NO_IMAGE_REQUIRED;
+    private static final int FLAGS = NO_IMAGE_REQUIRED;
+    private static final int DECIMAL_PLACES_WAIT = 0;
+    private static final int MIN_WAIT_TIME = 0;
+    private static final int COLUMNS = 8;
 
     // static var.
-    private static int wtime = 0;
+    private static int waitTime = 1000;
+    private static int maxWaitTime = 60000;
+    private static String textWhenFinished = "";
+    
+    // var.
+    private String className;
 
     @Override
     public int showDialog(ImagePlus ip, String command, PlugInFilterRunner pifr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
-        gd.addNumericField("waittime", wtime, 0);
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
+        gd.addNumericField("waittime", waitTime, DECIMAL_PLACES_WAIT);
+        gd.addNumericField("maxtime", maxWaitTime, DECIMAL_PLACES_WAIT);
+        gd.addStringField("text_when_finish", textWhenFinished, COLUMNS);
         gd.addMessage("The unit is ms.");
         gd.showDialog();
 
@@ -48,7 +59,28 @@ public class WK_Wait implements ExtendedPlugInFilter {
             return DONE;
         }
         else {
-            wtime = (int)gd.getNextNumber();
+            int inputWaitTime = (int)gd.getNextNumber();
+            int inputMaxWaitTime = (int)gd.getNextNumber();
+            textWhenFinished = gd.getNextString();
+            
+            if(inputMaxWaitTime <= MIN_WAIT_TIME) {
+                IJ.error("maxtime must be positive.");
+                return DONE;               
+            }
+            
+            maxWaitTime = inputMaxWaitTime;
+
+            if(inputWaitTime < MIN_WAIT_TIME) {
+                IJ.error("Wait time must be non-negative.");
+                return DONE;
+            }
+
+            if(inputWaitTime > maxWaitTime) {
+                IJ.error("Wait time must be less than or equal to " + maxWaitTime + " ms.");
+                return DONE;
+            }
+
+            waitTime = inputWaitTime;
             return FLAGS;
         }
     }
@@ -60,12 +92,25 @@ public class WK_Wait implements ExtendedPlugInFilter {
 
     @Override
     public int setup(String string, ImagePlus ip) {
-        // do nothing
         return FLAGS;
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        OCV__LoadLibrary.Wait(wtime);
+        try {
+            OCV__LoadLibrary.Wait(waitTime);
+            
+            if(!isNullOrEmpty(textWhenFinished)) {
+                IJ.log(textWhenFinished);
+            }
+        }
+        catch(Exception e) {
+            IJ.log("Error during wait: " + e.getMessage());
+        }
+    }
+    
+    private static boolean isNullOrEmpty(String src)
+    {
+        return src == null || src.isEmpty() || src.isBlank();  
     }
 }

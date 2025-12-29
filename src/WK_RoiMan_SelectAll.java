@@ -41,22 +41,26 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
     private static final String[] TYPE_STR = { STR_NONE, "and", "or", "xor" };
 
     // static var.
-    private static int type_ind = 0;
+    private static int selectedActionIndex = 0;
 
     // var.
-    private RoiManager roiMan = null;
+    private String className;
+    private RoiManager roiManager = null;
+    private int roiCount = 0;
+    private Macro_Runner macroRunner = new Macro_Runner();
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(cmd + "...");
-        gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[type_ind]);
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
+        gd.addChoice("action_after_selecting", TYPE_STR, TYPE_STR[selectedActionIndex]);
         gd.showDialog();
 
         if(gd.wasCanceled()) {
             return DONE;
         }
         else {
-            type_ind = (int)gd.getNextChoiceIndex();
+            selectedActionIndex = gd.getNextChoiceIndex();
             return FLAGS;
         }
     }
@@ -73,11 +77,16 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
             return DONE;
         }
         else {
-            // get the ROI Manager
-            roiMan = getRoiManager(false, true);
-            int num_roi = roiMan.getCount();
+            roiManager = getRoiManager(false, true);
 
-            if(num_roi == 0) {
+            if(roiManager == null) {
+                IJ.error("Failed to get ROI Manager");
+                return DONE;
+            }
+
+            roiCount = roiManager.getCount();
+
+            if(roiCount == 0) {
                 IJ.error("ROI is vacant.");
                 return DONE;
             }
@@ -88,58 +97,74 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
 
     @Override
     public void run(ImageProcessor ip) {
-        Macro_Runner mr = new Macro_Runner();
-        mr.runMacro("setBatchMode(true);", "");
+        try {
+            macroRunner.runMacro("setBatchMode(true);", "");
 
-        int num_roi = roiMan.getCount();
+            if(roiCount == 1) {
+                roiManager.select(0);
+            }
+            else if(roiCount > 1) {
+                roiManager.deselect();
 
-        if(num_roi == 0) {
-            // do nothing
+                int[] allIndexes = roiManager.getIndexes();
+
+                if(allIndexes == null || allIndexes.length == 0) {
+                    IJ.log("Failed to get ROI indexes");
+                    return;
+                }
+
+                roiManager.setSelectedIndexes(allIndexes);
+
+                if(!TYPE_STR[selectedActionIndex].equals(STR_NONE)) {
+                    roiManager.runCommand(TYPE_STR[selectedActionIndex]);
+                }
+            }
+
+            macroRunner.runMacro("setBatchMode(false);", "");
         }
-        else if(num_roi == 1) {
-            roiMan.select(0);
-            // do nothing after selecting
-        }
-        else {
-            roiMan.deselect();
-
-            int[] indx_all = roiMan.getIndexes();
-            roiMan.setSelectedIndexes(indx_all);
-
-            if(!TYPE_STR[type_ind].equals(STR_NONE)) {
-                roiMan.runCommand(TYPE_STR[type_ind]);
+        catch(Exception e) {
+            IJ.log("Error in WK_RoiMan_SelectAll: " + e.getMessage());
+            try {
+                macroRunner.runMacro("setBatchMode(false);", "");
+            }
+            catch(Exception ex) {
+                // Ignore if batch mode exit fails
             }
         }
-
-        mr.runMacro("setBatchMode(false);", "");
     }
 
     /**
-     * get the RoiManager or create a new RoiManager
-     * @param enReset reset or not
-     * @param enShowNone show none or not
-     * @return RoiManager
+     * Get the RoiManager or create a new RoiManager
+     * @param shouldReset reset or not
+     * @param shouldShowNone show none or not
+     * @return RoiManager or null if failed
      */
-    private RoiManager getRoiManager(boolean enReset, boolean enShowNone) {
-        Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm = null;
+    private RoiManager getRoiManager(boolean shouldReset, boolean shouldShowNone) {
+        try {
+            Frame frame = WindowManager.getFrame("ROI Manager");
+            RoiManager roiManager = null;
 
-        if(frame == null) {
-            rm = new RoiManager();
-            rm.setVisible(true);
-        }
-        else {
-            rm = (RoiManager)frame;
-        }
+            if(frame == null) {
+                roiManager = new RoiManager();
+                roiManager.setVisible(true);
+            }
+            else {
+                roiManager = (RoiManager)frame;
+            }
 
-        if(enReset) {
-            rm.reset();
-        }
+            if(shouldReset) {
+                roiManager.reset();
+            }
 
-        if(enShowNone) {
-            rm.runCommand("Show None");
-        }
+            if(shouldShowNone) {
+                roiManager.runCommand("Show None");
+            }
 
-        return rm;
+            return roiManager;
+        }
+        catch(Exception e) {
+            IJ.log("Failed to get ROI Manager: " + e.getMessage());
+            return null;
+        }
     }
 }

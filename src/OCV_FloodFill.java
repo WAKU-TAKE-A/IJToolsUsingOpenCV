@@ -46,9 +46,9 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_RGB | DOES_32 | KEEP_PREVIEW; // 1- or 3-channel, 8-bit, or floating-point image.
     private static final int[] INT_FLAGS = { 4, 8, Imgproc.FLOODFILL_FIXED_RANGE };
-    private static final String[] STR_ADAPTIVEMETHOD = { "4-connected", "8-connected", "FLOODFILL_FIXED_RANGE" };
+    private static final String[] STR_FLAGS = { "4-connected", "8-connected", "FLOODFILL_FIXED_RANGE" };
 
-    // staic var.
+    // static var.
     private static double newVal_0 = 255.0;
     private static double newVal_1 = 255.0;
     private static double newVal_2 = 255.0;
@@ -80,7 +80,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         gd.addNumericField("upDiff_B", upDiff_0, 3);
         gd.addNumericField("upDiff_G", upDiff_1, 3);
         gd.addNumericField("upDiff_R", upDiff_2, 3);
-        gd.addChoice("adaptiveMethod", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indFlags]);
+        gd.addChoice("flags", STR_FLAGS, STR_FLAGS[indFlags]);
         gd.addMessage("If the image is 8-bit or 32-bit,\nonly use the value written as *_B.");
 
         gd.addPreviewCheckbox(pfr);
@@ -150,9 +150,9 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         else {
             // get the ROI Manager
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
-            int num_roi = roiMan.getCount();
+            int numRoi = roiMan.getCount();
 
-            if(num_roi == 0) {
+            if(numRoi == 0) {
                 IJ.error("ROI is vacant. Select points.");
                 return DONE;
             }
@@ -170,80 +170,120 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
     @Override
     public void run(ImageProcessor ip) {
-        // set varr.
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        Rect rect = new Rect(0, 0, imw, imh);
+        Mat srcdstMat = null;
+        Mat mskMat = null;
 
-        // get seed points
-        int num_slctd = selectedIndexes.length;
-        ArrayList<Point> lstPt = new ArrayList<Point>();
+        try {
+            // set var.
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            Rect rect = new Rect(0, 0, imw, imh);
 
-        for(int i = 0; i < num_slctd; i++) {
-            Roi roi = roiMan.getRoi(selectedIndexes[i]);
-            OCV__LoadLibrary.GetCoordinates(roi, lstPt);
-        }
+            // get seed points
+            int numSlctd = selectedIndexes.length;
+            ArrayList<Point> lstPt = new ArrayList<Point>();
 
-
-        if(ip.getBitDepth() == 8) {
-            // srcdst
-            byte[] srcdst_bytes = (byte[])ip.getPixels();
-
-            // mat
-            Mat srcdst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            srcdst_mat.put(0, 0, srcdst_bytes);
-
-            // run
-            int num = lstPt.size();
-
-            for(int i = 0; i < num; i++) {
-                Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
-                Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
-
-                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
+            for(int i = 0; i < numSlctd; i++) {
+                Roi roi = roiMan.getRoi(selectedIndexes[i]);
+                OCV__LoadLibrary.GetCoordinates(roi, lstPt);
             }
 
-            srcdst_mat.get(0, 0, srcdst_bytes);
-        }
-        else if(ip.getBitDepth() == 24) {
-            // srcdst
-            int[] srcdst_ints = (int[])ip.getPixels();
-
-            // mat
-            Mat srcdst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            OCV__LoadLibrary.intarray2mat(srcdst_ints, srcdst_mat, imw, imh);
-
-            // run
-            int num = lstPt.size();
-
-            for(int i = 0; i < num; i++) {
-                Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
-                Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
-
-                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
+            if(lstPt.isEmpty()) {
+                IJ.log("No valid seed points found.");
+                return;
             }
 
-            OCV__LoadLibrary.mat2intarray(srcdst_mat, srcdst_ints, imw, imh);
-        }
-        else if(ip.getBitDepth() == 32) {
-            // srcdst
-            float[] srcdst_floats = (float[])ip.getPixels();
-
-            // mat
-            Mat srcdst_mat = new Mat(imh, imw, CvType.CV_32F);
-            srcdst_mat.put(0, 0, srcdst_floats);
-
-            // run
             int num = lstPt.size();
 
-            for(int i = 0; i < num; i++) {
-                Mat msk_mat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
-                Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
+            if(ip.getBitDepth() == 8) {
+                // srcdst
+                byte[] srcdstBytes = (byte[])ip.getPixels();
 
-                Imgproc.floodFill(srcdst_mat, msk_mat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
+                // mat
+                srcdstMat = new Mat(imh, imw, CvType.CV_8UC1);
+                srcdstMat.put(0, 0, srcdstBytes);
+
+                // run
+                for(int i = 0; i < num; i++) {
+                    Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
+                    
+                    if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
+                        IJ.log("Seed point out of bounds: (" + pt.x + ", " + pt.y + ")");
+                        continue;
+                    }
+
+                    if(mskMat != null) {
+                        mskMat.release();
+                    }
+                    mskMat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
+                    Imgproc.floodFill(srcdstMat, mskMat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
+                }
+
+                srcdstMat.get(0, 0, srcdstBytes);
             }
+            else if(ip.getBitDepth() == 24) {
+                // srcdst
+                int[] srcdstInts = (int[])ip.getPixels();
 
-            srcdst_mat.get(0, 0, srcdst_floats);
+                // mat
+                srcdstMat = new Mat(imh, imw, CvType.CV_8UC3);
+                OCV__LoadLibrary.intarray2mat(srcdstInts, srcdstMat, imw, imh);
+
+                // run
+                for(int i = 0; i < num; i++) {
+                    Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
+                    
+                    if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
+                        IJ.log("Seed point out of bounds: (" + pt.x + ", " + pt.y + ")");
+                        continue;
+                    }
+
+                    if(mskMat != null) {
+                        mskMat.release();
+                    }
+                    mskMat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
+                    Imgproc.floodFill(srcdstMat, mskMat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
+                }
+
+                OCV__LoadLibrary.mat2intarray(srcdstMat, srcdstInts, imw, imh);
+            }
+            else if(ip.getBitDepth() == 32) {
+                // srcdst
+                float[] srcdstFloats = (float[])ip.getPixels();
+
+                // mat
+                srcdstMat = new Mat(imh, imw, CvType.CV_32F);
+                srcdstMat.put(0, 0, srcdstFloats);
+
+                // run
+                for(int i = 0; i < num; i++) {
+                    Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
+                    
+                    if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
+                        IJ.log("Seed point out of bounds: (" + pt.x + ", " + pt.y + ")");
+                        continue;
+                    }
+
+                    if(mskMat != null) {
+                        mskMat.release();
+                    }
+                    mskMat = Mat.zeros(imh + 2, imw + 2, CvType.CV_8UC1);
+                    Imgproc.floodFill(srcdstMat, mskMat, pt, newVal, rect, loDiff, upDiff, INT_FLAGS[indFlags]);
+                }
+
+                srcdstMat.get(0, 0, srcdstFloats);
+            }
+        }
+        catch(Exception e) {
+            IJ.log("Flood fill failed: " + e.getMessage());
+        }
+        finally {
+            if(srcdstMat != null) {
+                srcdstMat.release();
+            }
+            if(mskMat != null) {
+                mskMat.release();
+            }
         }
     }
 }

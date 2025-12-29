@@ -8,7 +8,7 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
@@ -43,6 +43,10 @@ import org.opencv.imgproc.Imgproc;
  * fitEllipse.
  */
 public class OCV_FitEllipse implements ExtendedPlugInFilter {
+    // constant var.
+    private static final int BACKGROUND_VALUE = 0;
+    private static final int MIN_POINTS_FOR_ELLIPSE = 5;
+
     // static var.
     private static boolean enRefData = false;
 
@@ -54,8 +58,10 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
     private Roi roiSrc = null;
 
     @Override
-    public void setNPasses(int arg0) {
-        // do nothing
+    public void setNPasses(int nPasses) {
+        if(nPasses > 0 && enRefData) {
+            countNPass = 0;
+        }
     }
 
     @Override
@@ -68,67 +74,92 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
             return DONE;
         }
         else {
-            enRefData = (boolean)gd.getNextBoolean();
-            return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
+            enRefData = gd.getNextBoolean();
+            return IJ.setupDialog(imp, DOES_8G);
         }
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        int num_slice = ip.getSliceNumber();
-        
-        byte[] byteArray;
-        int w;
-        int h;
-        int offsetx;
-        int offsety;
-        
-        if (roiSrc == null) {
-            byteArray = (byte[])ip.getPixels();
-            w = ip.getWidth();
-            h = ip.getHeight();
-            offsetx = 0;
-            offsety = 0;
-        }
-        else
-        {
-            ImageProcessor ip_crop = ip.crop();
-            byteArray = (byte[])ip_crop.getPixels();
-            w = ip_crop.getWidth();
-            h = ip_crop.getHeight();
-            Polygon pol = roiSrc.getPolygon();
-            offsetx = pol.xpoints[0];
-            offsety = pol.ypoints[0];
-        }
-        
-        ArrayList<Point> lstPt = new ArrayList<Point>();
-        MatOfPoint2f pts = new MatOfPoint2f();
+        MatOfPoint2f pts = null;
+        ImageProcessor ipWork = null;
 
-        for(int y = 0; y < h; y++) {
-            for(int x = 0; x < w; x++) {
-                if(byteArray[x + w * y] != 0) {
-                    lstPt.add(new Point((double)x+(double)offsetx, (double)y+(double)offsety));
+        try {
+            int numSlice = ip.getSliceNumber();
+            
+            byte[] byteArray;
+            int w;
+            int h;
+            int offsetX;
+            int offsetY;
+            
+            if(roiSrc == null) {
+                // Process entire image
+                byteArray = (byte[])ip.getPixels();
+                w = ip.getWidth();
+                h = ip.getHeight();
+                offsetX = 0;
+                offsetY = 0;
+            }
+            else {
+                // Process ROI region
+                ipWork = ip.duplicate();
+                ipWork.setColor(BACKGROUND_VALUE);
+                ipWork.setRoi(roiSrc);
+                ipWork.fillOutside(roiSrc);
+                
+                ImageProcessor ipCrop = ipWork.crop();
+                byteArray = (byte[])ipCrop.getPixels();
+                w = ipCrop.getWidth();
+                h = ipCrop.getHeight();
+                Rectangle bounds = roiSrc.getBounds();
+                offsetX = bounds.x;
+                offsetY = bounds.y;
+                
+                ipCrop = null;
+            }
+            
+            ArrayList<Point> lstPt = new ArrayList<Point>();
+
+            for(int y = 0; y < h; y++) {
+                for(int x = 0; x < w; x++) {
+                    if(byteArray[x + w * y] != BACKGROUND_VALUE) {
+                        lstPt.add(new Point(x + offsetX, y + offsetY));
+                    }
                 }
             }
-        }
 
-        if(lstPt.isEmpty()) {
-            return;
-        }
+            if(lstPt.isEmpty()) {
+                return;
+            }
 
-        pts.fromList(lstPt);
-        RotatedRect rect =  Imgproc.fitEllipse(pts);
+            if(lstPt.size() < MIN_POINTS_FOR_ELLIPSE) {
+                IJ.log("Fit ellipse requires at least " + MIN_POINTS_FOR_ELLIPSE + " points, found: " + lstPt.size());
+                return;
+            }
 
-        if(rect != null) {
+            pts = new MatOfPoint2f();
+            pts.fromList(lstPt);
+            RotatedRect rect = Imgproc.fitEllipse(pts);
+
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
 
-            if(enRefData) {
+            if(enRefData && countNPass == 0) {
                 rt.reset();
                 roiMan.reset();
             }
 
-            showData(rect, num_slice);
+            showData(rect, numSlice);
+        }
+        catch(Exception e) {
+            IJ.log("Fit ellipse failed: " + e.getMessage());
+        }
+        finally {
+            if(pts != null) {
+                pts.release();
+            }
+            ipWork = null;
         }
     }
 
@@ -146,49 +177,51 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
         else {
             impSrc = imp;
             roiSrc = imp.getRoi();
-            
-            if (roiSrc == null || roiSrc.getType() != Roi.RECTANGLE) {
-                roiSrc = null;
-            }
+            countNPass = 0;
             
             return DOES_8G;
         }
     }
 
-    private void showData(RotatedRect rect, int num_slice) {
-        // set the ResultsTable
-        rt.incrementCounter();
-        rt.addValue("CenterX", rect.center.x);
-        rt.addValue("CenterY", rect.center.y);
-        rt.addValue("Width", rect.size.width);
-        rt.addValue("Height", rect.size.height);
-        rt.addValue("Angle", rect.angle);
-        rt.show("Results");
+    private void showData(RotatedRect rect, int numSlice) {
+        try {
+            // set the ResultsTable
+            rt.incrementCounter();
+            rt.addValue("CenterX", rect.center.x);
+            rt.addValue("CenterY", rect.center.y);
+            rt.addValue("Width", rect.size.width);
+            rt.addValue("Height", rect.size.height);
+            rt.addValue("Angle", rect.angle);
+            rt.show("Results");
 
-        // ser the ROI Manager
-        double[] xPoints = new double[2];
-        double[] yPoints = new double[2];
-        double cx = rect.center.x;
-        double cy = rect.center.y;
-        double w = rect.size.width;
-        double h = rect.size.height;
-        double rad =  rect.angle * Math.PI / 180;
-        double cos = Math.cos(rad);
-        double sin = Math.sin(rad);
-        double ratio = w / h;
+            // set the ROI Manager
+            double[] xPoints = new double[2];
+            double[] yPoints = new double[2];
+            double cx = rect.center.x;
+            double cy = rect.center.y;
+            double w = rect.size.width;
+            double h = rect.size.height;
+            double rad = rect.angle * Math.PI / 180;
+            double cos = Math.cos(rad);
+            double sin = Math.sin(rad);
+            double ratio = w / h;
 
-        xPoints[0] = (float)((0) * cos - (h / 2.0) * sin + cx);
-        yPoints[0] = (float)((0) * sin + (h / 2.0) * cos + cy);
-        xPoints[1] = (float)((0) * cos - ((-1) * h / 2.0) * sin + cx);
-        yPoints[1] = (float)((0) * sin + ((-1) * h / 2.0) * cos + cy);
+            xPoints[0] = (float)((0) * cos - (h / 2.0) * sin + cx);
+            yPoints[0] = (float)((0) * sin + (h / 2.0) * cos + cy);
+            xPoints[1] = (float)((0) * cos - (-h / 2.0) * sin + cx);
+            yPoints[1] = (float)((0) * sin + (-h / 2.0) * cos + cy);
 
-        impSrc.setSlice(num_slice);
-        EllipseRoi eroi = new EllipseRoi(xPoints[0], yPoints[0], xPoints[1], yPoints[1], ratio);
-        eroi.setPosition(countNPass + 1); // Start from one.
-        countNPass++;
+            impSrc.setSlice(numSlice);
+            EllipseRoi eroi = new EllipseRoi(xPoints[0], yPoints[0], xPoints[1], yPoints[1], ratio);
+            eroi.setPosition(countNPass + 1);
+            countNPass++;
 
-        roiMan.addRoi(eroi);
-        int num_roiMan = roiMan.getCount();
-        roiMan.select(num_roiMan - 1);
+            roiMan.addRoi(eroi);
+            int numRoiMan = roiMan.getCount();
+            roiMan.select(numRoiMan - 1);
+        }
+        catch(Exception e) {
+            IJ.log("Show data failed: " + e.getMessage());
+        }
     }
 }
