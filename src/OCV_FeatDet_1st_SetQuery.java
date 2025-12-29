@@ -1,22 +1,15 @@
 import ij.IJ;
 import ij.ImagePlus;
-import ij.WindowManager;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import ij.measure.ResultsTable;
+import ij.gui.Roi;
 import ij.plugin.filter.PlugInFilterRunner;
-import ij.process.ColorProcessor;
 import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
-import java.io.File;
 import java.io.IOException;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.TransformerException;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.features2d.Features2d;
-import org.xml.sax.SAXException;
+import org.opencv.imgcodecs.Imgcodecs;
 
 /*
  * The MIT License
@@ -50,29 +43,45 @@ import org.xml.sax.SAXException;
  */
 public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private final int FLAGS = DOES_RGB;
-    private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB"};
+    private final int FLAGS = NO_IMAGE_REQUIRED;
+    private final String[] TYPE_STR_CMD = new String[] { "new_query", "read_query", "remake_query"};
+    private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB", "SIFT"};
 
     // static var.
+    private static int ind_cmd = 0;
     private static int ind_det = 0;
+    private static String query_name = "";
     private static boolean enDrawKeys = false;
-    private static MyFeatureDetector detector = null;
+    private static final MyFeatureDetector detector = new MyFeatureDetector();
 
     // var.
-    private String fname = "";
+    private String className = "";
     private ImagePlus imp_query = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
 
+        gd.addChoice("command", TYPE_STR_CMD, TYPE_STR_CMD[ind_cmd]);
         gd.addChoice("feature_detector", TYPE_STR_DET, TYPE_STR_DET[ind_det]);
+        gd.addStringField("query_name", query_name, 8);
         gd.addCheckbox("enable_draw_keypoints", enDrawKeys);
         gd.addDialogListener(this);
 
         gd.showDialog();
+        
+        if (ind_cmd == 0 && imp_query == null) {
+            IJ.noImage();
+            return DONE;
+        }
+        
+        if (ind_cmd == 0 && OCV__LoadLibrary.isNullOrEmpty(query_name)) {
+            IJ.error("query_name is empty.");
+            return DONE;
+        }
 
-        if(gd.wasCanceled()) {
+        if (gd.wasCanceled()) {
             return DONE;
         }
         else {
@@ -82,12 +91,39 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
+        ind_cmd = (int)gd.getNextChoiceIndex();
         ind_det = (int)gd.getNextChoiceIndex();
+        query_name  = (String)gd.getNextString();
         enDrawKeys = (boolean)gd.getNextBoolean();
+        
+        if (OCV__LoadLibrary.isNullOrEmpty(query_name)) {
+            IJ.showStatus("query_name is empty.");
+            return false;
+        }
+        
+        try {
+            if (ind_cmd == 0) {
+                if (MyFeatureDetector.exitQueryName(query_name)) {
+                    IJ.showStatus("query_name already exists.");
+                    return false;                
+                }
+            } else {
+                if (!MyFeatureDetector.exitQueryName(query_name)) {
+                    IJ.showStatus("query_name does not exist.");
+                    return false;                     
+                }
+                
+                if (!MyFeatureDetector.exitParam(TYPE_STR_DET[ind_det], query_name)) {
+                    IJ.showStatus("the feature_detector is incorrect.");
+                    return false;                     
+                }               
+            }
+        }
+        catch(IOException ex) {
+            IJ.showStatus("IOException.");
+        }
 
-        fname = TYPE_STR_DET[ind_det] + ".xml";
-
-        IJ.showStatus("OCV_FeatDet_1st_SetQuery");
+        IJ.showStatus(className);
         return true;
     }
 
@@ -98,16 +134,12 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
 
     @Override
     public int setup(String arg, ImagePlus imp) {
-        if(!OCV__LoadLibrary.isLoad()) {
+        if (!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
             return DONE;
         }
 
-        if(imp == null) {
-            IJ.noImage();
-            return DONE;
-        }
-        else {
+        if (imp != null) {
             imp_query = imp;
         }
 
@@ -116,111 +148,99 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
 
     @Override
     public void run(ImageProcessor ip) {
-        // QueryImage
-        int[] arr_query = (int[])imp_query.getChannelProcessor().getPixels();
-        int imw_query = imp_query.getWidth();
-        int imh_query = imp_query.getHeight();
-        Mat mat_query = new Mat(imh_query, imw_query, CvType.CV_8UC3);
-        OCV__LoadLibrary.intarray2mat(arr_query, mat_query, imw_query, imh_query);
-
-        // KeyPoint of QueryImage
-        if(detector == null || !detector.getDetectorType().equals(TYPE_STR_DET[ind_det])) {
-            detector = new MyFeatureDetector(TYPE_STR_DET[ind_det]);
-            detector.create();
-        }
-
-        File file = new File(fname);
-
+        Mat mat_query = null;
+        
         try {
-            if(file.exists()) {
-                detector.readParam(fname);
+            // 0:new
+            // 1:read
+            // 2:remake  
+            if (ind_cmd == 0){
+                if(imp_query == null) {
+                    IJ.log(className + " error: No image.");
+                    return;
+                }
+                
+                ImageProcessor ip_query = imp_query.getChannelProcessor();
+                Roi roi = imp_query.getRoi();
+                
+                // ROI processing
+                if (roi != null) {
+                    // Fill outside and crop
+                    ip_query.setColor(0);
+                    ip_query.fillOutside(roi);
+                    ip_query.setRoi(roi);
+                    ip_query = ip_query.crop();
+                }
+                
+                int[] arr_query = (int[])ip_query.getPixels();
+                int imw_query = ip_query.getWidth();
+                int imh_query = ip_query.getHeight();
+                mat_query = new Mat(imh_query, imw_query, CvType.CV_8UC3);
+                OCV__LoadLibrary.intarray2mat(arr_query, mat_query, imw_query, imh_query);
+
+                try {
+                    detector.initialize(TYPE_STR_DET[ind_det], query_name);
+                    detector.generateQuery(mat_query);
+                } catch(IOException ex) {
+                    IJ.log(className + " error: " + ex.getMessage());
+                    return;
+                }            
+            } else if (ind_cmd == 1){
+                try {
+                    detector.initialize(TYPE_STR_DET[ind_det], query_name);
+                    detector.readQuery();
+                } catch(IOException ex) {
+                    IJ.log(className + " error: " + ex.getMessage());
+                    return;
+                }
+            } else if (ind_cmd == 2){
+                try {
+                    detector.initialize(TYPE_STR_DET[ind_det], query_name);
+                    detector.remakeQuery();
+                } catch(IOException ex) {
+                    IJ.log(className + " error: " + ex.getMessage());
+                    return;
+                }        
+            } else {
+                IJ.log(className + " error: Wrong command index.");
+                return;
             }
-            else {
-                detector.writeDefalutParam(fname);
+
+            // post-processing
+            if (detector == null) {
+                IJ.log(className + " error: Can not create detector.");
+                return;
+            }
+
+            if (detector.QueryKeyPoints == null || detector.QueryKeyPoints.rows() == 0) {
+                IJ.log(className + " error: KeyPoint is empty.");
+                return;
+            }
+
+            try{
+                detector.CopyTo(OCV__LoadLibrary.MyQuery);
+            } catch(IOException ex) {
+                IJ.log(className + " error: " + ex.getMessage());
+                return;
+            }
+
+            if(enDrawKeys && detector.QueryKeyPoints != null) {
+                Mat mat_query_for_draw = null;
+                try {
+                    detector.showData(detector.QueryKeyPoints);
+                    mat_query_for_draw = Imgcodecs.imread(detector.FileQueryImage.toString());
+                    MyFeatureDetector.drawKeyPoints(mat_query_for_draw, detector.QueryKeyPoints);
+                } finally {
+                    if (mat_query_for_draw != null) {
+                        mat_query_for_draw.release();
+                    }
+                }
+            }
+        } finally {
+            // Release resources
+            if (mat_query != null) {
+                mat_query.release();
             }
         }
-        catch(SAXException | IOException | ParserConfigurationException | TransformerException ex) {
-            IJ.error(ex.getMessage());
-        }
-
-        MatOfKeyPoint key_query = new MatOfKeyPoint();
-        detector.detect(mat_query, key_query);
-
-        if(key_query.rows() == 0) {
-            IJ.error("KeyPoint is empty.");
-            return;
-        }
-
-        // Descriptor of QueryImage
-        Mat desc_query = new Mat();
-        detector.compute(mat_query, key_query, desc_query);
-
-        if(desc_query.rows() == 0) {
-            IJ.error("Descriptor is empty.");
-            return;
-        }
-
-        // Set data
-        if(OCV__LoadLibrary.QueryMat != null) {
-            OCV__LoadLibrary.QueryMat.release();
-        }
-
-        if(OCV__LoadLibrary.QueryKeys != null) {
-            OCV__LoadLibrary.QueryKeys.release();
-        }
-
-        if(OCV__LoadLibrary.QueryDesc != null) {
-            OCV__LoadLibrary.QueryDesc.release();
-        }
-
-        OCV__LoadLibrary.QueryMat = mat_query;
-        OCV__LoadLibrary.QueryKeys = key_query;
-        OCV__LoadLibrary.QueryDesc = desc_query;
-        OCV__LoadLibrary.FeatDetType = TYPE_STR_DET[ind_det];
-
-        // Draw key points
-        if(enDrawKeys) {
-            showData(key_query);
-            drawKeyPoints(mat_query, key_query);
-        }
-    }
-
-    private void showData(MatOfKeyPoint key_query) {
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        int num = key_query.rows();
-
-        for(int i = 0; i < num; i++) {
-            double query_x = key_query.get(i, 0)[0];
-            double query_y = key_query.get(i, 0)[1];
-            double query_size = key_query.get(i, 0)[2];
-            double query_angle = key_query.get(i, 0)[3];
-            double query_response = key_query.get(i, 0)[4];
-            double query_octave = key_query.get(i, 0)[5];
-            double query_class_id = key_query.get(i, 0)[6];
-
-            rt.incrementCounter();
-            rt.addValue("query_x", query_x);
-            rt.addValue("query_y", query_y);
-            rt.addValue("query_size", query_size);
-            rt.addValue("query_angle", query_angle);
-            rt.addValue("query_response", query_response);
-            rt.addValue("query_octave", query_octave);
-            rt.addValue("query_class_id", query_class_id);
-        }
-
-        rt.show("Results");
-    }
-
-    private void drawKeyPoints(Mat mat_query, MatOfKeyPoint key_query) {
-        Mat mat_dst = new Mat();
-        Features2d.drawKeypoints(mat_query, key_query, mat_dst);
-
-        String title_dst = WindowManager.getUniqueName("FeatureDetection_Extract");
-        int imw_dst = mat_dst.cols();
-        int imh_dst = mat_dst.rows();
-        ImagePlus imp_dst = new ImagePlus(title_dst, new ColorProcessor(imw_dst, imh_dst));
-        int[] arr_dst = (int[]) imp_dst.getChannelProcessor().getPixels();
-        OCV__LoadLibrary.mat2intarray(mat_dst, arr_dst, imw_dst, imh_dst);
-        imp_dst.show();
     }
 }

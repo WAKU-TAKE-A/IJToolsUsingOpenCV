@@ -50,9 +50,6 @@ import org.opencv.videoio.VideoCapture;
 public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     // const var.
     private final int FLAGS = NO_IMAGE_REQUIRED;
-    // from /sources/modules/videoio/include/opencv2/videoio/videoio_c.h
-    private final int CV_CAP_PROP_FRAME_WIDTH = 3;
-    private final int CV_CAP_PROP_FRAME_HEIGHT = 4;
     /*
     VideoCapture API backends identifier.
 
@@ -70,12 +67,13 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     private static int device = 0;
     private static int width = 640;
     private static int height = 480;
-    private static int indCapApi = 0;
+    private static int indCapApi = 1;
     private static boolean enCalcStat = true;
     private static int max_results = 100;
     private static boolean enProfile = true;
     private static int wait_time = 100;
     private static boolean enOneShot = false;
+    private static volatile boolean isRunning = false;
 
     // var.
     private String className = null;
@@ -85,16 +83,28 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     private boolean flag_fin_loop = false;
     private boolean ini_verticalProfile = false;
     private ImagePlus impPlot = null;
+    private final Mat dummy = new Mat();
 
-    // For speeding up.
-    private static VideoCapture src_cap = null;
+    // Instance variables
+    private VideoCapture src_cap = null;
+    
+    // Static variables for image display
     private static ImagePlus imp_dsp = null;
     private static int[] impdsp_intarray = null;
-    private boolean isChanged = true;
 
     @Override
     public int showDialog(ImagePlus arg0, String cmd, PlugInFilterRunner arg2) {
         className = cmd.trim();
+        
+        // Warn if already running
+        if (isRunning) {
+            GenericDialog gd = new GenericDialog(className + "...");
+            gd.addMessage("Camera is currently running.");
+            gd.addMessage("Stop the current session before changing settings.");
+            gd.showDialog();
+            return DONE;
+        }
+        
         GenericDialog gd = new GenericDialog(className + "...");
 
         gd.addNumericField("device", device, 0);
@@ -116,10 +126,6 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
         else {
             ini_verticalProfile = Prefs.verticalProfile;
 
-            int dev_bef = device;
-            int w_bef = width;
-            int h_bef = height;
-
             device = (int)gd.getNextNumber();
             width = (int)gd.getNextNumber();
             height = (int)gd.getNextNumber();
@@ -130,8 +136,6 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             Prefs.verticalProfile = (boolean)gd.getNextBoolean();
             wait_time = (int)gd.getNextNumber();
             enOneShot = (boolean)gd.getNextBoolean();
-
-            isChanged = src_cap == null || dev_bef != device || w_bef != width || h_bef != height;
 
             return FLAGS;
         }
@@ -154,182 +158,215 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor arg0) {
-        boolean bret = true;
+        // Check for duplicate execution
+        if (isRunning) {
+            IJ.error(className, "Already running. Please stop the current session first.");
+            return;
+        }
+               
+        isRunning = true;
+        boolean bret;
+        Mat src_mat = new Mat();
 
-        // ----- stop dialog during continuous grabbing -----
-        diag_free = new JDialog(diag_free, className, false);
-        JButton but_stop_cont = new JButton("Stop");
+        try {
+            // ----- stop dialog during continuous grabbing -----
+            diag_free = new JDialog(diag_free, className, false);
+            JButton but_stop_cont = new JButton("Stop");
 
-        but_stop_cont.addMouseListener(new MouseAdapter() {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                flag_fin_loop = true;
-                diag_free.dispose();
-            }
-        });
+            but_stop_cont.addMouseListener(new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    flag_fin_loop = true;
+                    diag_free.dispose();
+                }
+            });
 
-        diag_free.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
-                flag_fin_loop = true;
-            }
-        });
+            diag_free.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    flag_fin_loop = true;
+                }
+            });
 
-        diag_free.add(but_stop_cont);
-        diag_free.setSize(100, 75);
-        // ----- end of stop dialog -----
+            diag_free.add(but_stop_cont);
+            diag_free.setSize(100, 75);
+            // ----- end of stop dialog -----
 
-        // initialize camera
-        if(isChanged) {
-            src_cap = new VideoCapture();
-            bret = src_cap.open(device, INT_CAP_APIS[indCapApi]);
+            // Initialize camera (OneShot mode reuses cache, normal mode creates new instance)
+            src_cap = OCV__LoadLibrary.GetCamera(
+                device, width, height, 
+                INT_CAP_APIS[indCapApi], 
+                !enOneShot  // false for OneShot (cache), true for normal mode (new instance)
+            );
 
-            if(!bret) {
-                IJ.error("Camera initialization is failed.");
-                diag_free.dispose();
-                return;
-            }
-
-            src_cap.set(CV_CAP_PROP_FRAME_WIDTH, width);
-            src_cap.set(CV_CAP_PROP_FRAME_HEIGHT, height);
-
-            // Setting the image display window
-            width = (int) src_cap.get(CV_CAP_PROP_FRAME_WIDTH);
-            height = (int) src_cap.get(CV_CAP_PROP_FRAME_HEIGHT);
+            // Get actual camera width and height
+            width = OCV__LoadLibrary.GetCachedCameraWidth();
+            height = OCV__LoadLibrary.GetCachedCameraHeight();
 
             imp_dsp = IJ.createImage(className, width, height, 1, 24);
             impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
             imp_dsp.show();
-        }
 
-        // show stop dialog
-        if(!enOneShot) {
-            diag_free.setVisible(true);
-        }
-
-        Mat src_mat = new Mat();
-
-        // run
-        for(;;) {
-            if(flag_fin_loop) {
-                break;
+            // show stop dialog
+            if(!enOneShot) {
+                diag_free.setVisible(true);
             }
 
-            // grab
-            imp_dsp.startTiming();
-            bret = src_cap.read(src_mat);
-            IJ.showTime(imp_dsp, imp_dsp.getStartTime(), className + " : ");
-
-            if(!bret) {
-                IJ.error("Error occurred in grabbing.");
-                diag_free.dispose();
-                break;
-            }
-
-            if(src_mat.empty()) {
-                IJ.error("Mat is empty.");
-                diag_free.dispose();
-                break;
-            }
-
-            // display
-            if(!imp_dsp.isVisible()) {
-                imp_dsp.close();
-                imp_dsp = IJ.createImage(className, width, height, 1, 24);
-                impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
-                imp_dsp.show();
-            }
-
-            if(src_mat.type() == CvType.CV_8UC3) {
-                OCV__LoadLibrary.mat2intarray(src_mat, impdsp_intarray, width, height);
-            }
-            else {
-                IJ.error("Color camera is supported only.");
-                diag_free.dispose();
-                break;
-            }
-
-            imp_dsp.draw();
-
-            // Statistics.
-            if(enCalcStat) {
-                ImagePlus impBuf;
-                ImageStatistics st;
-                Roi ro;
-
-                int meas = Measurements.MIN_MAX;
-                meas += Measurements.MEAN;
-                meas += Measurements.MODE;
-                meas += Measurements.STD_DEV;
-                meas += Measurements.RECT;
-                meas += Measurements.AREA;
-
-                ro = imp_dsp.getRoi();
-
-                if(ro != null) {
-                    impBuf = imp_dsp.getRoi().getImage();
-                    st = impBuf.getStatistics(meas);
-                    tblResults = ResultsTable.getResultsTable();
-
-                    if(tblResults == null || tblResults.getCounter() == 0) {
-                        tblResults = new ResultsTable();
-                    }
-
-                    if(max_results < tblResults.getCounter()) {
-                        tblResults.reset();
-                    }
-
-                    tblResults.incrementCounter();
-                    tblResults.addValue("Min", st.min);
-                    tblResults.addValue("Max", st.max);
-                    tblResults.addValue("Mean", st.mean);
-                    tblResults.addValue("Mode", st.mode);
-                    tblResults.addValue("StdDev", st.stdDev);
-                    tblResults.addValue("X", st.roiX);
-                    tblResults.addValue("Y", st.roiY);
-                    tblResults.addValue("W", st.roiWidth);
-                    tblResults.addValue("H", st.roiHeight);
-                    tblResults.addValue("Area", st.area);
-
-                    tblResults.show("Results");
+            // run
+            for(;;) {
+                if(flag_fin_loop) {
+                    break;
                 }
-            }
 
-            // Profile.
-            if(enProfile) {
-                Roi roi = imp_dsp.getRoi();
+                // grab
+                imp_dsp.startTiming();
+                
+                if (enOneShot) {
+                    // Drop old frames
+                    int dropFrames = 1;
+                    for (int i = 0; i < dropFrames; i++) {                        
+                        src_cap.read(dummy);                        
+                    }                    
+                }
+                
+                bret = src_cap.read(src_mat);
+                IJ.showTime(imp_dsp, imp_dsp.getStartTime(), className + " : ");
 
-                if(roi != null && (roi.getType() != Roi.LINE || roi.getType() != Roi.RECTANGLE || roi.getType() != Roi.FREEROI)) {
-                    plot = OCV__LoadLibrary.GetProfilePlot(imp_dsp);
+                if(!bret) {
+                    OCV__LoadLibrary.MarkCameraUnhealthy();
+                    throw new RuntimeException("Error occurred in grabbing.");
+                }
+
+                if(src_mat.empty()) {
+                    OCV__LoadLibrary.MarkCameraUnhealthy();
+                    throw new RuntimeException("Mat is empty.");
+                }
+
+                // display
+                if(!imp_dsp.isVisible()) {
+                    imp_dsp.close();
+                    imp_dsp = IJ.createImage(className, width, height, 1, 24);
+                    impdsp_intarray = (int[])imp_dsp.getChannelProcessor().getPixels();
+                    imp_dsp.show();
+                }
+
+                if(src_mat.type() == CvType.CV_8UC3) {
+                    OCV__LoadLibrary.mat2intarray(src_mat, impdsp_intarray, width, height);
                 }
                 else {
-                    if(plot != null) {
-                        plot.dispose();
-                        plot = null;
+                    OCV__LoadLibrary.MarkCameraUnhealthy();
+                    throw new RuntimeException("Color camera is supported only.");
+                }
+
+                imp_dsp.draw();
+
+                // Statistics.
+                if(enCalcStat) {
+                    ImagePlus impBuf;
+                    ImageStatistics st;
+                    Roi ro;
+
+                    int meas = Measurements.MIN_MAX;
+                    meas += Measurements.MEAN;
+                    meas += Measurements.MODE;
+                    meas += Measurements.STD_DEV;
+                    meas += Measurements.RECT;
+                    meas += Measurements.AREA;
+
+                    ro = imp_dsp.getRoi();
+
+                    if(ro != null) {
+                        impBuf = imp_dsp.getRoi().getImage();
+                        st = impBuf.getStatistics(meas);
+                        tblResults = ResultsTable.getResultsTable();
+
+                        if(tblResults == null || tblResults.getCounter() == 0) {
+                            tblResults = new ResultsTable();
+                        }
+
+                        if(max_results < tblResults.getCounter()) {
+                            tblResults.reset();
+                        }
+
+                        tblResults.incrementCounter();
+                        tblResults.addValue("Min", st.min);
+                        tblResults.addValue("Max", st.max);
+                        tblResults.addValue("Mean", st.mean);
+                        tblResults.addValue("Mode", st.mode);
+                        tblResults.addValue("StdDev", st.stdDev);
+                        tblResults.addValue("X", st.roiX);
+                        tblResults.addValue("Y", st.roiY);
+                        tblResults.addValue("W", st.roiWidth);
+                        tblResults.addValue("H", st.roiHeight);
+                        tblResults.addValue("Area", st.area);
+
+                        tblResults.show("Results");
                     }
                 }
 
-                if(plot != null) {
-                    if(impPlot == null) {
-                        impPlot = new ImagePlus("Profile (line or rectangle)", plot.getProcessor());
+                // Profile.
+                if(enProfile) {
+                    Roi roi = imp_dsp.getRoi();
+
+                    if(roi != null && (roi.getType() == Roi.LINE || roi.getType() == Roi.RECTANGLE || roi.getType() == Roi.FREEROI)) {
+                        plot = OCV__LoadLibrary.GetProfilePlot(imp_dsp);
                     }
                     else {
-                        impPlot.setProcessor(null, plot.getProcessor());
+                        if(plot != null) {
+                            plot.dispose();
+                            plot = null;
+                        }
                     }
 
-                    impPlot.show();
+                    if(plot != null) {
+                        if(impPlot == null) {
+                            impPlot = new ImagePlus("Profile (line or rectangle)", plot.getProcessor());
+                        }
+                        else {
+                            impPlot.setProcessor(null, plot.getProcessor());
+                        }
+
+                        impPlot.show();
+                    }
                 }
-            }
 
-            if(enOneShot) {
-                break;
-            }
+                if(enOneShot) {
+                    break;
+                }
 
-            // wait
-            OCV__LoadLibrary.Wait(wait_time);
+                // wait
+                OCV__LoadLibrary.Wait(wait_time);
+            }
+            
+        } catch (RuntimeException e) {
+            IJ.log(className + " exception: " + e.getMessage());
+            // Mark camera as unhealthy on exception
+            OCV__LoadLibrary.MarkCameraUnhealthy();
+        } finally {
+            // Resource cleanup
+            if (src_mat != null) {
+                src_mat.release();
+            }
+            
+            if (dummy != null){
+                dummy.release();
+            }
+            
+            // Release camera only in normal mode
+            if (!enOneShot) {
+                OCV__LoadLibrary.ReleaseCamera();
+            }
+            
+            // Set local reference to null
+            src_cap = null;
+            
+            Prefs.verticalProfile = ini_verticalProfile;
+            
+            if (diag_free != null) {
+                diag_free.dispose();
+            }
+            
+            isRunning = false;
         }
-
-        Prefs.verticalProfile = ini_verticalProfile;
-        diag_free.dispose();
     }
 }

@@ -42,11 +42,14 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     // constant var.
     private static final int FLAGS = NO_IMAGE_REQUIRED;
 
-    // staic var.
-    private static double center_x = 0; // Center of the rotation in the source image (x)
-    private static double center_y = 0; // Center of the rotation in the source image (y)
+    // static var.
+    private static double centerX = 0; // Center of the rotation in the source image (x)
+    private static double centerY = 0; // Center of the rotation in the source image (y)
     private static double angle = 0; // Rotation angle in degrees
     private static double scale = 1; // Isotropic scale factor
+
+    // instance var.
+    private Point center = null;
 
     @Override
     public void setNPasses(int arg0) {
@@ -57,8 +60,8 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         GenericDialog gd = new GenericDialog(cmd.trim() + " ...");
 
-        gd.addNumericField("center_x", center_x, 4);
-        gd.addNumericField("center_y", center_y, 4);
+        gd.addNumericField("center_x", centerX, 4);
+        gd.addNumericField("center_y", centerY, 4);
         gd.addNumericField("angle", angle, 4);
         gd.addNumericField("scale", scale, 4);
         gd.addDialogListener(this);
@@ -75,12 +78,12 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        center_x = (double)gd.getNextNumber();
-        center_y = (double)gd.getNextNumber();
+        centerX = (double)gd.getNextNumber();
+        centerY = (double)gd.getNextNumber();
         angle = (double)gd.getNextNumber();
         scale = (double)gd.getNextNumber();
 
-        if(Double.isNaN(center_x) || Double.isNaN(center_y) || Double.isNaN(angle) || Double.isNaN(scale)) {
+        if(Double.isNaN(centerX) || Double.isNaN(centerY) || Double.isNaN(angle) || Double.isNaN(scale)) {
             IJ.showStatus("ERR : NaN");
             return false;
         }
@@ -90,29 +93,43 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             return false;
         }
 
+        center = new Point(centerX, centerY);
+
         IJ.showStatus("OCV_GetRotationMatrix2D");
         return true;
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        Mat mat = Imgproc.getRotationMatrix2D(new Point(center_x, center_y), angle, scale);
+        Mat mat = null;
 
-        if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
-            IJ.showMessage("Output is null or error");
-            return;
+        try {
+            mat = Imgproc.getRotationMatrix2D(center, angle, scale);
+
+            if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
+                IJ.log("Output is null or error");
+                return;
+            }
+
+            ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat.get(0, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat.get(0, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat.get(0, 2)[0]));
+            rt.incrementCounter();
+            rt.addValue("Column01", String.valueOf(mat.get(1, 0)[0]));
+            rt.addValue("Column02", String.valueOf(mat.get(1, 1)[0]));
+            rt.addValue("Column03", String.valueOf(mat.get(1, 2)[0]));
+            rt.show("Results");
         }
-
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        rt.incrementCounter();
-        rt.addValue("Column01", String.valueOf(mat.get(0, 0)[0]));
-        rt.addValue("Column02", String.valueOf(mat.get(0, 1)[0]));
-        rt.addValue("Column03", String.valueOf(mat.get(0, 2)[0]));
-        rt.incrementCounter();
-        rt.addValue("Column01", String.valueOf(mat.get(1, 0)[0]));
-        rt.addValue("Column02", String.valueOf(mat.get(1, 1)[0]));
-        rt.addValue("Column03", String.valueOf(mat.get(1, 2)[0]));
-        rt.show("Results");
+        catch(Exception e) {
+            IJ.log("Get rotation matrix 2D failed: " + e.getMessage());
+        }
+        finally {
+            if(mat != null) {
+                mat.release();
+            }
+        }
     }
 
     @Override

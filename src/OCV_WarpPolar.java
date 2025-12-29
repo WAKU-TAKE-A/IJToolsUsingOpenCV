@@ -1,4 +1,5 @@
 import ij.*;
+import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
 import ij.plugin.filter.*;
@@ -40,7 +41,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32;
+    private static final int FLAGS = PlugInFilter.DOES_8G | PlugInFilter.DOES_RGB | PlugInFilter.DOES_16 | PlugInFilter.DOES_32;
 
     /*
     Specify the polar mapping mode.
@@ -70,35 +71,37 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
     private static Rectangle rect = new Rectangle(0, 0, 0, 0);
     private static int cx = 0;
     private static int cy = 0;
-    private static int dest_w = 0;
-    private static int dest_h = 0;
+    private static int destW = 0;
+    private static int destH = 0;
     private static int rmax = 0;
     private static int indMode = 0;
     private static int indInterpolation = 0;
     private static boolean enInverse = false;
 
     // var
+    private String className;
     private String titleSrc = "";
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
+        className = command.trim();
         rect = imp.getRoi().getBounds();
 
         if(rmax == 0) {
-            rmax = (int)(rect.getWidth() / 2 < rect.getHeight() / 2 ? rect.getWidth() / 2 : rect.getHeight() / 2);
+            rmax = (int)Math.min(rect.getWidth() / 2, rect.getHeight() / 2);
         }
 
-        if(dest_w == 0 || dest_h == 0) {
-            dest_w = imp.getWidth();
-            dest_h = imp.getHeight();
+        if(destW == 0 || destH == 0) {
+            destW = imp.getWidth();
+            destH = imp.getHeight();
         }
 
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
+        GenericDialog gd = new GenericDialog(className + "...");
 
         gd.addNumericField("center_x", rect.getX() + rect.getWidth() / 2, 0);
         gd.addNumericField("center_y", rect.getY() + rect.getHeight() / 2, 0);
-        gd.addNumericField("destination_width", dest_w, 0);
-        gd.addNumericField("destination_height", dest_h, 0);
+        gd.addNumericField("destination_width", destW, 0);
+        gd.addNumericField("destination_height", destH, 0);
         gd.addNumericField("max_radius", rmax, 0);
         gd.addChoice("mode", STR_MODE, STR_MODE[indMode]);
         gd.addChoice("interpolation", STR_INTERPOLATION, STR_INTERPOLATION[indInterpolation]);
@@ -108,7 +111,7 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            return DONE;
+            return PlugInFilter.DONE;
         }
         else {
             return IJ.setupDialog(imp, FLAGS);
@@ -119,35 +122,35 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         cx = (int)gd.getNextNumber();
         cy = (int)gd.getNextNumber();
-        dest_w = (int)gd.getNextNumber();
-        dest_h = (int)gd.getNextNumber();
+        destW = (int)gd.getNextNumber();
+        destH = (int)gd.getNextNumber();
         rmax = (int)gd.getNextNumber();
-        indMode = (int)gd.getNextChoiceIndex();
-        indInterpolation = (int)gd.getNextChoiceIndex();
-        enInverse = (boolean)gd.getNextBoolean();
+        indMode = gd.getNextChoiceIndex();
+        indInterpolation = gd.getNextChoiceIndex();
+        enInverse = gd.getNextBoolean();
 
         if(cx < 0) {
-            IJ.showStatus("'0 <= center_x' is necessary.");
+            IJ.showStatus("center_x must be >= 0");
             return false;
         }
 
         if(cy < 0) {
-            IJ.showStatus("'0 <= center_y' is necessary.");
+            IJ.showStatus("center_y must be >= 0");
             return false;
         }
 
-        if(dest_w <= 0) {
-            IJ.showStatus("'0 < destination_width' is necessary.");
+        if(destW <= 0) {
+            IJ.showStatus("destination_width must be > 0");
             return false;
         }
 
-        if(dest_h <= 0) {
-            IJ.showStatus("'0 < destination_height' is necessary.");
+        if(destH <= 0) {
+            IJ.showStatus("destination_height must be > 0");
             return false;
         }
 
         if(rmax <= 0) {
-            IJ.showStatus("'0 < max_radius' is necessary.");
+            IJ.showStatus("max_radius must be > 0");
             return false;
         }
 
@@ -164,25 +167,19 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
-            return DONE;
+            return PlugInFilter.DONE;
         }
 
         if(imp == null) {
             IJ.noImage();
-            return DONE;
+            return PlugInFilter.DONE;
         }
         else {
             titleSrc = imp.getTitle();
-
-            if(imp.getRoi() != null) {
-                rect = imp.getRoi().getBounds();
-            }
-            else {
-                rect = new Rectangle(0, 0, imp.getWidth(), imp.getHeight());
-            }
-
+            
+            // 常に全画像を選択
             imp.setRoi(0, 0, imp.getWidth(), imp.getHeight());
-            imp.setRoi(rect);
+            rect = imp.getRoi().getBounds();
 
             return FLAGS;
         }
@@ -190,112 +187,111 @@ public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
 
     @Override
     public void run(ImageProcessor ip) {
-        if(ip.getBitDepth() == 8) {
-            // src
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            byte[] src_byte = (byte[])ip.getPixels();
+        int imw = ip.getWidth();
+        int imh = ip.getHeight();
+        int bitDepth = ip.getBitDepth();
+        int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP : 0);
 
-            // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
-            ImagePlus impDst = new ImagePlus(titleDst, new ByteProcessor(dest_w, dest_h));
-            byte[] dst_byte = (byte[]) impDst.getChannelProcessor().getPixels();
+        try {
+            if(bitDepth == 8) {
+                Mat srcMat = null;
+                Mat dstMat = null;
 
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_8UC1);
+                try {
+                    byte[] srcByte = (byte[])ip.getPixels();
+                    String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
+                    ImagePlus impDst = new ImagePlus(titleDst, new ByteProcessor(destW, destH));
+                    byte[] dstByte = (byte[])impDst.getChannelProcessor().getPixels();
 
-            // flag
-            int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP : 0);
+                    srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+                    dstMat = new Mat(destH, destW, CvType.CV_8UC1);
 
-            // run
-            src_mat.put(0, 0, src_byte);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
-            dst_mat.get(0, 0, dst_byte);
+                    srcMat.put(0, 0, srcByte);
+                    Imgproc.warpPolar(srcMat, dstMat, new Size(destW, destH), new Point(cx, cy), rmax, flags);
+                    dstMat.get(0, 0, dstByte);
 
-            // show
-            impDst.show();
+                    impDst.show();
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 16) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    short[] srcShort = (short[])ip.getPixels();
+                    String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
+                    ImagePlus impDst = new ImagePlus(titleDst, new ShortProcessor(destW, destH));
+                    short[] dstShort = (short[])impDst.getChannelProcessor().getPixels();
+
+                    srcMat = new Mat(imh, imw, CvType.CV_16U);
+                    dstMat = new Mat(destH, destW, CvType.CV_16U);
+
+                    srcMat.put(0, 0, srcShort);
+                    Imgproc.warpPolar(srcMat, dstMat, new Size(destW, destH), new Point(cx, cy), rmax, flags);
+                    dstMat.get(0, 0, dstShort);
+
+                    impDst.show();
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 24) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    int[] srcInt = (int[])ip.getPixels();
+                    String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
+                    ImagePlus impDst = IJ.createImage(titleDst, destW, destH, 1, 24);
+                    int[] dstInt = (int[])impDst.getChannelProcessor().getPixels();
+
+                    srcMat = new Mat(imh, imw, CvType.CV_8UC3);
+                    dstMat = new Mat(destH, destW, CvType.CV_8UC3);
+
+                    OCV__LoadLibrary.intarray2mat(srcInt, srcMat, imw, imh);
+                    Imgproc.warpPolar(srcMat, dstMat, new Size(destW, destH), new Point(cx, cy), rmax, flags);
+                    OCV__LoadLibrary.mat2intarray(dstMat, dstInt, destW, destH);
+
+                    impDst.show();
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 32) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    float[] srcFloat = (float[])ip.getPixels();
+                    String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
+                    ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(destW, destH));
+                    float[] dstFloat = (float[])impDst.getChannelProcessor().getPixels();
+
+                    srcMat = new Mat(imh, imw, CvType.CV_32F);
+                    dstMat = new Mat(destH, destW, CvType.CV_32F);
+
+                    srcMat.put(0, 0, srcFloat);
+                    Imgproc.warpPolar(srcMat, dstMat, new Size(destW, destH), new Point(cx, cy), rmax, flags);
+                    dstMat.get(0, 0, dstFloat);
+
+                    impDst.show();
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
         }
-        else if(ip.getBitDepth() == 16) {
-            // src
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            short[] src_short = (short[])ip.getPixels();
-
-            // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
-            ImagePlus impDst = new ImagePlus(titleDst, new ShortProcessor(dest_w, dest_h));
-            short[] dst_short = (short[]) impDst.getChannelProcessor().getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_16S);
-
-            // flag
-            int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP : 0);
-
-            // run
-            src_mat.put(0, 0, src_short);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
-            dst_mat.get(0, 0, dst_short);
-
-            // show
-            impDst.show();
-        }
-        else if(ip.getBitDepth() == 24) {
-            // src
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            int[] src_int = (int[])ip.getPixels();
-
-            // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
-            ImagePlus  impDst = IJ.createImage(titleDst, dest_w, dest_h, 1, 24);
-            int[] dst_int = (int[])impDst.getChannelProcessor().getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_8UC3);
-
-            // flag
-            int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP : 0);
-
-            // run
-            OCV__LoadLibrary.intarray2mat(src_int, src_mat, imw, imh);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
-            OCV__LoadLibrary.mat2intarray(dst_mat, dst_int, dest_w, dest_h);
-
-            // show
-            impDst.show();
-        }
-        else if(ip.getBitDepth() == 32) {
-            // src
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            float[] src_float = (float[])ip.getPixels();
-
-            // dst
-            String titleDst = WindowManager.getUniqueName(titleSrc + "_WarpPolar");
-            ImagePlus impDst = new ImagePlus(titleDst, new FloatProcessor(dest_w, dest_h));
-            float[] dst_float = (float[]) impDst.getChannelProcessor().getPixels();
-
-            // flag
-            int flags = INT_MODE[indMode] + INT_INTERPOLATION[indInterpolation] + (enInverse ? Imgproc.WARP_INVERSE_MAP : 0);
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
-            Mat dst_mat = new Mat(dest_w, dest_h, CvType.CV_32F);
-
-            // run
-            src_mat.put(0, 0, src_float);
-            Imgproc.warpPolar(src_mat, dst_mat, new Size(dest_w, dest_h), new Point(cx, cy), (double)rmax, flags);
-            dst_mat.get(0, 0, dst_float);
-
-            // show
-            impDst.show();
-        }
-        else {
-            IJ.error("Wrong image format");
+        catch(Exception e) {
+            IJ.log(className + " error: " + e.getMessage());
         }
     }
 }

@@ -41,6 +41,7 @@ import org.opencv.core.Size;
 public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | DOES_16 | DOES_32 | DOES_RGB | KEEP_PREVIEW;
+    private static final Point ANCHOR = new Point(-1, -1);
 
     /*
      type of morphological operation
@@ -67,26 +68,25 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
     private static final int[] INT_SHAPERTYPE = { Imgproc.MORPH_RECT, Imgproc.MORPH_CROSS, Imgproc.MORPH_ELLIPSE };
     private static final String[] STR_SHAPERTYPE = { "MORPH_RECT", "MORPH_CROSS", "MORPH_ELLIPSE" };
 
-
-    // staic var.
-    private static int ksize_x = 3; // kernel size of x
-    private static int ksize_y = 3; // kernel size of y
-    private static int iterations  = 1; // Number of times erosion and dilation are applied.
+    // static var.
+    private static int ksizeX = 3; // kernel size of x
+    private static int ksizeY = 3; // kernel size of y
+    private static int iterations = 1; // Number of times erosion and dilation are applied.
     private static int indOperation = 0; // operation
     private static int indShapeType = 0; // shape type
 
     // var.
-    private Mat kernel = null;
-    private Point anchor = null;
+    private String className;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addChoice("operation", STR_OPERATION, STR_OPERATION[indOperation]);
         gd.addChoice("shape", STR_SHAPERTYPE, STR_SHAPERTYPE[indShapeType]);
-        gd.addNumericField("ksize_x", ksize_x, 0);
-        gd.addNumericField("ksize_y", ksize_y, 0);
+        gd.addNumericField("ksize_x", ksizeX, 0);
+        gd.addNumericField("ksize_y", ksizeY, 0);
         gd.addNumericField("iterations", iterations, 0);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -103,31 +103,26 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        indOperation = (int)gd.getNextChoiceIndex();
-        indShapeType = (int)gd.getNextChoiceIndex();
-        ksize_x = (int)gd.getNextNumber();
-        ksize_y = (int)gd.getNextNumber();
+        indOperation = gd.getNextChoiceIndex();
+        indShapeType = gd.getNextChoiceIndex();
+        ksizeX = (int)gd.getNextNumber();
+        ksizeY = (int)gd.getNextNumber();
         iterations = (int)gd.getNextNumber();
 
-        if(ksize_x < 0 || ksize_y < 0) {
-            IJ.showStatus("'0 <= ksize_*' is necessary.");
+        if(ksizeX < 0 || ksizeY < 0) {
+            IJ.showStatus("ksize_x and ksize_y must be >= 0");
             return false;
         }
 
-        if(ksize_x % 2 == 0 || ksize_y % 2 == 0) {
-            IJ.showStatus("'ksize_* is odd.");
+        if(ksizeX % 2 == 0 || ksizeY % 2 == 0) {
+            IJ.showStatus("ksize_x and ksize_y must be odd");
             return false;
         }
 
         if(iterations < 1) {
-            IJ.showStatus("'1 <= iterations' is necessary.");
+            IJ.showStatus("iterations must be >= 1");
             return false;
         }
-
-        Size ksize = new Size(ksize_x, ksize_y);
-        kernel = Imgproc.getStructuringElement(INT_SHAPERTYPE[indShapeType], ksize);
-
-        anchor = new Point(-1, -1);
 
         IJ.showStatus("OCV_MorphologyEx");
         return true;
@@ -156,68 +151,94 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
 
     @Override
     public void run(ImageProcessor ip) {
-        if(ip.getBitDepth() == 8) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            byte[] srcdst_bytes = (byte[])ip.getPixels();
+        int imw = ip.getWidth();
+        int imh = ip.getHeight();
+        int bitDepth = ip.getBitDepth();
+        
+        Mat kernel = null;
 
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        try {
+            Size ksize = new Size(ksizeX, ksizeY);
+            kernel = Imgproc.getStructuringElement(INT_SHAPERTYPE[indShapeType], ksize);
 
-            // run
-            src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
-            dst_mat.get(0, 0, srcdst_bytes);
+            if(bitDepth == 8) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    byte[] srcdstBytes = (byte[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+                    dstMat = new Mat(imh, imw, CvType.CV_8UC1);
+
+                    srcMat.put(0, 0, srcdstBytes);
+                    Imgproc.morphologyEx(srcMat, dstMat, INT_OPERATION[indOperation], kernel, ANCHOR, iterations);
+                    dstMat.get(0, 0, srcdstBytes);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 16) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    short[] srcdstShorts = (short[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_16U);
+                    dstMat = new Mat(imh, imw, CvType.CV_16U);
+
+                    srcMat.put(0, 0, srcdstShorts);
+                    Imgproc.morphologyEx(srcMat, dstMat, INT_OPERATION[indOperation], kernel, ANCHOR, iterations);
+                    dstMat.get(0, 0, srcdstShorts);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 32) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    float[] srcdstFloats = (float[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_32F);
+                    dstMat = new Mat(imh, imw, CvType.CV_32F);
+
+                    srcMat.put(0, 0, srcdstFloats);
+                    Imgproc.morphologyEx(srcMat, dstMat, INT_OPERATION[indOperation], kernel, ANCHOR, iterations);
+                    dstMat.get(0, 0, srcdstFloats);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 24) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    int[] srcdstInts = (int[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_8UC3);
+                    dstMat = new Mat(imh, imw, CvType.CV_8UC3);
+
+                    OCV__LoadLibrary.intarray2mat(srcdstInts, srcMat, imw, imh);
+                    Imgproc.morphologyEx(srcMat, dstMat, INT_OPERATION[indOperation], kernel, ANCHOR, iterations);
+                    OCV__LoadLibrary.mat2intarray(dstMat, srcdstInts, imw, imh);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
         }
-        else if(ip.getBitDepth() == 16) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            short[] srcdst_shorts = (short[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-
-            // run
-            src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
-            dst_mat.get(0, 0, srcdst_shorts);
+        catch(Exception e) {
+            IJ.log(className + " error: " + e.getMessage());
         }
-        else if(ip.getBitDepth() == 32) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            float[] srcdst_floats = (float[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-
-            // run
-            src_mat.put(0, 0, srcdst_floats);
-            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
-            dst_mat.get(0, 0, srcdst_floats);
-        }
-        else if(ip.getBitDepth() == 24) {
-            // dst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            int[] srcdst_ints = (int[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-
-            // run
-            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.morphologyEx(src_mat, dst_mat, INT_OPERATION[indOperation], kernel, anchor, iterations);
-            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
-        }
-        else {
-            IJ.error("Wrong image format");
+        finally {
+            if(kernel != null) kernel.release();
         }
     }
 }

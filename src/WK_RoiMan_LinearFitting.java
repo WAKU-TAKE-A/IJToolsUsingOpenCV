@@ -51,6 +51,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter {
     private static boolean enAddRoi = true;
 
     // var.
+    private String className;
     private ImagePlus impSrc = null;
     private RoiManager roiMan = null;
     private int[] selectedIndexes = null;
@@ -58,7 +59,8 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter {
 
     @Override
     public int showDialog(ImagePlus ip, String cmd, PlugInFilterRunner pifr) {
-        GenericDialog gd = new GenericDialog(cmd + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addCheckbox("enable_refresh_data", enRefData);
         gd.addCheckbox("enable_add_roi", enAddRoi);

@@ -1,29 +1,31 @@
-import java.io.File;
+import ij.ImagePlus;
+import ij.WindowManager;
+import ij.measure.ResultsTable;
+import ij.process.ColorProcessor;
+import java.io.*;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
-import javax.xml.transform.Transformer;
-import javax.xml.transform.TransformerConfigurationException;
-import javax.xml.transform.TransformerException;
-import javax.xml.transform.TransformerFactory;
-import javax.xml.transform.dom.DOMSource;
-import javax.xml.transform.stream.StreamResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
+import org.opencv.core.CvType;
+import org.opencv.core.KeyPoint;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
 import org.opencv.features2d.AKAZE;
 import org.opencv.features2d.BRISK;
+import org.opencv.features2d.Feature2D;
+import org.opencv.features2d.Features2d;
 import org.opencv.features2d.ORB;
-import org.w3c.dom.Document;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
-
+import org.opencv.features2d.SIFT;
+import org.opencv.imgcodecs.Imgcodecs;
 /*
  * The MIT License
  *
- * Copyright 2018 nishida.
+ * Copyright 2016 Takehito Nishida.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -45,284 +47,451 @@ import org.xml.sax.SAXException;
  */
 
 /**
- * Instead of FeatureDetector
+ * Feature2D wrapper for multiple detectors
  * @author nishida
  */
 public class MyFeatureDetector {
     // const var.
-    private final int TYPE_ELEMENT = 1;
-
-    private final String STR_AKAZE = "AKAZE";
-    private final String STR_BRISK = "BRISK";
-    private final String STR_ORB = "ORB";
+    private static final String STR_AKAZE = "AKAZE";
+    private static final String STR_BRISK = "BRISK";
+    private static final String STR_ORB = "ORB";
+    private static final String STR_SIFT = "SIFT";
+    private static final String STR_BASE_FOLDER = "features";
 
     // var.
-    private AKAZE m_akaze = null;
-    private BRISK m_brisk = null;
-    private ORB m_orb = null;
+    private Feature2D detector = null;
+    public String DetectorType = "";
+    public String QueryName = "";
+    public Path FileParam = null;
+    public Path FileQueryImage = null;
+    public Path FileQueryImage_Key = null;
+    public Path FileQueryKeyPoints = null;
+    public Path FileQueryDescriptors = null;    
+    public MatOfKeyPoint QueryKeyPoints = null;
+    public Mat QueryDescriptors = null;
+    public boolean IsInit = false;
 
-    private String detType = "";
-    private Boolean isCreate = false;
-    private DocumentBuilderFactory factory = null;
-    private DocumentBuilder builder = null;
-    private Document document = null;
+    /**
+     * constructor
+     */  
+    public  MyFeatureDetector() { }
+    
+    /**
+     * Initilize
+     * @param type
+     * @param name
+     * @throws IOException 
+     */
+    public void initialize(String type, String name) throws IOException {
+        // check
+        if (OCV__LoadLibrary.isNullOrEmpty(type) || OCV__LoadLibrary.isNullOrEmpty(name)) {
+            throw new IllegalArgumentException("Type or QueryName is empty.");
+        }
+        
+        if (QueryKeyPoints == null) {
+            QueryKeyPoints = new MatOfKeyPoint();
+        }
+        
+        if (QueryDescriptors == null) {
+            QueryDescriptors = new Mat();
+        }
+        
+        // set
+        IsInit = false;        
+        reset_QueryKeyPoints_QueryDescriptors();        
+        DetectorType = type;
+        QueryName = name;
+        
+        if (detector != null && !detector.empty()) {
+            detector.clear();
+        }        
+        
+        if (DetectorType.equals(STR_AKAZE)) {
+            detector = AKAZE.create();
+        } else if (DetectorType.equals(STR_BRISK)) {
+            detector = BRISK.create();
+        } else if (DetectorType.equals(STR_ORB)) {
+            detector = ORB.create();
+        } else if (DetectorType.equals(STR_SIFT)) {
+            detector = SIFT.create();
+        } else {
+            throw new IllegalArgumentException("Unknown detector type: " + DetectorType);
+        }
+       
+        Path dir = Paths.get(STR_BASE_FOLDER, QueryName);
+        Files.createDirectories(dir);
+        FileParam = dir.resolve(DetectorType + ".yaml");
+        FileQueryImage = dir.resolve("query.bmp");
+        FileQueryImage_Key = dir.resolve("query_key.bmp");
+        FileQueryKeyPoints = dir.resolve("query_key.mkp");
+        FileQueryDescriptors = dir.resolve("query_desc.mat");       
+        IsInit = true;
+    }
+    
+    /**
+     * generate the query's file set
+     * calc QueryKeyPoints and QueryDescriptors -> write（FileParam, QueryImage, QueryImage_Key, QueryKeyPoints, QueryDescriptors）
+     * @param image
+     * @throws IOException 
+     */
+    public void generateQuery(Mat image) throws IOException {
+        if (detector == null || !IsInit) {
+            throw new IllegalStateException("Not initialize.");
+        }
+        
+        Mat image_key = null;
+        
+        try {
+            reset_QueryKeyPoints_QueryDescriptors();
+            calc_KeyPoints_Descriptors(image, QueryKeyPoints, QueryDescriptors);
+            
+            image_key = new Mat();
+            Features2d.drawKeypoints(image, QueryKeyPoints, image_key);
+            
+            detector.write(FileParam.toString());
+            boolean bret1 = Imgcodecs.imwrite(FileQueryImage.toString(), image);
+            boolean bret2 = Imgcodecs.imwrite(FileQueryImage_Key.toString(), image_key);
+            writeMatOfKeyPoint(QueryKeyPoints, FileQueryKeyPoints.toString());
+            writeDescriptors(QueryDescriptors, FileQueryDescriptors.toString());
+            
+            if (!bret1 || !bret2) {
+                throw new IOException("Can not write the image.");
+            }
+        } finally {
+            if (image_key != null) {
+                image_key.release();
+            }
+        }
+    }
+    
+    /**
+     * read FileParam and FileQueryImage, generate the query's file set.
+     * read (FileParam, QueryImage) -> calc QueryKeyPoints and QueryDescriptors -> write (FileQueryImage_Key, QueryKeyPoints, QueryDescriptors)
+     * @throws IOException 
+     */
+    public void remakeQuery() throws IOException {
+        if (detector == null || !IsInit) {
+            throw new IllegalStateException("Not initialize.");
+        }
+        
+        Mat image = null;
+        Mat image_key = null;
+        
+        try {
+            // read Param -> read QueryImage -> detect QueryKeyPoints -> write (FileQueryImage_Key, QueryKeyPoints)
+            detector.read(FileParam.toString());       
+            image = Imgcodecs.imread(FileQueryImage.toString());
+            
+            reset_QueryKeyPoints_QueryDescriptors();
+            calc_KeyPoints_Descriptors(image, QueryKeyPoints, QueryDescriptors);
+            
+            image_key = new Mat();
+            Features2d.drawKeypoints(image, QueryKeyPoints, image_key);
+            
+            boolean bret2 = Imgcodecs.imwrite(FileQueryImage_Key.toString(), image_key);
+            writeMatOfKeyPoint(QueryKeyPoints, FileQueryKeyPoints.toString());
+            writeDescriptors(QueryDescriptors, FileQueryDescriptors.toString());
+            
+            if (!bret2) {
+                throw new IOException("Can not write the image.");
+            }
+        } finally {
+            if (image != null) {
+                image.release();
+            }
+            if (image_key != null) {
+                image_key.release();
+            }
+        }
+    }
+    
+    /**
+     * read only.
+     * read only (FileParam, QueryKeyPoints, QueryDescriptors)
+     * @throws IOException 
+     */
+    public void readQuery() throws IOException {
+        if (detector == null || !IsInit) {
+            throw new IllegalStateException("Not initialize.");
+        }
 
-    // for BRISK
-    private static int brisk_thresh = 30;
-    private static int brisk_octaves = 3;
-    private static float brisk_patternScale = 1.0f;
-
-    // consructor
-    public MyFeatureDetector(String type) {
-        detType = type;
-        brisk_thresh = 30;
-        brisk_octaves = 3;
-        brisk_patternScale = 1.0f;
+        if (!Files.exists(FileParam)){
+            throw new IOException("Can not find " + FileParam.toString() + " .");
+        }
+        
+        detector.read(FileParam.toString());
+        
+        reset_QueryKeyPoints_QueryDescriptors();
+        QueryKeyPoints = readMatOfKeyPoint(FileQueryKeyPoints.toString());     
+        QueryDescriptors = readDescriptors(FileQueryDescriptors.toString()); 
+    }
+    
+    /**
+     * calclate KeyPoints and  Descriptors
+     * @param image
+     * @param key
+     * @param desc 
+     */
+    public void calc_KeyPoints_Descriptors(Mat image, MatOfKeyPoint key, Mat desc) {
+        if (detector == null || !IsInit) {
+            throw new IllegalStateException("Detector not created");
+        }
+        
+        detector.detect(image, key);
+        detector.compute(image, key, desc);
+    }
+    
+    /**
+     * copy
+     * @param dst 
+     */
+    public void CopyTo(MyFeatureDetector dst) throws IOException {
+        dst.initialize(DetectorType, QueryName);
+        QueryKeyPoints.copyTo(dst.QueryKeyPoints);
+        QueryDescriptors.copyTo(dst.QueryDescriptors);
     }
 
-    // public method
-    public String getDetectorType() {
-        return detType;
+    /**
+     * reset QueryKeyPoints
+     */
+    private void reset_QueryKeyPoints_QueryDescriptors() {
+        if (QueryKeyPoints != null && !QueryKeyPoints.empty()) {
+            QueryKeyPoints.release();
+        }
+        
+        if (QueryDescriptors != null && !QueryDescriptors.empty()) {
+            QueryDescriptors.release();
+        }
+    }
+    
+    /**
+     * write MatOfKeyPoint
+     * @param mkp
+     * @param filePath
+     * @throws IOException 
+     */
+    private void writeMatOfKeyPoint(MatOfKeyPoint mkp, String filePath) throws IOException {
+        KeyPoint[] kps = mkp.toArray();
+        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(new FileOutputStream(filePath)))) {
+            dos.writeInt(kps.length);
+            for (KeyPoint kp : kps) {
+                dos.writeFloat((float) kp.pt.x);
+                dos.writeFloat((float) kp.pt.y);
+                dos.writeFloat((float) kp.size);
+                dos.writeFloat((float) kp.angle);
+                dos.writeFloat((float) kp.response);
+                dos.writeInt(kp.octave);
+                dos.writeInt(kp.class_id);
+            }
+        }
     }
 
-    public void create() {
-        brisk_thresh = 30;
-        brisk_octaves = 3;
-        brisk_patternScale = 1.0f;
+    /**
+     * read MatOfKeyPoint
+     * @param filePath
+     * @return
+     * @throws IOException 
+     */
+    private MatOfKeyPoint readMatOfKeyPoint(String filePath) throws IOException {
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
+            int n = dis.readInt();
+            List<KeyPoint> list = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                float x = dis.readFloat();
+                float y = dis.readFloat();
+                float size = dis.readFloat();
+                float angle = dis.readFloat();
+                float response = dis.readFloat();
+                int octave = dis.readInt();
+                int classId = dis.readInt();
 
-        if(detType.equals(STR_AKAZE)) {
-            m_akaze =  AKAZE.create();
+                // KeyPoint の 7 引数コンストラクタを使って生成
+                KeyPoint kp = new KeyPoint(x, y, size, angle, response, octave, classId);
+                list.add(kp);
+            }
+            MatOfKeyPoint mkp = new MatOfKeyPoint();
+            mkp.fromList(list);           
+            return mkp;
         }
-        else if(detType.equals(STR_BRISK)) {
-            m_brisk =  BRISK.create();
-        }
-        else if(detType.equals(STR_ORB)) {
-            m_orb =  ORB.create();
-        }
-
-        isCreate = true;
     }
 
-    public void readParam(String fname) throws SAXException, IOException, ParserConfigurationException {
-        if(!isCreate || fname == null || fname.isEmpty()) {
+    /**
+     * write Descriptors
+     * @param descriptors
+     * @param filePath
+     * @throws IOException 
+     */
+    public static void writeDescriptors(Mat descriptors, String filePath) throws IOException {
+        if (descriptors == null || descriptors.empty()) {
             return;
         }
 
-        try {
-            Element root = readXml(fname);
-            String root_name = root.getNodeName();
+        int rows = descriptors.rows();
+        int cols = descriptors.cols();
+        int type = descriptors.type();
 
-            if(!detType.equals(root_name)) {
-                throw new IllegalArgumentException();
-            }
+        try (DataOutputStream dos = new DataOutputStream(
+                new BufferedOutputStream(new FileOutputStream(filePath)))) {
 
-            NodeList nodeList = root.getChildNodes();
-            int num = nodeList.getLength();
+            dos.writeInt(rows);
+            dos.writeInt(cols);
+            dos.writeInt(type);
 
-            for(int i = 0; i < num; i++) {
-                Node node = nodeList.item(i);
-                String node_name = node.getNodeName();
-                String node_value = node.getTextContent();
-                int type = node.getNodeType();
-
-                if(type == TYPE_ELEMENT) {
-                    //
-                    // AKAZE
-                    //
-                    if(detType.equals(STR_AKAZE) && node_name.equals("DescriptorChannels")) {
-                        m_akaze.setDescriptorChannels(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_AKAZE) && node_name.equals("DescriptorSize")) {
-                        m_akaze.setDescriptorSize(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_AKAZE) && node_name.equals("DescriptorType")) {
-                        m_akaze.setDescriptorType(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_AKAZE) && node_name.equals("Diffusivity")) {
-                        m_akaze.setDiffusivity(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_AKAZE) && node_name.equals("NOctaveLayers")) {
-                        m_akaze.setNOctaveLayers(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_AKAZE) && node_name.equals("NOctaves")) {
-                        m_akaze.setNOctaves(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_AKAZE) && node_name.equals("Threshold")) {
-                        m_akaze.setThreshold(Double.parseDouble(node_value));
-                    }
-                    //
-                    // BRISK
-                    //
-                    else if(detType.equals(STR_BRISK) && node_name.equals("Thresh")) {
-                        brisk_thresh =  Integer.parseInt(node_value);
-                    }
-                    else if(detType.equals(STR_BRISK) && node_name.equals("Octaves")) {
-                        brisk_octaves =  Integer.parseInt(node_value);
-                    }
-                    else if(detType.equals(STR_BRISK) && node_name.equals("PatternScale")) {
-                        brisk_patternScale =  Float.parseFloat(node_value);
-                    }
-                    //
-                    // ORB
-                    //
-                    else if(detType.equals(STR_ORB) && node_name.equals("MaxFeatures")) {
-                        m_orb.setMaxFeatures(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("ScaleFactor")) {
-                        m_orb.setScaleFactor(Double.parseDouble(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("NLevels")) {
-                        m_orb.setNLevels(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("EdgeThreshold")) {
-                        m_orb.setEdgeThreshold(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("FirstLevel")) {
-                        m_orb.setFirstLevel(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("WTA_K")) {
-                        m_orb.setWTA_K(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("ScoreType")) {
-                        m_orb.setScoreType(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("PatchSize")) {
-                        m_orb.setPatchSize(Integer.parseInt(node_value));
-                    }
-                    else if(detType.equals(STR_ORB) && node_name.equals("FastThreshold")) {
-                        m_orb.setFastThreshold(Integer.parseInt(node_value));
+            if (type == CvType.CV_32F) {
+                float[] buffer = new float[cols];
+                for (int r = 0; r < rows; r++) {
+                    // 1行を float[] に取得
+                    descriptors.row(r).get(0, 0, buffer);
+                    for (int c = 0; c < cols; c++) {
+                        dos.writeFloat(buffer[c]);
                     }
                 }
+            } else if (type == CvType.CV_64F) {
+                double[] buffer = new double[cols];
+                for (int r = 0; r < rows; r++) {
+                    descriptors.row(r).get(0, 0, buffer);
+                    for (int c = 0; c < cols; c++) {
+                        dos.writeDouble(buffer[c]);
+                    }
+                }
+            } else if (type == CvType.CV_8U) {
+                byte[] buffer = new byte[cols];
+                for (int r = 0; r < rows; r++) {
+                    descriptors.row(r).get(0, 0, buffer);
+                    dos.write(buffer);
+                }
+            } else {
+                throw new IllegalArgumentException("Unsupported descriptor type: " + type);
             }
-
-            if(detType.equals(STR_BRISK)) {
-                detType = STR_BRISK;
-                m_brisk = BRISK.create(brisk_thresh, brisk_octaves, brisk_patternScale);
-                isCreate = true;
-            }
-        }
-        catch(ParserConfigurationException | SAXException | IOException ex) {
-            throw ex;
         }
     }
+    
+    /**
+     * read Descriptors
+     * @param filePath
+     * @return
+     * @throws IOException 
+     */
+    public static Mat readDescriptors(String filePath) throws IOException {
+        try (DataInputStream dis = new DataInputStream(
+                new BufferedInputStream(new FileInputStream(filePath)))) {
 
-    public void writeDefalutParam(String fname) throws TransformerException, ParserConfigurationException {
-        if(!isCreate ||  fname == null || fname.isEmpty()) {
-            return;
+            int rows = dis.readInt();
+            int cols = dis.readInt();
+            int type = dis.readInt();
+
+            if (rows <= 0 || cols <= 0) {
+                return new Mat();
+            }
+
+            Mat descriptors = new Mat(rows, cols, type);
+
+            if (type == CvType.CV_32F) {
+                float[] buffer = new float[cols];
+                for (int r = 0; r < rows; r++) {
+                    for (int c = 0; c < cols; c++) {
+                        buffer[c] = dis.readFloat();
+                    }
+                    descriptors.row(r).put(0, 0, buffer);
+                }
+            } else if (type == CvType.CV_64F) {
+                double[] buffer = new double[cols];
+                for (int r = 0; r < rows; r++) {
+                    for (int c = 0; c < cols; c++) {
+                        buffer[c] = dis.readDouble();
+                    }
+                    descriptors.row(r).put(0, 0, buffer);
+                }
+            } else if (type == CvType.CV_8U) {
+                byte[] buffer = new byte[cols];
+                for (int r = 0; r < rows; r++) {
+                    dis.readFully(buffer);
+                    descriptors.row(r).put(0, 0, buffer);
+                }
+            } else {
+                throw new IllegalArgumentException("Unsupported descriptor type: " + type);
+            }
+
+            return descriptors;
+        }
+    }
+    
+    /**
+     * Check the existence of a folder named [query_name].
+     * @param query_name
+     * @return
+     * @throws IOException 
+     */
+    public static boolean exitQueryName(String query_name) throws IOException {
+        Path queryPath = Paths.get(STR_BASE_FOLDER, query_name);     
+        return Files.isDirectory(queryPath);
+    }
+    
+    /**
+     * Check the existence of the parameter.
+     * @param type
+     * @param query_name
+     * @return 
+     */
+    public static boolean exitParam(String type, String query_name) {
+        Path queryPath = Paths.get(STR_BASE_FOLDER, query_name);
+        Path paramPath = queryPath.resolve(type + ".yaml");
+        return Files.exists(paramPath);
+    }
+    
+    /**
+     * Show detection results in ResultsTable 
+     * @param key_query 
+     */
+    public void showData(MatOfKeyPoint key_query) {
+        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+        int num = key_query.rows();
+
+        for(int i = 0; i < num; i++) {
+            double query_x = key_query.get(i, 0)[0];
+            double query_y = key_query.get(i, 0)[1];
+            double query_size = key_query.get(i, 0)[2];
+            double query_angle = key_query.get(i, 0)[3];
+            double query_response = key_query.get(i, 0)[4];
+            double query_octave = key_query.get(i, 0)[5];
+            double query_class_id = key_query.get(i, 0)[6];
+
+            rt.incrementCounter();
+            rt.addValue("query_x", query_x);
+            rt.addValue("query_y", query_y);
+            rt.addValue("query_size", query_size);
+            rt.addValue("query_angle", query_angle);
+            rt.addValue("query_response", query_response);
+            rt.addValue("query_octave", query_octave);
+            rt.addValue("query_class_id", query_class_id);
         }
 
+        rt.show("Results");
+    }
+
+    /**
+     * draw KeyPoints
+     * @param mat_query
+     * @param key_query 
+     */
+    public static void drawKeyPoints(Mat mat_query, MatOfKeyPoint key_query) {
+        Mat mat_dst = null;
+        
         try {
-            factory = DocumentBuilderFactory.newInstance();
-            builder = factory.newDocumentBuilder();
-            document = builder.newDocument();
-            Element root = document.createElement(detType);
-            document.appendChild(root);
+            mat_dst = new Mat();
+            Features2d.drawKeypoints(mat_query, key_query, mat_dst);
 
-            if(detType.equals(STR_AKAZE)) {
-                addToRoot(root, "DescriptorChannels", String.valueOf(m_akaze.getDescriptorChannels()));
-                addToRoot(root, "DescriptorSize", String.valueOf(m_akaze.getDescriptorSize()));
-                addToRoot(root, "DescriptorType", String.valueOf(m_akaze.getDescriptorType()));
-                addToRoot(root, "Diffusivity", String.valueOf(m_akaze.getDiffusivity()));
-                addToRoot(root, "NOctaveLayers", String.valueOf(m_akaze.getNOctaveLayers()));
-                addToRoot(root, "NOctaves", String.valueOf(m_akaze.getNOctaves()));
-                addToRoot(root, "Threshold", String.valueOf(m_akaze.getThreshold()));
+            String title_dst = WindowManager.getUniqueName("FeatureDetection_Extract");
+            int imw_dst = mat_dst.cols();
+            int imh_dst = mat_dst.rows();
+            ImagePlus imp_dst = new ImagePlus(title_dst, new ColorProcessor(imw_dst, imh_dst));
+            int[] arr_dst = (int[]) imp_dst.getChannelProcessor().getPixels();
+            OCV__LoadLibrary.mat2intarray(mat_dst, arr_dst, imw_dst, imh_dst);
+            imp_dst.show();
+        } finally {
+            if (mat_dst != null) {
+                mat_dst.release();
             }
-            else if(detType.equals(STR_BRISK)) {
-                addToRoot(root, "Thresh", String.valueOf(brisk_thresh));
-                addToRoot(root, "Octaves", String.valueOf(brisk_octaves));
-                addToRoot(root, "PatternScale", String.valueOf(brisk_patternScale));
-            }
-            else if(detType.equals(STR_ORB)) {
-                addToRoot(root, "MaxFeatures", String.valueOf(m_orb.getMaxFeatures()));
-                addToRoot(root, "ScaleFactor", String.valueOf(m_orb.getScaleFactor()));
-                addToRoot(root, "NLevels", String.valueOf(m_orb.getNLevels()));
-                addToRoot(root, "EdgeThreshold", String.valueOf(m_orb.getEdgeThreshold()));
-                addToRoot(root, "FirstLevel", String.valueOf(m_orb.getFirstLevel()));
-                addToRoot(root, "WTA_K", String.valueOf(m_orb.getWTA_K()));
-                addToRoot(root, "ScoreType", String.valueOf(m_orb.getScoreType()));
-                addToRoot(root, "PatchSize", String.valueOf(m_orb.getPatchSize()));
-                addToRoot(root, "FastThreshold", String.valueOf(m_orb.getFastThreshold()));
-            }
-
-            writeXml(fname, document);
-        }
-        catch(TransformerException | ParserConfigurationException ex) {
-            throw ex;
-        }
-    }
-
-    public void detect(Mat img_query, MatOfKeyPoint key_query) {
-        if(detType.isEmpty()) {
-            return;
-        }
-
-        if(detType.equals(STR_AKAZE)) {
-            m_akaze.detect(img_query, key_query);
-        }
-        else if(detType.equals(STR_BRISK)) {
-            m_brisk.detect(img_query, key_query);
-        }
-        else if(detType.equals(STR_ORB)) {
-            m_orb.detect(img_query, key_query);
-        }
-    }
-
-    public void compute(Mat img_query, MatOfKeyPoint key_query, Mat desc_query) {
-        if(detType.isEmpty()) {
-            return;
-        }
-
-        if(detType.equals(STR_AKAZE)) {
-            m_akaze.compute(img_query, key_query, desc_query);
-        }
-        else if(detType.equals(STR_BRISK)) {
-            m_brisk.compute(img_query, key_query, desc_query);
-        }
-        else if(detType.equals(STR_ORB)) {
-            m_orb.compute(img_query, key_query, desc_query);
-        }
-    }
-
-    // private method
-    private Element readXml(String fname) throws ParserConfigurationException, SAXException, IOException {
-        try {
-            factory = DocumentBuilderFactory.newInstance();
-            builder = factory.newDocumentBuilder();
-            document = builder.parse(fname);
-            Element root = document.getDocumentElement();
-            return root;
-        }
-        catch(ParserConfigurationException | SAXException | IOException ex) {
-            throw ex;
-        }
-    }
-
-    private void addToRoot(Element root, String name, String value) {
-        Element child_one = document.createElement(name);
-        child_one.appendChild(document.createTextNode(value));
-        root.appendChild(child_one);
-    }
-
-    private void writeXml(String fname, Document document) throws TransformerConfigurationException, TransformerException {
-        try {
-            File file = new File(fname);
-
-            // Transformerインスタンスの生成
-            TransformerFactory transformerFactory = TransformerFactory.newInstance();
-            Transformer transformer = transformerFactory.newTransformer();
-
-            // Transformerの設定
-            transformer.setOutputProperty("indent", "yes"); //改行指定
-            transformer.setOutputProperty("encoding", "utf-8"); // エンコーディング
-
-            // XMLファイルの作成
-            transformer.transform(new DOMSource(document), new StreamResult(file));
-        }
-        catch(TransformerConfigurationException e) {
-            throw e;
-        }
-        catch(TransformerException ex) {
-            throw ex;
         }
     }
 }

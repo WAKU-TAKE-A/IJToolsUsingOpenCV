@@ -34,19 +34,25 @@ import org.opencv.imgproc.Imgproc;
  */
 
 /**
- * Cany.
+ * Canny.
  */
 public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G | KEEP_PREVIEW; // 8-bit input image.
-    private final String[] SIZE_STR = new String[] { "3", "5", "7"};
-    private final int[] SIZE_VAL = new int[] { 3, 5, 7 };
+    private static final String[] SIZE_STRINGS = new String[] { "3", "5", "7" };
+    private static final int[] SIZE_VALUES = new int[] { 3, 5, 7 };
 
-    // staic var.
-    private static double thr1  = 0; // first threshold for the hysteresis procedure.
-    private static double thr2  = 0; // second threshold for the hysteresis procedure.
-    private static int ind_size = 0; // aperture size for the Sobel operator.
+    // static var.
+    private static double thr1 = 0; // first threshold for the hysteresis procedure.
+    private static double thr2 = 0; // second threshold for the hysteresis procedure.
+    private static int indSize = 0; // aperture size for the Sobel operator.
     private static boolean l2grad = false; // L2gradient;
+
+    // instance var.
+    private Mat src_mat = null;
+    private Mat dst_mat = null;
+    private int cachedWidth = -1;
+    private int cachedHeight = -1;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -54,7 +60,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
         gd.addNumericField("threshold1", thr1, 4);
         gd.addNumericField("threshold2", thr2, 4);
-        gd.addChoice("apertureSize", SIZE_STR, SIZE_STR[ind_size]);
+        gd.addChoice("apertureSize", SIZE_STRINGS, SIZE_STRINGS[indSize]);
         gd.addCheckbox("L2gradient", l2grad);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
@@ -62,6 +68,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         gd.showDialog();
 
         if(gd.wasCanceled()) {
+            releaseResources();
             return DONE;
         }
         else {
@@ -73,7 +80,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
         thr1 = (double)gd.getNextNumber();
         thr2 = (double)gd.getNextNumber();
-        ind_size = (int)gd.getNextChoiceIndex();
+        indSize = (int)gd.getNextChoiceIndex();
         l2grad = (boolean)gd.getNextBoolean();
 
         if(Double.isNaN(thr1) || Double.isNaN(thr2)) {
@@ -89,6 +96,10 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         if(thr2 < 0) {
             IJ.showStatus("'0 <= threshold2' is necessary.");
             return false;
+        }
+
+        if(thr1 > thr2) {
+            IJ.showStatus("Warning: threshold1 should be <= threshold2 for typical usage.");
         }
 
         IJ.showStatus("OCV_Canny");
@@ -118,18 +129,43 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
 
     @Override
     public void run(ImageProcessor ip) {
-        // srcdst
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         byte[] srcdst_bytes = (byte[])ip.getPixels();
 
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        try {
+            allocateMatIfNeeded(imw, imh);
 
-        // run
-        src_mat.put(0, 0, srcdst_bytes);
-        Imgproc.Canny(src_mat, dst_mat, thr1, thr2, SIZE_VAL[ind_size], l2grad);
-        dst_mat.get(0, 0, srcdst_bytes);
+            src_mat.put(0, 0, srcdst_bytes);
+            Imgproc.Canny(src_mat, dst_mat, thr1, thr2, SIZE_VALUES[indSize], l2grad);
+            dst_mat.get(0, 0, srcdst_bytes);
+        }
+        catch(Exception e) {
+            IJ.log("Canny edge detection failed: " + e.getMessage());
+            releaseResources();
+        }
+    }
+
+    private void allocateMatIfNeeded(int imw, int imh) {
+        if(src_mat == null || cachedWidth != imw || cachedHeight != imh) {
+            releaseResources();
+            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            cachedWidth = imw;
+            cachedHeight = imh;
+        }
+    }
+
+    private void releaseResources() {
+        if(src_mat != null) {
+            src_mat.release();
+            src_mat = null;
+        }
+        if(dst_mat != null) {
+            dst_mat.release();
+            dst_mat = null;
+        }
+        cachedWidth = -1;
+        cachedHeight = -1;
     }
 }

@@ -68,12 +68,14 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
     private static boolean enOutputImg = true;
 
     // var.
+    private String className;
     private ImagePlus impSrc = null;
     private final ArrayList<double[]> res = new ArrayList<double[]>();
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("min_radius", rmin, 0);
         gd.addNumericField("max_radius", rmax, 0);
@@ -162,6 +164,9 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
 
     @Override
     public void run(ImageProcessor ip) {
+        // Clear previous results
+        res.clear();
+
         // src
         byte[] src = (byte[]) ip.getPixels();
         int imw = ip.getWidth();
@@ -176,7 +181,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
 
         // fin
         if(err != ERR_OK) {
-            IJ.error("Err code of HoughCircle() is " + String.valueOf(err));
+            IJ.log(className + " error: " + String.valueOf(err));
             return;
         }
 
@@ -225,7 +230,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
                     tmp = (int)((rmin + indR) * Math.sin(angle));
                     int rsin = (int)(tmp + 0.5 - (tmp < 0 ? 1 : 0));
 
-                    if((i == 0) | (rcos != cosLut[i * depthR + indR]) & (rsin != sinLut[i * depthR + indR])) {
+                    if((i == 0) || (rcos != cosLut[i * depthR + indR]) && (rsin != sinLut[i * depthR + indR])) {
                         cosLut[i * depthR + indR] = rcos;
                         sinLut[i * depthR + indR] = rsin;
                         i++;

@@ -2,6 +2,8 @@ import ij.*;
 import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
+import ij.plugin.filter.ExtendedPlugInFilter;
+import ij.plugin.filter.PlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
 import ij.process.ImageStatistics;
@@ -37,48 +39,50 @@ import org.opencv.imgproc.Imgproc;
 /**
  * threshold.
  */
-public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
+public class OCV_Threshold implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_32 | KEEP_PREVIEW;
+    private static final int FLAGS = PlugInFilter.DOES_8G | PlugInFilter.DOES_16 | PlugInFilter.DOES_32 | ExtendedPlugInFilter.KEEP_PREVIEW;
     private static final int[] INT_TYPE = { Imgproc.THRESH_BINARY, Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRUNC, Imgproc.THRESH_TOZERO, Imgproc.THRESH_TOZERO_INV, Imgproc.THRESH_OTSU, Imgproc.THRESH_OTSU + Imgproc.THRESH_BINARY_INV, Imgproc.THRESH_TRIANGLE };
     private static final String[] STR_TYPE = { "THRESH_BINARY", "THRESH_BINARY_INV", "THRESH_TRUNC", "THRESH_TOZERO", "THRESH_TOZERO_INV" , "THRESH_OTSU", "THRESH_OTSU_INV", "THRESH_TRIANGLE"};
     private static final float UBYTE_MAX = 255;
 
-    // staic var.
+    // static var.
     private static double thresh = 125;
-    private static double maxVal  = 255.0;
+    private static double maxVal = 255.0;
     private static int idxType = 0;
 
     // var.
+    private String className;
     private int bitDepth = 0;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        double min_val = 0;
-        double max_val = 0;
+        double minVal = 0;
+        double maxVal = 0;
 
         if(bitDepth == 8) {
-            min_val = 0;
-            max_val = UBYTE_MAX;
+            minVal = 0;
+            maxVal = UBYTE_MAX;
         }
         else {
-            ImageStatistics stat =  imp.getStatistics();
-            min_val = stat.min - 1;
-            max_val = stat.max + 1;
+            ImageStatistics stat = imp.getStatistics();
+            minVal = stat.min - 1;
+            maxVal = stat.max + 1;
         }
 
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
-        gd.addSlider("thresh", min_val, max_val, thresh);
-        gd.addNumericField("maxval", maxVal, 4);
-        gd.addChoice("adaptiveMethod", STR_TYPE, STR_TYPE[idxType]);
+        gd.addSlider("thresh", minVal, maxVal, thresh);
+        gd.addNumericField("maxval", OCV_Threshold.maxVal, 4);
+        gd.addChoice("type", STR_TYPE, STR_TYPE[idxType]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            return DONE;
+            return PlugInFilter.DONE;
         }
         else {
             return IJ.setupDialog(imp, FLAGS);
@@ -87,22 +91,28 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        thresh = (double)gd.getNextNumber();
-        maxVal = (double)gd.getNextNumber();
-        idxType = (int)gd.getNextChoiceIndex();
+        thresh = gd.getNextNumber();
+        maxVal = gd.getNextNumber();
+        idxType = gd.getNextChoiceIndex();
 
         if(Double.isNaN(thresh) || Double.isNaN(maxVal)) {
-            IJ.showStatus("ERR : NaN");
+            IJ.showStatus("Error: NaN value detected");
             return false;
         }
 
-        if(bitDepth == 8 && (thresh < 0 || 255 < thresh)) {
-            IJ.showStatus("'0 <= thresh & thresh <= 255' is necessary.");
+        if(bitDepth == 8 && (thresh < 0 || thresh > UBYTE_MAX)) {
+            IJ.showStatus("For 8-bit images, thresh must be between 0 and " + (int)UBYTE_MAX);
             return false;
         }
 
         if(bitDepth == 8 && maxVal < 0) {
-            IJ.showStatus("'0 <= maxValue' is necessary.");
+            IJ.showStatus("maxVal must be >= 0");
+            return false;
+        }
+
+        // THRESH_OTSU and THRESH_TRIANGLE only support 8-bit images
+        if(bitDepth != 8 && (idxType == 5 || idxType == 6 || idxType == 7)) {
+            IJ.showStatus("OTSU and TRIANGLE methods are only supported for 8-bit images");
             return false;
         }
 
@@ -119,12 +129,12 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
-            return DONE;
+            return PlugInFilter.DONE;
         }
 
         if(imp == null) {
             IJ.noImage();
-            return DONE;
+            return PlugInFilter.DONE;
         }
         else {
             bitDepth = imp.getBitDepth();
@@ -137,34 +147,64 @@ public class OCV_Threshold implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         int imw = ip.getWidth();
         int imh = ip.getHeight();
 
-        if(ip.getBitDepth() == 8) {
-            // srcdst
-            byte[] srcdst_bytes = (byte[])ip.getPixels();
+        try {
+            if(bitDepth == 8) {
+                Mat srcMat = null;
+                Mat dstMat = null;
 
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+                try {
+                    byte[] srcdstBytes = (byte[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+                    dstMat = new Mat(imh, imw, CvType.CV_8UC1);
 
-            // run
-            src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.threshold(src_mat, dst_mat, thresh, maxVal, INT_TYPE[idxType]);
-            dst_mat.get(0, 0, srcdst_bytes);
+                    srcMat.put(0, 0, srcdstBytes);
+                    Imgproc.threshold(srcMat, dstMat, thresh, maxVal, INT_TYPE[idxType]);
+                    dstMat.get(0, 0, srcdstBytes);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 16) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    short[] srcdstShorts = (short[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_16U);
+                    dstMat = new Mat(imh, imw, CvType.CV_16U);
+
+                    srcMat.put(0, 0, srcdstShorts);
+                    Imgproc.threshold(srcMat, dstMat, thresh, maxVal, INT_TYPE[idxType]);
+                    dstMat.get(0, 0, srcdstShorts);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
+            else if(bitDepth == 32) {
+                Mat srcMat = null;
+                Mat dstMat = null;
+
+                try {
+                    float[] srcdstFloats = (float[])ip.getPixels();
+                    srcMat = new Mat(imh, imw, CvType.CV_32F);
+                    dstMat = new Mat(imh, imw, CvType.CV_32F);
+
+                    srcMat.put(0, 0, srcdstFloats);
+                    Imgproc.threshold(srcMat, dstMat, thresh, maxVal, INT_TYPE[idxType]);
+                    dstMat.get(0, 0, srcdstFloats);
+                }
+                finally {
+                    if(srcMat != null) srcMat.release();
+                    if(dstMat != null) dstMat.release();
+                }
+            }
         }
-        else if(ip.getBitDepth() == 32) {
-            // srcdst
-            float[] srcdst_floats = (float[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-
-            // run
-            src_mat.put(0, 0, srcdst_floats);
-            Imgproc.threshold(src_mat, dst_mat, thresh, maxVal, INT_TYPE[idxType]);
-            dst_mat.get(0, 0, srcdst_floats);
-        }
-        else {
-            IJ.error("Wrong image format");
+        catch(Exception e) {
+            IJ.log(className + " error: " + e.getMessage());
         }
     }
 }

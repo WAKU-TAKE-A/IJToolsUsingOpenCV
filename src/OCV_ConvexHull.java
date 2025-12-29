@@ -8,7 +8,7 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-import java.awt.Polygon;
+import java.awt.Rectangle;
 import java.util.ArrayList;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
@@ -43,84 +43,110 @@ import org.opencv.imgproc.Imgproc;
  * convexHull.
  */
 public class OCV_ConvexHull implements ExtendedPlugInFilter {
+    // constant var.
+    private static final int BACKGROUND_VALUE = 0;
+
     // static var.
     private static boolean enCW = true;
     private static boolean enRefData = false;
 
     // var.
+    private String className;
     private int countNPass = 0;
     private Roi roiSrc = null;
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
 
     @Override
-    public void setNPasses(int arg0) {
-        // do nothing
+    public void setNPasses(int nPasses) {
+        if(nPasses > 0 && enRefData) {
+            countNPass = 0;
+        }
     }
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
+        
         gd.addCheckbox("enable_clockwise", enCW);
         gd.addCheckbox("enable_refresh_data", enRefData);
+        
         gd.showDialog();
 
         if(gd.wasCanceled()) {
             return DONE;
         }
         else {
-            enCW = (boolean)gd.getNextBoolean();
-            enRefData = (boolean)gd.getNextBoolean();
+            enCW = gd.getNextBoolean();
+            enRefData = gd.getNextBoolean();
             return DOES_8G;
         }
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        byte[] byteArray;
-        int w;
-        int h;
-        int offsetx;
-        int offsety;
-        
-        if (roiSrc == null) {
-            byteArray = (byte[])ip.getPixels();
-            w = ip.getWidth();
-            h = ip.getHeight();
-            offsetx = 0;
-            offsety = 0;
-        }
-        else
-        {
-            ImageProcessor ip_crop = ip.crop();
-            byteArray = (byte[])ip_crop.getPixels();
-            w = ip_crop.getWidth();
-            h = ip_crop.getHeight();
-            Polygon pol = roiSrc.getPolygon();
-            offsetx = pol.xpoints[0];
-            offsety = pol.ypoints[0];
-        }
+        MatOfPoint pts = null;
+        MatOfInt hull = null;
+        ImageProcessor ipWork = null;
 
-        ArrayList<Point> lstPt = new ArrayList<Point>();
-        MatOfPoint pts = new MatOfPoint();
+        try {
+            byte[] byteArray;
+            int w;
+            int h;
+            int offsetX;
+            int offsetY;
+            
+            if(roiSrc == null) {
+                // Process entire image
+                byteArray = (byte[])ip.getPixels();
+                w = ip.getWidth();
+                h = ip.getHeight();
+                offsetX = 0;
+                offsetY = 0;
+            }
+            else {
+                // Process ROI region
+                ipWork = ip.duplicate();
+                ipWork.setColor(BACKGROUND_VALUE);
+                ipWork.setRoi(roiSrc);
+                ipWork.fillOutside(roiSrc);
+                
+                ImageProcessor ipCrop = ipWork.crop();
+                byteArray = (byte[])ipCrop.getPixels();
+                w = ipCrop.getWidth();
+                h = ipCrop.getHeight();
+                Rectangle bounds = roiSrc.getBounds();
+                offsetX = bounds.x;
+                offsetY = bounds.y;
+                
+                ipCrop = null;
+            }
 
-        for(int y = 0; y < h; y++) {
-            for(int x = 0; x < w; x++) {
-                if(byteArray[x + w * y] != 0) {
-                    lstPt.add(new Point((double)x+(double)offsetx, (double)y+(double)offsety));
+            ArrayList<Point> lstPt = new ArrayList<Point>();
+
+            for(int y = 0; y < h; y++) {
+                for(int x = 0; x < w; x++) {
+                    if(byteArray[x + w * y] != BACKGROUND_VALUE) {
+                        lstPt.add(new Point(x + offsetX, y + offsetY));
+                    }
                 }
             }
-        }
 
-        if(lstPt.isEmpty()) {
-            return;
-        }
+            if(lstPt.isEmpty()) {
+                return;
+            }
 
-        pts.fromList(lstPt);
-        MatOfInt hull = new MatOfInt();
-        Imgproc.convexHull(pts, hull, enCW);
-        
-        if(pts != null) {
+            pts = new MatOfPoint();
+            pts.fromList(lstPt);
+            hull = new MatOfInt();
+            Imgproc.convexHull(pts, hull, enCW);
+            
+            if(hull.empty()) {
+                IJ.log("Convex hull is empty.");
+                return;
+            }
+
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
 
@@ -131,6 +157,18 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             }
 
             showData(pts, hull);
+        }
+        catch(Exception e) {
+            IJ.log("Convex hull failed: " + e.getMessage());
+        }
+        finally {
+            if(pts != null) {
+                pts.release();
+            }
+            if(hull != null) {
+                hull.release();
+            }
+            ipWork = null;
         }
     }
 
@@ -147,40 +185,42 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
         }
         else {
             roiSrc = imp.getRoi();
-            
-            if (roiSrc == null || roiSrc.getType() != Roi.RECTANGLE) {
-                roiSrc = null;
-            }
+            countNPass = 0;
             
             return DOES_8G;
         }
     }
 
     private void showData(MatOfPoint pts, MatOfInt hull) {
-        // set the ResultsTable
-        int num_hull = (int)hull.size().height;
-        float[] xPoints = new float[num_hull];
-        float[] yPoints = new float[num_hull];
+        try {
+            // set the ResultsTable
+            int numHull = (int)hull.size().height;
+            float[] xPoints = new float[numHull];
+            float[] yPoints = new float[numHull];
 
-        for(int i = 0; i < num_hull ; i++) {
-            int index = (int)hull.get(i, 0)[0];
-            xPoints[i] = (float)pts.get(index, 0)[0];
-            yPoints[i] = (float)pts.get(index, 0)[1];
+            for(int i = 0; i < numHull; i++) {
+                int index = (int)hull.get(i, 0)[0];
+                xPoints[i] = (float)pts.get(index, 0)[0];
+                yPoints[i] = (float)pts.get(index, 0)[1];
 
-            rt.incrementCounter();
-            rt.addValue("X", xPoints[i]);
-            rt.addValue("Y", yPoints[i]);
+                rt.incrementCounter();
+                rt.addValue("X", xPoints[i]);
+                rt.addValue("Y", yPoints[i]);
+            }
+
+            rt.show("Results");
+
+            // set the ROI
+            PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
+            proi.setPosition(countNPass + 1);
+            countNPass++;
+
+            roiMan.addRoi(proi);
+            int numRoiMan = roiMan.getCount();
+            roiMan.select(numRoiMan - 1);
         }
-
-        rt.show("Results");
-
-        // set the ROI
-        PolygonRoi proi = new PolygonRoi(xPoints, yPoints, Roi.POLYGON);
-        proi.setPosition(countNPass + 1); // Start from one.
-        countNPass++;
-
-        roiMan.addRoi(proi);
-        int num_roiMan = roiMan.getCount();
-        roiMan.select(num_roiMan - 1);
+        catch(Exception e) {
+            IJ.log("Show data failed: " + e.getMessage());
+        }
     }
 }

@@ -44,28 +44,35 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     private static final int[] INT_THRESHOLDTYPE = { Imgproc.THRESH_BINARY, Imgproc.THRESH_BINARY_INV };
     private static final String[] STR_THRESHOLDTYPE = { "THRESH_BINARY", "THRESH_BINARY_INV" };
 
-    // staic var.
-    private static double maxValue  = 255.0;
+    // static var.
+    private static double maxValue = 255.0;
     private static int indMethod = 0;
-    private static int indType  = 0;
-    private static int blockSize  = 5;
-    private static double subC = 10.0;
+    private static int indType = 0;
+    private static int blockSize = 5;
+    private static double constantOffset = 10.0;
+    
+    // var.
+    private String className;
+    private Mat src_mat = null;
+    private Mat dst_mat = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addSlider("maxValue", 1, 255, maxValue);
         gd.addChoice("adaptiveMethod", STR_ADAPTIVEMETHOD, STR_ADAPTIVEMETHOD[indMethod]);
         gd.addChoice("thresholdType", STR_THRESHOLDTYPE, STR_THRESHOLDTYPE[indType]);
         gd.addNumericField("blockSize", blockSize, 0);
-        gd.addNumericField("constSubtractedFromMean", subC, 4);
+        gd.addNumericField("constSubtractedFromMean", constantOffset, 4);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
         gd.showDialog();
 
         if(gd.wasCanceled()) {
+            releaseResources();
             return DONE;
         }
         else {
@@ -79,9 +86,9 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         indMethod = (int)gd.getNextChoiceIndex();
         indType = (int)gd.getNextChoiceIndex();
         blockSize = (int)gd.getNextNumber();
-        subC = (double)gd.getNextNumber();
+        constantOffset = (double)gd.getNextNumber();
 
-        if(Double.isNaN(maxValue) || Double.isNaN(subC)) {
+        if(Double.isNaN(maxValue) || Double.isNaN(constantOffset)) {
             IJ.showStatus("ERR : NaN");
             return false;
         }
@@ -93,11 +100,6 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
 
         if(blockSize % 2 == 0) {
             IJ.showStatus("blockSize should be odd.");
-            return false;
-        }
-
-        if(subC <= 0) {
-            IJ.showStatus("'0 < subC'");
             return false;
         }
 
@@ -134,13 +136,32 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         // srcdst
         byte[] srcdst_ar = (byte[])ip.getPixels();
 
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        // mat - allocate or reuse
+        if(src_mat == null || src_mat.width() != imw || src_mat.height() != imh) {
+            releaseResources();
+            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
+        }
 
         // run
-        src_mat.put(0, 0, srcdst_ar);
-        Imgproc.adaptiveThreshold(src_mat, dst_mat, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, subC);
-        dst_mat.get(0, 0, srcdst_ar);
+        try {
+            src_mat.put(0, 0, srcdst_ar);
+            Imgproc.adaptiveThreshold(src_mat, dst_mat, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, constantOffset);
+            dst_mat.get(0, 0, srcdst_ar);
+        } catch(Exception e) {
+            IJ.log("Adaptive threshold failed: " + e.getMessage());
+            releaseResources();
+        }
+    }
+
+    private void releaseResources() {
+        if(src_mat != null) {
+            src_mat.release();
+            src_mat = null;
+        }
+        if(dst_mat != null) {
+            dst_mat.release();
+            dst_mat = null;
+        }
     }
 }

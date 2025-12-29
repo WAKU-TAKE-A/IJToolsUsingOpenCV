@@ -1,7 +1,7 @@
 import ij.*;
+import ij.IJ;
 import ij.gui.DialogListener;
 import ij.gui.GenericDialog;
-import ij.measure.ResultsTable;
 import ij.plugin.filter.*;
 import ij.process.*;
 import java.awt.AWTEvent;
@@ -39,26 +39,31 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | KEEP_PREVIEW;
-    private static final int[] FLAGS_INT = new int[] { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
-    private static final String[] FLAGS_STR = new String [] { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "INVERSE_TRANSFORMATION" };
+    private static final int FLAGS = PlugInFilter.DOES_8G | PlugInFilter.DOES_RGB | PlugInFilter.DOES_16 | PlugInFilter.DOES_32 | ExtendedPlugInFilter.KEEP_PREVIEW;
+    private static final int[] INT_INTERPOLATION = { Imgproc.INTER_NEAREST, Imgproc.INTER_LINEAR, Imgproc.INTER_CUBIC, Imgproc.INTER_AREA, Imgproc.INTER_LANCZOS4, Imgproc.WARP_FILL_OUTLIERS, Imgproc.WARP_INVERSE_MAP };
+    private static final String[] STR_INTERPOLATION = { "INTER_NEAREST", "INTER_LINEAR", "INTER_CUBIC", "INTER_AREA", "INTER_LANCZOS4", "WARP_FILL_OUTLIERS", "INVERSE_TRANSFORMATION" };
 
     // static var.
-    private static int flags_ind = 1;
-    private ResultsTable rt  = null;
+    private static boolean useInverse = false;
+    private static int flagsInd = 1;
+    
+    // var.
+    private String className;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
-
-        gd.addChoice("interpolation_method", FLAGS_STR, FLAGS_STR[flags_ind]);
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
+        
+        gd.addCheckbox("use_inverse", useInverse);
+        gd.addChoice("interpolation_method", STR_INTERPOLATION, STR_INTERPOLATION[flagsInd]);
         gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            return DONE;
+            return PlugInFilter.DONE;
         }
         else {
             return IJ.setupDialog(imp, FLAGS);
@@ -67,7 +72,8 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
 
     @Override
     public boolean dialogItemChanged(GenericDialog gd, AWTEvent awte) {
-        flags_ind = (int)gd.getNextChoiceIndex();
+        useInverse = gd.getNextBoolean();
+        flagsInd = gd.getNextChoiceIndex();
         IJ.showStatus("OCV_WarpAffine");
         return true;
     }
@@ -79,21 +85,19 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
 
     @Override
     public int setup(String arg0, ImagePlus imp) {
-        if(!OCV__LoadLibrary.isLoad()) {
+        if (!OCV__LoadLibrary.isLoad()) {
             IJ.error("Library is not loaded.");
-            return DONE;
+            return PlugInFilter.DONE;
         }
 
-        if(imp == null) {
+        if (imp == null) {
             IJ.noImage();
-            return DONE;
+            return PlugInFilter.DONE;
         }
 
-        rt = OCV__LoadLibrary.GetResultsTable(false);
-
-        if(rt == null || rt.size() != 2) {
-            IJ.error("It is necessary that ResultsTable.size() is two.");
-            return DONE;
+        if (!OCV__LoadLibrary.MyAffine.hasMatrix) {
+            IJ.error("Matrix has not been generated yet.");
+            return PlugInFilter.DONE;
         }
 
         return FLAGS;
@@ -103,53 +107,69 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
     public void run(ImageProcessor ip) {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
-        Size size =  new Size((double)imw, (double)imh);
-        Mat mat = new Mat(2, 3, CvType.CV_64FC1);
-
-        for(int i = 0; i < 2; i++) {
-            mat.put(i, 0, new double[] { Double.valueOf(rt.getStringValue(0, i).replaceAll("\"|'", "")) });
-            mat.put(i, 1, new double[] { Double.valueOf(rt.getStringValue(1, i).replaceAll("\"|'", "")) });
-            mat.put(i, 2, new double[] { Double.valueOf(rt.getStringValue(2, i).replaceAll("\"|'", "")) });
+        int bitDepth = ip.getBitDepth();
+        
+        Size size = new Size(imw, imh);
+        Mat mat;
+        
+        if (useInverse) {
+            mat = OCV__LoadLibrary.MyAffine.AffineInverse;
+        } else {
+            mat = OCV__LoadLibrary.MyAffine.AffineMatrix;
         }
 
-        if(ip.getBitDepth() == 8) {
-            byte[] srcdst_ar = (byte[])ip.getPixels();
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
-            src_mat.put(0, 0, srcdst_ar);
-            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
-            dst_mat.get(0, 0, srcdst_ar);
+        if (mat == null || mat.empty()) {
+            IJ.log(className + " error: Invalid transformation matrix");
+            return;
         }
-        else if(ip.getBitDepth() == 16) {
-            short[] srcdst_ar = (short[])ip.getPixels();
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16UC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_16UC1);
 
-            src_mat.put(0, 0, srcdst_ar);
-            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
-            dst_mat.get(0, 0, srcdst_ar);
-        }
-        else if(ip.getBitDepth() == 24) {
-            int[] srcdst_ar = (int[])ip.getPixels();
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
+        Mat srcMat = null;
+        Mat dstMat = null;
+        
+        try {
+            if(bitDepth == 8) {
+                byte[] srcdstArray = (byte[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+                dstMat = new Mat(imh, imw, CvType.CV_8UC1);
 
-            OCV__LoadLibrary.intarray2mat(srcdst_ar, src_mat, imw, imh);
-            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
-            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ar, imw, imh);
-        }
-        else if(ip.getBitDepth() == 32) {
-            float[] srcdst_ar = (float[])ip.getPixels();
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32FC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_32FC1);
+                srcMat.put(0, 0, srcdstArray);
+                Imgproc.warpAffine(srcMat, dstMat, mat, size, INT_INTERPOLATION[flagsInd]);
+                dstMat.get(0, 0, srcdstArray);
+            }
+            else if(bitDepth == 16) {
+                short[] srcdstArray = (short[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_16U);
+                dstMat = new Mat(imh, imw, CvType.CV_16U);
 
-            src_mat.put(0, 0, srcdst_ar);
-            Imgproc.warpAffine(src_mat, dst_mat, mat, size, FLAGS_INT[flags_ind]);
-            dst_mat.get(0, 0, srcdst_ar);
+                srcMat.put(0, 0, srcdstArray);
+                Imgproc.warpAffine(srcMat, dstMat, mat, size, INT_INTERPOLATION[flagsInd]);
+                dstMat.get(0, 0, srcdstArray);
+            }
+            else if(bitDepth == 24) {
+                int[] srcdstArray = (int[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_8UC3);
+                dstMat = new Mat(imh, imw, CvType.CV_8UC3);
+
+                OCV__LoadLibrary.intarray2mat(srcdstArray, srcMat, imw, imh);
+                Imgproc.warpAffine(srcMat, dstMat, mat, size, INT_INTERPOLATION[flagsInd]);
+                OCV__LoadLibrary.mat2intarray(dstMat, srcdstArray, imw, imh);
+            }
+            else if(bitDepth == 32) {
+                float[] srcdstArray = (float[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_32F);
+                dstMat = new Mat(imh, imw, CvType.CV_32F);
+
+                srcMat.put(0, 0, srcdstArray);
+                Imgproc.warpAffine(srcMat, dstMat, mat, size, INT_INTERPOLATION[flagsInd]);
+                dstMat.get(0, 0, srcdstArray);
+            }
         }
-        else {
-            IJ.error("Wrong image format");
+        catch(Exception e) {
+            IJ.log(className + " error: " + e.getMessage());
+        }
+        finally {
+            if (srcMat != null) srcMat.release();
+            if (dstMat != null) dstMat.release();
         }
     }
 }

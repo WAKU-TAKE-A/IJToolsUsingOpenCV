@@ -41,7 +41,6 @@ import java.awt.AWTEvent;
 public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_8G;
-    private static final double CV_PI = 3.1415926535897932384626433832795;
 
     // static var.
     private static double resDist = 1;
@@ -172,73 +171,103 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
 
     @Override
     public void run(ImageProcessor ip) {
-        // src
-        int imw = ip.getWidth();
-        int imh = ip.getHeight();
-        byte[] src_ar = (byte[]) ip.getPixels();
+        Mat srcMat = null;
+        Mat dstLines = null;
 
-        // mat
-        Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        Mat dst_lines = new Mat();
+        try {
+            // src
+            int imw = ip.getWidth();
+            int imh = ip.getHeight();
+            byte[] srcAr = (byte[])ip.getPixels();
 
-        // run
-        src_mat.put(0, 0, src_ar);
+            // mat
+            srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+            dstLines = new Mat();
 
-        double resAng = CV_PI / resAngFact;
-        double minTheta = CV_PI / 360.0 * minDeg;
-        double maxTheta = CV_PI / 360.0 * maxDeg;
-        Imgproc.HoughLines(src_mat, dst_lines, resDist, resAng, minVotes, srn, stn, minTheta, maxTheta);
+            // run
+            srcMat.put(0, 0, srcAr);
 
-        // fin
-        showData(dst_lines, imw, imh);
+            double resAng = Math.PI / resAngFact;
+            double minTheta = Math.PI / 360.0 * minDeg;
+            double maxTheta = Math.PI / 360.0 * maxDeg;
+            Imgproc.HoughLines(srcMat, dstLines, resDist, resAng, minVotes, srn, stn, minTheta, maxTheta);
+
+            // fin
+            showData(dstLines, imw, imh);
+        }
+        catch(Exception e) {
+            IJ.log("Hough lines failed: " + e.getMessage());
+        }
+        finally {
+            if(srcMat != null) {
+                srcMat.release();
+            }
+            if(dstLines != null) {
+                dstLines.release();
+            }
+        }
     }
 
     // private
     private void showData(Mat lines, int imw, int imh) {
-        // prepare the ResultsTable
-        ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+        try {
+            int numLines = lines.rows();
 
-        // prepare the ROI Manager
-        RoiManager roiMan = null;
-
-        if(enAddRoi) {
-            roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
-        }
-
-        // show
-        int num_lines = lines.rows();
-        float[] res = new float[2];
-
-        for(int i = 0; i < num_lines; i++) {
-            lines.get(i, 0, res);
-
-            float rho = res[0];
-            float theta = res[1];
-            double a = Math.cos(theta);
-            double b = Math.sin(theta);
-            double x0 = a * rho;
-            double y0 = b * rho;
-            double z = imw < imh ? imh : imw;
-            double x1 = x0 + z * (-b);
-            double y1 = y0 + z * a;
-            double x2 = x0 - z * (-b);
-            double y2 = y0 - z * (a);
-
-            rt.incrementCounter();
-            rt.addValue("No", i + 1);
-            rt.addValue("theta", (double)theta / CV_PI * 180);
-            rt.addValue("x1", x1);
-            rt.addValue("y1", y1);
-            rt.addValue("x2", x2);
-            rt.addValue("y2", y2);
-
-            if(enAddRoi && (roiMan != null)) {
-                Line roi = new Line(x1, y1, x2, y2);
-                roiMan.addRoi(roi);
-                roiMan.rename(i, "no" + String.valueOf(i + 1));
+            if(numLines == 0) {
+                IJ.log("No lines detected.");
+                return;
             }
-        }
 
-        rt.show("Results");
+            // prepare the ResultsTable
+            ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
+
+            // prepare the ROI Manager
+            RoiManager roiMan = null;
+
+            if(enAddRoi) {
+                roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
+                if(roiMan == null) {
+                    IJ.log("Failed to get ROI Manager.");
+                }
+            }
+
+            // show
+            float[] res = new float[2];
+
+            for(int i = 0; i < numLines; i++) {
+                lines.get(i, 0, res);
+
+                float rho = res[0];
+                float theta = res[1];
+                double a = Math.cos(theta);
+                double b = Math.sin(theta);
+                double x0 = a * rho;
+                double y0 = b * rho;
+                double z = imw < imh ? imh : imw;
+                double x1 = x0 + z * (-b);
+                double y1 = y0 + z * a;
+                double x2 = x0 - z * (-b);
+                double y2 = y0 - z * (a);
+
+                rt.incrementCounter();
+                rt.addValue("No", i + 1);
+                rt.addValue("theta", (double)theta / Math.PI * 180);
+                rt.addValue("x1", x1);
+                rt.addValue("y1", y1);
+                rt.addValue("x2", x2);
+                rt.addValue("y2", y2);
+
+                if(enAddRoi && roiMan != null) {
+                    Line roi = new Line(x1, y1, x2, y2);
+                    roiMan.addRoi(roi);
+                    roiMan.rename(i, "no" + String.valueOf(i + 1));
+                }
+            }
+
+            rt.show("Results");
+        }
+        catch(Exception e) {
+            IJ.log("Show data failed: " + e.getMessage());
+        }
     }
 }

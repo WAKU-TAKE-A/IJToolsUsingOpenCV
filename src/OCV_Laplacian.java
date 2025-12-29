@@ -55,15 +55,19 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
     private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
 
-    // staic var.
+    // static var.
     private static int ksize = 3; // kernel size
     private static double scale = 1; // optional scale factor for the computed Laplacian values
     private static double delta = 0; // optional delta value that is added to the results prior to storing them in dst
     private static int indBorderType = 2; // border type
 
+    // var.
+    private String className;
+    
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("ksize", ksize, 0);
         gd.addNumericField("scale", scale, 4);
@@ -131,68 +135,59 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
     @Override
     public void run(ImageProcessor ip) {
-        if(ip.getBitDepth() == 8) {
-            // srcdst
+        Mat srcMat = null;
+        Mat dstMat = null;
+
+        try {
             int imw = ip.getWidth();
             int imh = ip.getHeight();
-            byte[] srcdst_bytes = (byte[])ip.getPixels();
 
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-
-            // run
-            src_mat.put(0, 0, srcdst_bytes);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_bytes);
+            if(ip.getBitDepth() == 8) {
+                byte[] srcdstBytes = (byte[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+                dstMat = new Mat(imh, imw, CvType.CV_8UC1);
+                srcMat.put(0, 0, srcdstBytes);
+                Imgproc.Laplacian(srcMat, dstMat, dstMat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
+                dstMat.get(0, 0, srcdstBytes);
+            }
+            else if(ip.getBitDepth() == 16) {
+                short[] srcdstShorts = (short[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_16S);
+                dstMat = new Mat(imh, imw, CvType.CV_16S);
+                srcMat.put(0, 0, srcdstShorts);
+                Imgproc.Laplacian(srcMat, dstMat, dstMat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
+                dstMat.get(0, 0, srcdstShorts);
+            }
+            else if(ip.getBitDepth() == 24) {
+                int[] srcdstInts = (int[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_8UC3);
+                dstMat = new Mat(imh, imw, CvType.CV_8UC3);
+                OCV__LoadLibrary.intarray2mat(srcdstInts, srcMat, imw, imh);
+                Imgproc.Laplacian(srcMat, dstMat, dstMat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
+                OCV__LoadLibrary.mat2intarray(dstMat, srcdstInts, imw, imh);
+            }
+            else if(ip.getBitDepth() == 32) {
+                float[] srcdstFloats = (float[])ip.getPixels();
+                srcMat = new Mat(imh, imw, CvType.CV_32F);
+                dstMat = new Mat(imh, imw, CvType.CV_32F);
+                srcMat.put(0, 0, srcdstFloats);
+                Imgproc.Laplacian(srcMat, dstMat, dstMat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
+                dstMat.get(0, 0, srcdstFloats);
+            }
+            else {
+                IJ.log(className + " error: Wrong image format.");
+            }
         }
-        else if(ip.getBitDepth() == 16) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            short[] srcdst_shorts = (short[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_16S);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_16S);
-
-            // run
-            src_mat.put(0, 0, srcdst_shorts);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_shorts);
+        catch(Exception e) {
+            IJ.log(className + " error: Laplacian failed. (" + e.getMessage() + ")");
         }
-        else if(ip.getBitDepth() == 24) {
-            // dst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            int[] srcdst_ints = (int[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_8UC3);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_8UC3);
-
-            // run
-            OCV__LoadLibrary.intarray2mat(srcdst_ints, src_mat, imw, imh);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
-            OCV__LoadLibrary.mat2intarray(dst_mat, srcdst_ints, imw, imh);
-        }
-        else if(ip.getBitDepth() == 32) {
-            // srcdst
-            int imw = ip.getWidth();
-            int imh = ip.getHeight();
-            float[] srcdst_floats = (float[])ip.getPixels();
-
-            // mat
-            Mat src_mat = new Mat(imh, imw, CvType.CV_32F);
-            Mat dst_mat = new Mat(imh, imw, CvType.CV_32F);
-
-            // run
-            src_mat.put(0, 0, srcdst_floats);
-            Imgproc.Laplacian(src_mat, dst_mat, dst_mat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
-            dst_mat.get(0, 0, srcdst_floats);
-        }
-        else {
-            IJ.error("Wrong image format");
+        finally {
+            if(srcMat != null) {
+                srcMat.release();
+            }
+            if(dstMat != null) {
+                dstMat.release();
+            }
         }
     }
 }

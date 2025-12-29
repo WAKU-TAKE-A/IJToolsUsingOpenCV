@@ -8,11 +8,11 @@ import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
-import java.awt.Polygon;
+import java.awt.Rectangle;
+import java.util.ArrayList;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.imgproc.Imgproc;
-import java.util.ArrayList;
 
 /*
  * The MIT License
@@ -42,19 +42,20 @@ import java.util.ArrayList;
  * minEnclosingCircle.
  */
 public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
+    // constant var.
+    private static final int BACKGROUND_VALUE = 0;
+
     // static var.
     private static boolean enRefData = false;
 
     // var.
+    private String className;
     private ImagePlus impSrc = null;
     private ResultsTable rt = null;
     private RoiManager roiMan = null;
     private int countNPass = 0;
     private Roi roiSrc = null;
 
-    /*
-     * @see ij.plugin.filter.ExtendedPlugInFilter#setNPasses(int)
-     */
     @Override
     public void setNPasses(int arg0) {
         // do nothing
@@ -62,7 +63,8 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
         gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
@@ -71,68 +73,88 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
         }
         else {
             enRefData = (boolean)gd.getNextBoolean();
-            return IJ.setupDialog(imp, DOES_8G); // Displays a "Process all images?" dialog
+            countNPass = 0;
+            return IJ.setupDialog(imp, DOES_8G);
         }
     }
 
     @Override
     public void run(ImageProcessor ip) {
-        int num_slice = ip.getSliceNumber();
-        
-        byte[] byteArray;
-        int w;
-        int h;
-        int offsetx;
-        int offsety;
-        
-        if (roiSrc == null) {
-            byteArray = (byte[])ip.getPixels();
-            w = ip.getWidth();
-            h = ip.getHeight();
-            offsetx = 0;
-            offsety = 0;
-        }
-        else
-        {
-            ImageProcessor ip_crop = ip.crop();
-            byteArray = (byte[])ip_crop.getPixels();
-            w = ip_crop.getWidth();
-            h = ip_crop.getHeight();
-            Polygon pol = roiSrc.getPolygon();
-            offsetx = pol.xpoints[0];
-            offsety = pol.ypoints[0];
-        }
+        int numSlice = ip.getSliceNumber();
+        ImageProcessor ipWork = null;
+        MatOfPoint2f pts = null;
 
+        try {
+            byte[] byteArray;
+            int w;
+            int h;
+            int offsetX;
+            int offsetY;
 
-        ArrayList<Point> lstPt = new ArrayList<Point>();
-        MatOfPoint2f pts = new MatOfPoint2f();
+            if (roiSrc == null) {
+                // 画像全体を処理
+                byteArray = (byte[])ip.getPixels();
+                w = ip.getWidth();
+                h = ip.getHeight();
+                offsetX = 0;
+                offsetY = 0;
+            }
+            else {
+                // ROI領域を処理
+                ipWork = ip.duplicate();
+                ipWork.setColor(BACKGROUND_VALUE);
+                ipWork.setRoi(roiSrc);
+                ipWork.fillOutside(roiSrc);
 
-        for(int y = 0; y < h; y++) {
-            for(int x = 0; x < w; x++) {
-                if(byteArray[x + w * y] != 0) {
-                    lstPt.add(new Point((double)x+(double)offsetx, (double)y+(double)offsety));
+                ImageProcessor ipCrop = ipWork.crop();
+                byteArray = (byte[])ipCrop.getPixels();
+                w = ipCrop.getWidth();
+                h = ipCrop.getHeight();
+
+                Rectangle rect = roiSrc.getBounds();
+                offsetX = rect.x;
+                offsetY = rect.y;
+
+                ipCrop = null;
+            }
+
+            ArrayList<Point> lstPt = new ArrayList<Point>();
+
+            for(int y = 0; y < h; y++) {
+                for(int x = 0; x < w; x++) {
+                    if(byteArray[x + w * y] != BACKGROUND_VALUE) {
+                        lstPt.add(new Point(x + offsetX, y + offsetY));
+                    }
                 }
             }
+
+            if(lstPt.isEmpty()) {
+                return;
+            }
+
+            pts = new MatOfPoint2f();
+            pts.fromList(lstPt);
+            float[] radius = new float[1];
+            Point center = new Point();
+            Imgproc.minEnclosingCircle(pts, center, radius);
+
+            rt = OCV__LoadLibrary.GetResultsTable(false);
+            roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
+
+            if(enRefData && countNPass == 0) {
+                rt.reset();
+                roiMan.reset();
+            }
+
+            showData(center.x, center.y, radius[0], numSlice);
         }
-
-        if(lstPt.isEmpty()) {
-            return;
+        catch(Exception e) {
+            IJ.log(className + " error: " + e.getMessage());
         }
-
-        pts.fromList(lstPt);
-        float[] radius = new float[1];
-        Point center = new Point();
-        Imgproc.minEnclosingCircle(pts, center, radius);
-
-        rt = OCV__LoadLibrary.GetResultsTable(false);
-        roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
-
-        if(enRefData) {
-            rt.reset();
-            roiMan.reset();
+        finally {
+            if(pts != null) pts.release();
+            ipWork = null;
         }
-
-        showData(center.x, center.y, (double)radius[0], num_slice);
     }
 
     @Override
@@ -149,33 +171,27 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
         else {
             impSrc = imp;
             roiSrc = imp.getRoi();
-            
-            if (roiSrc == null || roiSrc.getType() != Roi.RECTANGLE) {
-                roiSrc = null;
-            } 
-            
             return DOES_8G;
         }
     }
 
-    private void showData(double center_x, double center_y, double radius, int num_slice) {
+    private void showData(double centerX, double centerY, double radius, int numSlice) {
         // set the ResultsTable
         rt.incrementCounter();
-        rt.addValue("CenterX", center_x);
-        rt.addValue("CenterY", center_y);
+        rt.addValue("CenterX", centerX);
+        rt.addValue("CenterY", centerY);
         rt.addValue("R", radius);
         rt.show("Results");
 
         // set the ROI
-        double diameter = (double)(radius * 2);
-        impSrc.setSlice(num_slice);
-        OvalRoi roi = new OvalRoi((center_x - radius), (center_y - radius), diameter, diameter);
-        roi.setPosition(countNPass + 1); // Start from one.
+        double diameter = radius * 2;
+        impSrc.setSlice(numSlice);
+        OvalRoi roi = new OvalRoi(centerX - radius, centerY - radius, diameter, diameter);
+        roi.setPosition(countNPass + 1);
         countNPass++;
 
         roiMan.addRoi(roi);
-        int num_roiMan = roiMan.getCount();
-        roiMan.select(num_roiMan - 1);
+        int numRoiMan = roiMan.getCount();
+        roiMan.select(numRoiMan - 1);
     }
 }
-
