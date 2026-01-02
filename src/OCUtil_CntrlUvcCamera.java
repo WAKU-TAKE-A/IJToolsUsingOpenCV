@@ -83,7 +83,7 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     private boolean flag_fin_loop = false;
     private boolean ini_verticalProfile = false;
     private ImagePlus impPlot = null;
-    private final Mat dummy = new Mat();
+    private Mat dummy = null; // 修正: 初期化をnullに (UnsatisfiedLinkError回避)
 
     // Instance variables
     private VideoCapture src_cap = null;
@@ -163,12 +163,15 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             IJ.error(className, "Already running. Please stop the current session first.");
             return;
         }
-               
+                
         isRunning = true;
         boolean bret;
-        Mat src_mat = new Mat();
+        Mat src_mat = null;
 
         try {
+            src_mat = new Mat(); // 修正: runメソッド内で実体化
+            dummy = new Mat();   // 修正: runメソッド内で実体化
+
             // ----- stop dialog during continuous grabbing -----
             diag_free = new JDialog(diag_free, className, false);
             JButton but_stop_cont = new JButton("Stop");

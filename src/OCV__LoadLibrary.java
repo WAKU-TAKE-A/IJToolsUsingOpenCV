@@ -9,7 +9,11 @@ import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
+import ij.process.ByteProcessor;
+import ij.process.ColorProcessor;
+import ij.process.FloatProcessor;
 import ij.process.ImageProcessor;
+import ij.process.ShortProcessor;
 import java.awt.Frame;
 import java.awt.Rectangle;
 import java.util.ArrayList;
@@ -47,7 +51,7 @@ import org.opencv.videoio.VideoCapture;
  * Load OpenCV library.
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.46.0";
+    public static final String VERSION = "0.9.47.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -56,6 +60,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     public static MyFeatureDetector MyQuery;
     public static MyAffineTransform MyAffine;
     public static MyPerspectiveTransform MyPerspective;
+    public static MyCameraCalibration MyCameraCalib; // 追加
     
     // カメラキャッシュ
     private static VideoCapture cachedCamera = null;
@@ -97,6 +102,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             if (MyPerspective == null) {
                 MyPerspective = new MyPerspectiveTransform();
             }
+            if (MyCameraCalib == null) {
+                MyCameraCalib = new MyCameraCalibration();
+            }
             
             disposed = false;
         }
@@ -134,15 +142,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     // Camera management methods
     /**
      * カメラを取得（キャッシュから再利用または新規作成）
-     * @param device デバイス番号
-     * @param width 幅
-     * @param height 高さ
-     * @param apiId API ID
-     * @param forceNew 強制的に新規作成
-     * @return VideoCapture
      */
     public static VideoCapture GetCamera(int device, int width, int height, int apiId, boolean forceNew) {
-        // キャッシュが存在するが開いていない場合は再作成が必要
         boolean needRecreate = forceNew || !cameraHealthy || cachedCamera == null || 
                                !cachedCamera.isOpened() ||
                                cachedDevice != device || cachedApi != apiId;
@@ -174,7 +175,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
                 throw e;
             }
         } else {
-            // キャッシュ再利用の場合もwidth/heightが変更されていれば再設定
             if (cachedWidth != width || cachedHeight != height) {
                 cachedCamera.set(3, width);
                 cachedCamera.set(4, height);
@@ -187,42 +187,17 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         return cachedCamera;
     }
     
-    /**
-     * キャッシュされたカメラの幅を取得
-     * @return 幅
-     */
-    public static int GetCachedCameraWidth() {
-        return cachedWidth;
-    }
+    public static int GetCachedCameraWidth() { return cachedWidth; }
+    public static int GetCachedCameraHeight() { return cachedHeight; }
+    public static boolean IsCachedCameraOpened() { return cachedCamera != null && cachedCamera.isOpened(); }
     
-    /**
-     * キャッシュされたカメラの高さを取得
-     * @return 高さ
-     */
-    public static int GetCachedCameraHeight() {
-        return cachedHeight;
-    }
-    
-    /**
-     * キャッシュされたカメラが開いているか確認
-     * @return 開いている場合true
-     */
-    public static boolean IsCachedCameraOpened() {
-        return cachedCamera != null && cachedCamera.isOpened();
-    }
-    
-    /**
-     * カメラリソースを解放
-     */
     public static void ReleaseCamera() {
         if (cachedCamera != null) {
             try {
                 if (cachedCamera.isOpened()) {
                     cachedCamera.release();
                 }
-            } catch (Exception e) {
-                // 解放失敗は無視
-            }
+            } catch (Exception e) {}
         }
         cachedCamera = null;
         cachedDevice = -1;
@@ -232,20 +207,11 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         cameraHealthy = true;
     }
     
-    /**
-     * カメラエラーをマーク（次回GetCameraで強制再作成）
-     */
-    public static void MarkCameraUnhealthy() {
-        cameraHealthy = false;
-    }
+    public static void MarkCameraUnhealthy() { cameraHealthy = false; }
 
-    // static method
+    // Conversion methods
     /**
      * a CV_8UC3 data of OpenCV -> a color data of ImageJ.
-     * @param src_cv_8uc3 a CV_8UC3 data of OpenCV
-     * @param dst_ar a color data of ImageJ (int[])
-     * @param imw width of image
-     * @param imh height of image
      */
     public static void mat2intarray(Mat src_cv_8uc3, int[] dst_ar, int imw, int imh) {
         if((src_cv_8uc3.width() != imw) || (src_cv_8uc3.height() != imh) || dst_ar.length != imw * imh) {
@@ -253,12 +219,10 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             return;
         }
 
-        // 一括取得
         int totalPixels = imw * imh;
         byte[] buffer = new byte[totalPixels * 3];
         src_cv_8uc3.get(0, 0, buffer);
 
-        // 高速変換
         for (int i = 0; i < totalPixels; i++) {
             int b = buffer[i * 3] & 0xFF;
             int g = buffer[i * 3 + 1] & 0xFF;
@@ -269,10 +233,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
     /**
      * a color data of ImageJ -> a CV_8UC3 data of OpenCV
-     * @param src_ar a color data of ImageJ (int[])
-     * @param dst_cv_8uc3 CV_8UC3 data of OpenCV
-     * @param imw width of image
-     * @param imh height of image
      */
     public static void intarray2mat(int[] src_ar, Mat dst_cv_8uc3, int imw, int imh) {
         if((dst_cv_8uc3.width() != imw) || (dst_cv_8uc3.height() != imh) || src_ar.length != imw * imh) {
@@ -280,7 +240,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             return;
         }
 
-        // 高速変換
         int totalPixels = imw * imh;
         byte[] buffer = new byte[totalPixels * 3];
 
@@ -291,194 +250,128 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             buffer[i * 3 + 2] = (byte)((pixel >> 16) & 0xFF); // r
         }
 
-        // 一括書き込み
         dst_cv_8uc3.put(0, 0, buffer);
     }
 
     /**
-     * get the coordinates of the roi(ref:XYCoordinates.saveSelectionCoordinates())
-     * @param roi
-     * @param lstPt
+     * ImageProcessor -> OpenCV Mat
      */
+    public static Mat ip2mat(ImageProcessor ip) {
+        int w = ip.getWidth();
+        int h = ip.getHeight();
+        Mat mat;
+
+        if (ip instanceof ColorProcessor) {
+            mat = new Mat(h, w, CvType.CV_8UC3);
+            intarray2mat((int[]) ip.getPixels(), mat, w, h);
+        } else if (ip instanceof ByteProcessor) {
+            mat = new Mat(h, w, CvType.CV_8UC1);
+            mat.put(0, 0, (byte[]) ip.getPixels());
+        } else if (ip instanceof ShortProcessor) {
+            mat = new Mat(h, w, CvType.CV_16UC1);
+            mat.put(0, 0, (short[]) ip.getPixels());
+        } else if (ip instanceof FloatProcessor) {
+            mat = new Mat(h, w, CvType.CV_32FC1);
+            mat.put(0, 0, (float[]) ip.getPixels());
+        } else {
+            throw new IllegalArgumentException("Unsupported ImageProcessor type");
+        }
+        return mat;
+    }
+
+    /**
+     * OpenCV Mat -> ImageProcessor
+     */
+    public static ImageProcessor mat2ip(Mat mat) {
+        int w = mat.cols();
+        int h = mat.rows();
+        int type = mat.type();
+
+        if (type == CvType.CV_8UC3) {
+            ColorProcessor cp = new ColorProcessor(w, h);
+            mat2intarray(mat, (int[]) cp.getPixels(), w, h);
+            return cp;
+        } else if (type == CvType.CV_8UC1) {
+            ByteProcessor bp = new ByteProcessor(w, h);
+            mat.get(0, 0, (byte[]) bp.getPixels());
+            return bp;
+        } else if (type == CvType.CV_16UC1) {
+            ShortProcessor sp = new ShortProcessor(w, h);
+            mat.get(0, 0, (short[]) sp.getPixels());
+            return sp;
+        } else if (type == CvType.CV_32FC1) {
+            FloatProcessor fp = new FloatProcessor(w, h);
+            mat.get(0, 0, (float[]) fp.getPixels());
+            return fp;
+        } else {
+            throw new IllegalArgumentException("Unsupported Mat type: " + type);
+        }
+    }
+
+    // Utility methods
     public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt) {
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();
-        int pos_x;
-        int pos_y;
-
         for(int y = 0; y < r.height; y++) {
             for(int x = 0; x < r.width; x++) {
                 if(mask == null || mask.getPixel(x, y) != 0) {
-                    pos_x = r.x + x;
-                    pos_y = r.y + y;
-                    lstPt.add(new Point(pos_x, pos_y));
+                    lstPt.add(new Point(r.x + x, r.y + y));
                 }
             }
         }
     }
 
-    /**
-     * get the ResultsTable or create a new ResultsTable
-     * @param enReset reset or not
-     * @return ResultsTable
-     */
     public static ResultsTable GetResultsTable(boolean enReset) {
         ResultsTable rt = ResultsTable.getResultsTable();
-
-        if(rt == null || rt.getCounter() == 0) {
-            rt = new ResultsTable();
-        }
-
-        if(enReset) {
-            rt.reset();
-        }
-
+        if(rt == null || rt.getCounter() == 0) rt = new ResultsTable();
+        if(enReset) rt.reset();
         rt.show("Results");
         return rt;
     }
 
-    /**
-     * get the RoiManager or create a new RoiManager
-     * @param enReset reset or not
-     * @param enShowNone show none or not
-     * @return RoiManager
-     */
     public static RoiManager GetRoiManager(boolean enReset, boolean enShowNone) {
         Frame frame = WindowManager.getFrame("ROI Manager");
-        RoiManager rm;
-
-        if(frame == null) {
-            rm = new RoiManager();
-            rm.setVisible(true);
-        }
-        else {
-            rm = (RoiManager)frame;
-        }
-
-        if(enReset) {
-            rm.reset();
-        }
-
-        if(enShowNone) {
-            rm.runCommand("Show None");
-        }
-
+        RoiManager rm = (frame == null) ? new RoiManager() : (RoiManager)frame;
+        rm.setVisible(true);
+        if(enReset) rm.reset();
+        if(enShowNone) rm.runCommand("Show None");
         return rm;
     }
 
-    /**
-     * Wait.
-     * @param wt wait time (ms).
-     */
     public static void Wait(int wt) {
-        try {
-            if(wt == 0) {
-                // do nothing
-            }
-            else {
-                Thread.sleep(wt);
-            }
-        }
-        catch(InterruptedException e) {
-            // do nothing
-        }
+        try { if(wt > 0) Thread.sleep(wt); } catch(InterruptedException e) {}
     }
     
-    /**
-     * plot profile
-     * @param imp
-     * @return
-     */
     public static Plot GetProfilePlot(ImagePlus imp) {
         ProfilePlot profPlot = new ProfilePlot(imp, Prefs.verticalProfile);
         double[] prof = profPlot.getProfile();
-
-        if(prof == null || prof.length < 2) {
-            return null;
-        }
-
-        String xLabel = "Distance (pixels)";
-        String yLabel = "Value";
-
-        Plot output_plot = new Plot("Profile", xLabel, yLabel);
+        if(prof == null || prof.length < 2) return null;
+        Plot output_plot = new Plot("Profile", "Distance (pixels)", "Value");
         output_plot.add("line", prof);
-
         return output_plot;
     }
     
-    /**
-     * copy array
-     * @param src
-     * @param dst
-     */    
     public static void ArrayCopy(ImageProcessor src, ImageProcessor dst) {
-        if(src.getBitDepth() == 8) {
-            int imw = src.getWidth();
-            int imh = src.getHeight();
-            byte[] src_bytes = (byte[])src.getPixels();
-            byte[] dst_bytes = (byte[])dst.getPixels();
-            System.arraycopy(src_bytes, 0, dst_bytes, 0, imw*imh);
-        }
-        else if(src.getBitDepth() == 16) {
-            int imw = src.getWidth();
-            int imh = src.getHeight();
-            short[] src_shorts = (short[])src.getPixels();
-            short[] dst_shorts = (short[])dst.getPixels();            
-            System.arraycopy(src_shorts, 0, dst_shorts, 0, imw*imh);
-        }
-        else if(src.getBitDepth() == 24) {
-            int imw = src.getWidth();
-            int imh = src.getHeight();
-            int[] src_ints = (int[])src.getPixels();
-            int[] dst_ints = (int[])dst.getPixels();
-            System.arraycopy(src_ints, 0, dst_ints, 0, imw*imh);
-        }
-        else if(src.getBitDepth() == 32) {
-            // srcdst
-            int imw = src.getWidth();
-            int imh = src.getHeight();
-            float[] src_floats = (float[])src.getPixels();
-            float[] dst_floats = (float[])dst.getPixels();
-            System.arraycopy(src_floats, 0, dst_floats, 0, imw*imh);
-        }
-        else {
-            IJ.log("OCV_LoadLibrary error: Wrong image format.");
-        }
+        int len = src.getWidth() * src.getHeight();
+        System.arraycopy(src.getPixels(), 0, dst.getPixels(), 0, len);
     }
 
-    /** 
-     * null check for a string
-     * @param src
-     * @return
-     */
-    public static boolean isNullOrEmpty(String src)
-    {
+    public static boolean isNullOrEmpty(String src) {
         return src == null || src.isEmpty() || src.isBlank();  
     }
 
-    /**
-     * describe the type of mat
-     * @param m
-     * @return 
-     */
     public static String DescribeMat(Mat m) {
-        int type = m.type();
-        int depth = m.depth();
-        int channels = m.channels();
-
-        String depthName;
-        depthName = switch (depth) {
-                case CvType.CV_8U -> "CV_8U";
-                case CvType.CV_8S -> "CV_8S";
-                case CvType.CV_16U -> "CV_16U";
-                case CvType.CV_16S -> "CV_16S";
-                case CvType.CV_32S -> "CV_32S";
-                case CvType.CV_32F -> "CV_32F";
-                case CvType.CV_64F -> "CV_64F";
-                default -> "Unknown";
-            };
-
-        return "rows=" + m.rows() + ", cols=" + m.cols() + ", type=" + type
-                + " (depth=" + depthName + ", channels=" + channels + ")";
+        String depthName = switch (m.depth()) {
+            case CvType.CV_8U -> "CV_8U";
+            case CvType.CV_8S -> "CV_8S";
+            case CvType.CV_16U -> "CV_16U";
+            case CvType.CV_16S -> "CV_16S";
+            case CvType.CV_32S -> "CV_32S";
+            case CvType.CV_32F -> "CV_32F";
+            case CvType.CV_64F -> "CV_64F";
+            default -> "Unknown";
+        };
+        return "rows=" + m.rows() + ", cols=" + m.cols() + ", type=" + m.type()
+                + " (depth=" + depthName + ", channels=" + m.channels() + ")";
     }
 }
