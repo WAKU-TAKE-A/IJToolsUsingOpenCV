@@ -1,3 +1,9 @@
+# Release v0.9.46.0
+
+Latest update: December 29th 2025
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.11.0.
+
 # Release v0.9.41.0
 
 Latest update: August 17th 2023
@@ -172,3 +178,4 @@ Several serious bugs were found and fixed. A bug was found in a function that co
   * Change the dialog.
 * WK_RoiMan_DisplayedInTheCenter.java
   * When it is not selected, the center of the image is displayed.
+
