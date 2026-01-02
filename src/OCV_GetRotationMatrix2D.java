@@ -15,28 +15,11 @@ import org.opencv.imgproc.Imgproc;
  * The MIT License
  *
  * Copyright 2016 Takehito Nishida.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
  */
 
 /**
  * getRotationMatrix2D.
+ * 算出した回転行列を OCV__LoadLibrary.MyAffine にセットし、OCV_WarpAffine と連携可能にします。
  */
 public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogListener {
     // constant var.
@@ -47,9 +30,11 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     private static double centerY = 0; // Center of the rotation in the source image (y)
     private static double angle = 0; // Rotation angle in degrees
     private static double scale = 1; // Isotropic scale factor
+    private static boolean enShowMat = false; // 行列を表示するかどうかのフラグ
 
     // instance var.
     private Point center = null;
+    private String className = "";
 
     @Override
     public void setNPasses(int arg0) {
@@ -58,12 +43,14 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + " ...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("center_x", centerX, 4);
         gd.addNumericField("center_y", centerY, 4);
         gd.addNumericField("angle", angle, 4);
         gd.addNumericField("scale", scale, 4);
+        gd.addCheckbox("enable_show_matrix", enShowMat); // チェックボックスの追加
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -82,6 +69,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
         centerY = (double)gd.getNextNumber();
         angle = (double)gd.getNextNumber();
         scale = (double)gd.getNextNumber();
+        enShowMat = (boolean)gd.getNextBoolean(); // フラグの更新
 
         if(Double.isNaN(centerX) || Double.isNaN(centerY) || Double.isNaN(angle) || Double.isNaN(scale)) {
             IJ.showStatus("ERR : NaN");
@@ -95,40 +83,51 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
 
         center = new Point(centerX, centerY);
 
-        IJ.showStatus("OCV_GetRotationMatrix2D");
+        IJ.showStatus(className);
         return true;
     }
 
     @Override
     public void run(ImageProcessor ip) {
         Mat mat = null;
+        Mat inv = null;
 
         try {
+            // 回転行列(2x3)を計算
             mat = Imgproc.getRotationMatrix2D(center, angle, scale);
 
             if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
                 IJ.log("Output is null or error");
                 return;
             }
+            
+            // 逆行列の計算 (OCV_WarpAffine の inverse 指定用)
+            inv = new Mat();
+            Imgproc.invertAffineTransform(mat, inv);
 
-            ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-            rt.incrementCounter();
-            rt.addValue("Column01", String.valueOf(mat.get(0, 0)[0]));
-            rt.addValue("Column02", String.valueOf(mat.get(0, 1)[0]));
-            rt.addValue("Column03", String.valueOf(mat.get(0, 2)[0]));
-            rt.incrementCounter();
-            rt.addValue("Column01", String.valueOf(mat.get(1, 0)[0]));
-            rt.addValue("Column02", String.valueOf(mat.get(1, 1)[0]));
-            rt.addValue("Column03", String.valueOf(mat.get(1, 2)[0]));
-            rt.show("Results");
+            // 一時的な MyAffineTransform にデータを格納
+            MyAffineTransform tmpAffine = new MyAffineTransform();
+            tmpAffine.AffineMatrix = mat.clone();
+            tmpAffine.AffineInverse = inv.clone();
+            tmpAffine.hasMatrix = true; // フラグを立てる
+
+            // 結果を表示する場合のみ ShowData() を実行
+            if (enShowMat) {
+                tmpAffine.ShowData();
+            }
+            
+            // 全局の共通領域（LoadLibrary 内のインスタンス）にコピー
+            // これにより OCV_WarpAffine が行列を認識できるようになります
+            tmpAffine.copyTo(OCV__LoadLibrary.MyAffine);
+            
+            IJ.showStatus(className + ": Matrix updated.");
         }
         catch(Exception e) {
-            IJ.log("Get rotation matrix 2D failed: " + e.getMessage());
+            IJ.log(className + " failed: " + e.getMessage());
         }
         finally {
-            if(mat != null) {
-                mat.release();
-            }
+            if(mat != null) mat.release();
+            if(inv != null) inv.release();
         }
     }
 
@@ -138,7 +137,6 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             IJ.error("Library is not loaded.");
             return DONE;
         }
-
         return FLAGS;
     }
 }
