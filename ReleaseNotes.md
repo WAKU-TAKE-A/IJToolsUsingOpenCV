@@ -1,8 +1,24 @@
+# Release v0.9.48.0
+
+Latest update: December 29th 2025
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.11.0.
+
+## Changes
+
+* Added a camera calibration feature.
+
 # Release v0.9.46.0
 
 Latest update: December 29th 2025
 
 Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.11.0.
+
+## Changes
+
+* Reviewed everything, with particular attention to addressing forgotten Mat releases.
+* Significantly revised the feature point matching.
+* Leveraged generative AI.
 
 # Release v0.9.41.0
 
