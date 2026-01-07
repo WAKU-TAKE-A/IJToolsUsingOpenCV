@@ -46,6 +46,16 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
     private final int FLAGS = NO_IMAGE_REQUIRED;
     private final String[] TYPE_STR_CMD = new String[] { "new_query", "read_query", "remake_query"};
     private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB", "SIFT"};
+    
+    // Command indices
+    private final int CMD_NEW = 0;
+    private final int CMD_READ = 1;
+    private final int CMD_REMAKE = 2;
+    
+    // UI constants
+    private final int STRING_FIELD_WIDTH = 8;
+    private final int COLOR_BLACK = 0;
+    private final int EMPTY_ROWS = 0;
 
     // static var.
     private static int ind_cmd = 0;
@@ -65,18 +75,18 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
 
         gd.addChoice("command", TYPE_STR_CMD, TYPE_STR_CMD[ind_cmd]);
         gd.addChoice("feature_detector", TYPE_STR_DET, TYPE_STR_DET[ind_det]);
-        gd.addStringField("query_name", query_name, 8);
+        gd.addStringField("query_name", query_name, STRING_FIELD_WIDTH);
         gd.addCheckbox("enable_draw_keypoints", enDrawKeys);
         gd.addDialogListener(this);
 
         gd.showDialog();
         
-        if (ind_cmd == 0 && imp_query == null) {
+        if (ind_cmd == CMD_NEW && imp_query == null) {
             IJ.noImage();
             return DONE;
         }
         
-        if (ind_cmd == 0 && OCV__LoadLibrary.isNullOrEmpty(query_name)) {
+        if (ind_cmd == CMD_NEW && OCV__LoadLibrary.isNullOrEmpty(query_name)) {
             IJ.error("query_name is empty.");
             return DONE;
         }
@@ -102,7 +112,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
         }
         
         try {
-            if (ind_cmd == 0) {
+            if (ind_cmd == CMD_NEW) {
                 if (MyFeatureDetector.exitQueryName(query_name)) {
                     IJ.showStatus("query_name already exists.");
                     return false;                
@@ -154,27 +164,28 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
             // 0:new
             // 1:read
             // 2:remake  
-            if (ind_cmd == 0){
+            if (ind_cmd == CMD_NEW){
                 if(imp_query == null) {
                     IJ.log(className + " error: No image.");
                     return;
                 }
                 
-                ImageProcessor ip_query = imp_query.getChannelProcessor();
+                // 元の画像を保護するため、作業用にプロセッサを複製する
+                ImageProcessor ip_query_working = imp_query.getChannelProcessor().duplicate();
                 Roi roi = imp_query.getRoi();
                 
-                // ROI processing
+                // ROI processing (作業用プロセッサに対して行う)
                 if (roi != null) {
                     // Fill outside and crop
-                    ip_query.setColor(0);
-                    ip_query.fillOutside(roi);
-                    ip_query.setRoi(roi);
-                    ip_query = ip_query.crop();
+                    ip_query_working.setColor(COLOR_BLACK);
+                    ip_query_working.fillOutside(roi);
+                    ip_query_working.setRoi(roi);
+                    ip_query_working = ip_query_working.crop();
                 }
                 
-                int[] arr_query = (int[])ip_query.getPixels();
-                int imw_query = ip_query.getWidth();
-                int imh_query = ip_query.getHeight();
+                int[] arr_query = (int[])ip_query_working.getPixels();
+                int imw_query = ip_query_working.getWidth();
+                int imh_query = ip_query_working.getHeight();
                 mat_query = new Mat(imh_query, imw_query, CvType.CV_8UC3);
                 OCV__LoadLibrary.intarray2mat(arr_query, mat_query, imw_query, imh_query);
 
@@ -185,7 +196,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                     IJ.log(className + " error: " + ex.getMessage());
                     return;
                 }            
-            } else if (ind_cmd == 1){
+            } else if (ind_cmd == CMD_READ){
                 try {
                     detector.initialize(TYPE_STR_DET[ind_det], query_name);
                     detector.readQuery();
@@ -193,7 +204,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                     IJ.log(className + " error: " + ex.getMessage());
                     return;
                 }
-            } else if (ind_cmd == 2){
+            } else if (ind_cmd == CMD_REMAKE){
                 try {
                     detector.initialize(TYPE_STR_DET[ind_det], query_name);
                     detector.remakeQuery();
@@ -212,7 +223,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                 return;
             }
 
-            if (detector.QueryKeyPoints == null || detector.QueryKeyPoints.rows() == 0) {
+            if (detector.QueryKeyPoints == null || detector.QueryKeyPoints.rows() == EMPTY_ROWS) {
                 IJ.log(className + " error: KeyPoint is empty.");
                 return;
             }

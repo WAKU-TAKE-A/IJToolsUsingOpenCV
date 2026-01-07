@@ -51,7 +51,7 @@ import org.opencv.videoio.VideoCapture;
  * Load OpenCV library.
  */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.48.0";
+    public static final String VERSION = "0.9.49.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
