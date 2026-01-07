@@ -1,12 +1,23 @@
 # Release v0.9.48.0
 
+Latest update: January 11th 2026
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.11.0.
+
+## Changes
+
+* OCV_FeatDet_1st_SetQuery : Fixed an issue where the area outside the ROI in the original image was cleared when an ROI was set.
+* Sample_EqualizeHist : Fixed the issue where the drawing was not updated after processing.
+
+# Release v0.9.48.0
+
 Latest update: December 29th 2025
 
 Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.11.0.
 
 ## Changes
 
-* Added a camera calibration feature.
+* Added a camera calibration.
 
 # Release v0.9.46.0
 
