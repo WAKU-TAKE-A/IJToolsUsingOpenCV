@@ -1,4 +1,4 @@
-# Release v0.9.48.0
+# Release v0.9.49.0
 
 Latest update: January 11th 2026
 
@@ -205,4 +205,5 @@ Several serious bugs were found and fixed. A bug was found in a function that co
   * Change the dialog.
 * WK_RoiMan_DisplayedInTheCenter.java
   * When it is not selected, the center of the image is displayed.
+
 
