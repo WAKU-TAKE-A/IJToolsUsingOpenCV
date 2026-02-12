@@ -1,3 +1,4 @@
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Prefs;
@@ -60,7 +61,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     public static MyFeatureDetector MyQuery;
     public static MyAffineTransform MyAffine;
     public static MyPerspectiveTransform MyPerspective;
-    public static MyCameraCalibration MyCameraCalib; // 追加
+    public static MyCameraCalibration MyCameraCalib;
+    public static MyNetFromONNX MyNet; // Added
     
     // カメラキャッシュ
     private static VideoCapture cachedCamera = null;
@@ -104,6 +106,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             }
             if (MyCameraCalib == null) {
                 MyCameraCalib = new MyCameraCalibration();
+            }
+            if (MyNet == null) {
+                MyNet = new MyNetFromONNX();
             }
             
             disposed = false;
