@@ -1,3 +1,13 @@
+# Release v0.9.50.0
+
+Latest update: February 19th 2026
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.13.0.
+
+## Changes
+
+* OCV_NetFromONNX_*** : This plugins wraps YOLO/YOLOX ONNX models perform object detection with support for multiple coordinate formats and preprocessing strategies.
+
 # Release v0.9.49.0
 
 Latest update: January 11th 2026
@@ -205,5 +215,6 @@ Several serious bugs were found and fixed. A bug was found in a function that co
   * Change the dialog.
 * WK_RoiMan_DisplayedInTheCenter.java
   * When it is not selected, the center of the image is displayed.
+
 
 
