@@ -147,10 +147,6 @@ Core.copyMakeBorder(resized, padded,
 **学習時の前処理：**
 YOLOX公式コードは学習時にletterboxを使用している（YOLOX/yolox/data/data_augment.py）。
 
-**実装：**
-ユーザーのPythonスクリプトは強制リサイズ（letterboxなし）だったが、
-Java実装では両方に対応できるよう`preprocess()`の引数で切り替え可能にした：
-
 ```java
 // Letterbox版（推奨）
 preproc = preprocess(image, 1.0, false, true);  // useLetterbox=true
@@ -160,8 +156,6 @@ preproc = preprocess(image, 1.0, false, true);  // useLetterbox=true
 preproc = preprocess(image, 1.0, false, false);  // useLetterbox=false
 // → ratioX != ratioY, padLeft/padTop=0
 ```
-
-**どちらも動作確認済み。** 学習時と同じletterbox版の方が精度は高いはず。
 
 ---
 
@@ -300,9 +294,9 @@ per-classを実現するにはクラスごとにループして`NMSBoxes()`を�
 
 ## 8. 困難だった部分
 
-### (1) NMSで1441個しか削減されなかった
+### (1) NMSで削減されなかった
 
-3144個の候補が1441個にしか削減されず、しかも全部confidence=1.0という異常な状態だった。
+大量の候補が削減されず(1000個以上)、しかも全部confidence=1.0という異常な状態だった。
 当初はNMSBoxesのJavaバインディングを疑ったが、後の調査で**真の原因は入力の正規化なし**だった。
 正規化なし（0-255のまま）でモデルに入力すると推論結果が異常値（confidence=1.0が大量発生）になり、
 NMSBoxesが正しく機能しているにもかかわらず削減できない状態になっていた。
