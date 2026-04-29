@@ -37,6 +37,9 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
     // constant var.
     private static final int FLAGS = DOES_8G | NO_CHANGES; // 8-bit single channel image.
 
+    // var.
+    ImagePlus impSrc;
+    
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         return FLAGS;
@@ -59,6 +62,7 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
             return DONE;
         }
         else {
+            impSrc = imp;
             return FLAGS;
         }
     }
@@ -79,6 +83,8 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
             srcMat.put(0, 0, srcdstBytes);
             Imgproc.equalizeHist(srcMat, dstMat);
             dstMat.get(0, 0, srcdstBytes);
+            
+            impSrc.draw();
         }
         catch(Exception e) {
             IJ.log("Equalize histogram failed: " + e.getMessage());

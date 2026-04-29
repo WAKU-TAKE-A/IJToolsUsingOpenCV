@@ -1,3 +1,4 @@
+
 import ij.IJ;
 import ij.ImagePlus;
 import ij.Prefs;
@@ -23,35 +24,8 @@ import org.opencv.core.Mat;
 import org.opencv.core.Point;
 import org.opencv.videoio.VideoCapture;
 
-/*
- * The MIT License
- *
- * Copyright 2016 Takehito Nishida.
- *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be included in
- * all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
- * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
- * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
- * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
- * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
- * THE SOFTWARE.
- */
-
-/**
- * Load OpenCV library.
- */
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.48.0";
+    public static final String VERSION = "0.9.50.0";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
@@ -60,7 +34,8 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     public static MyFeatureDetector MyQuery;
     public static MyAffineTransform MyAffine;
     public static MyPerspectiveTransform MyPerspective;
-    public static MyCameraCalibration MyCameraCalib; // 追加
+    public static MyCameraCalibration MyCameraCalib;
+    public static MyNetFromONNX MyNet;
     
     // カメラキャッシュ
     private static VideoCapture cachedCamera = null;
@@ -70,18 +45,14 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     private static int cachedApi = -1;
     private static boolean cameraHealthy = true;
     
-    // ExtendedPlugInFilter
     @Override
-    public void setNPasses(int arg0) {
-        // do nothing
-    }
+    public void setNPasses(int arg0) {}
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
         if(!disposed) {
             return DONE;
-        }
-        else {
+        } else {
             return NO_IMAGE_REQUIRED;
         }
     }
@@ -90,21 +61,13 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     public void run(ImageProcessor arg0) {
         try {           
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            IJ.showStatus("Loading succeeded.(" + VERSION + ")");
+            IJ.showStatus("Loading succeeded. (Plugin: " + VERSION + ", OpenCV: " + Core.VERSION + ")");
             
-            // Initialize only if null (preserve existing instances)
-            if (MyQuery == null) {
-                MyQuery = new MyFeatureDetector();
-            }
-            if (MyAffine == null) {
-                MyAffine = new MyAffineTransform();
-            }
-            if (MyPerspective == null) {
-                MyPerspective = new MyPerspectiveTransform();
-            }
-            if (MyCameraCalib == null) {
-                MyCameraCalib = new MyCameraCalibration();
-            }
+            if (MyQuery == null) MyQuery = new MyFeatureDetector();
+            if (MyAffine == null) MyAffine = new MyAffineTransform();
+            if (MyPerspective == null) MyPerspective = new MyPerspectiveTransform();
+            if (MyCameraCalib == null) MyCameraCalib = new MyCameraCalibration();
+            if (MyNet == null) MyNet = new MyNetFromONNX();
             
             disposed = false;
         }
@@ -120,29 +83,18 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         return NO_IMAGE_REQUIRED;
     }
     
-    // for check
     private boolean isLoadOpenCV() {
         try {
-            if(dummy != null) {
-                dummy.release();
-            }
-
+            if(dummy != null) dummy.release();
             dummy = new Mat();
             return true;
-        }
-        catch(Throwable ex) {
+        } catch(Throwable ex) {
             return false;
         }
     }
 
-    public static boolean isLoad() {
-        return !disposed;
-    }
+    public static boolean isLoad() { return !disposed; }
 
-    // Camera management methods
-    /**
-     * カメラを取得（キャッシュから再利用または新規作成）
-     */
     public static VideoCapture GetCamera(int device, int width, int height, int apiId, boolean forceNew) {
         boolean needRecreate = forceNew || !cameraHealthy || cachedCamera == null || 
                                !cachedCamera.isOpened() ||
@@ -150,7 +102,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         
         if (needRecreate) {
             ReleaseCamera();
-            
             try {
                 cachedCamera = new VideoCapture();
                 if (!cachedCamera.open(device, apiId)) {
@@ -158,17 +109,14 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
                     cameraHealthy = false;
                     throw new RuntimeException("Camera initialization failed for device " + device);
                 }
-                
-                cachedCamera.set(3, width);   // CV_CAP_PROP_FRAME_WIDTH
-                cachedCamera.set(4, height);  // CV_CAP_PROP_FRAME_HEIGHT
-                cachedCamera.set(38, 1);      // CAP_PROP_BUFFERSIZE
-                
+                cachedCamera.set(3, width);
+                cachedCamera.set(4, height);
+                cachedCamera.set(38, 1);
                 cachedDevice = device;
                 cachedWidth = (int)cachedCamera.get(3);
                 cachedHeight = (int)cachedCamera.get(4);
                 cachedApi = apiId;
                 cameraHealthy = true;
-                
             } catch (RuntimeException e) {
                 cameraHealthy = false;
                 ReleaseCamera();
@@ -183,7 +131,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
                 cachedHeight = (int)cachedCamera.get(4);
             }
         }
-        
         return cachedCamera;
     }
     
@@ -194,9 +141,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     public static void ReleaseCamera() {
         if (cachedCamera != null) {
             try {
-                if (cachedCamera.isOpened()) {
-                    cachedCamera.release();
-                }
+                if (cachedCamera.isOpened()) cachedCamera.release();
             } catch (Exception e) {}
         }
         cachedCamera = null;
@@ -209,20 +154,14 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
     
     public static void MarkCameraUnhealthy() { cameraHealthy = false; }
 
-    // Conversion methods
-    /**
-     * a CV_8UC3 data of OpenCV -> a color data of ImageJ.
-     */
     public static void mat2intarray(Mat src_cv_8uc3, int[] dst_ar, int imw, int imh) {
         if((src_cv_8uc3.width() != imw) || (src_cv_8uc3.height() != imh) || dst_ar.length != imw * imh) {
             IJ.error("Wrong image size");
             return;
         }
-
         int totalPixels = imw * imh;
         byte[] buffer = new byte[totalPixels * 3];
         src_cv_8uc3.get(0, 0, buffer);
-
         for (int i = 0; i < totalPixels; i++) {
             int b = buffer[i * 3] & 0xFF;
             int g = buffer[i * 3 + 1] & 0xFF;
@@ -231,36 +170,26 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         }
     }
 
-    /**
-     * a color data of ImageJ -> a CV_8UC3 data of OpenCV
-     */
     public static void intarray2mat(int[] src_ar, Mat dst_cv_8uc3, int imw, int imh) {
         if((dst_cv_8uc3.width() != imw) || (dst_cv_8uc3.height() != imh) || src_ar.length != imw * imh) {
             IJ.error("Wrong image size");
             return;
         }
-
         int totalPixels = imw * imh;
         byte[] buffer = new byte[totalPixels * 3];
-
         for (int i = 0; i < totalPixels; i++) {
             int pixel = src_ar[i];
-            buffer[i * 3] = (byte)(pixel & 0xFF);           // b
-            buffer[i * 3 + 1] = (byte)((pixel >> 8) & 0xFF);  // g
-            buffer[i * 3 + 2] = (byte)((pixel >> 16) & 0xFF); // r
+            buffer[i * 3] = (byte)(pixel & 0xFF);
+            buffer[i * 3 + 1] = (byte)((pixel >> 8) & 0xFF);
+            buffer[i * 3 + 2] = (byte)((pixel >> 16) & 0xFF);
         }
-
         dst_cv_8uc3.put(0, 0, buffer);
     }
 
-    /**
-     * ImageProcessor -> OpenCV Mat
-     */
     public static Mat ip2mat(ImageProcessor ip) {
         int w = ip.getWidth();
         int h = ip.getHeight();
         Mat mat;
-
         if (ip instanceof ColorProcessor) {
             mat = new Mat(h, w, CvType.CV_8UC3);
             intarray2mat((int[]) ip.getPixels(), mat, w, h);
@@ -279,14 +208,10 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         return mat;
     }
 
-    /**
-     * OpenCV Mat -> ImageProcessor
-     */
     public static ImageProcessor mat2ip(Mat mat) {
         int w = mat.cols();
         int h = mat.rows();
         int type = mat.type();
-
         if (type == CvType.CV_8UC3) {
             ColorProcessor cp = new ColorProcessor(w, h);
             mat2intarray(mat, (int[]) cp.getPixels(), w, h);
@@ -308,7 +233,6 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         }
     }
 
-    // Utility methods
     public static void GetCoordinates(Roi roi, ArrayList<Point> lstPt) {
         ImageProcessor mask = roi.getMask();
         Rectangle r = roi.getBounds();
