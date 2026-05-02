@@ -94,7 +94,7 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
             rt = OCV__LoadLibrary.GetResultsTable(enableRefreshData);
         }
 
-        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
+        RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(enableRefreshData, true);
 
         if (!results.isEmpty()) {
             for (MyNetFromONNX.DetectionResult res : results) {
