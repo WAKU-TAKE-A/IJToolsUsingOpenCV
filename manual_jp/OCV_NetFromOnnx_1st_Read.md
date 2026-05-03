@@ -1,7 +1,7 @@
 # OCV_NetFromOnnx_1st_Read（DNNモデルの読み込み）
 
 ## 1. 概要
-ONNX形式の物体検出モデル（YOLOv8 / YOLOX）をImageJにロードし、推論の準備を行います。このプラグインは「推論の前段」として機能し、モデル情報を共有メモリに保持します。
+ONNX形式のモデル（YOLOv8 / YOLOX 物体検出 または YOLO 画像分類）をImageJにロードし、推論の準備を行います。このプラグインは「推論の前段」として機能し、モデル情報を共有メモリに保持します。
 
 ---
 
@@ -13,21 +13,24 @@ ONNX形式の物体検出モデル（YOLOv8 / YOLOX）をImageJにロードし�
 - `.txt`ファイルが同じディレクトリにあれば、クラス名リストとして自動ロードされます
 
 ### input_width / input_height
-モデルが要求する入力解像度を指定します（通常は **640x640**）。Netronなどで調べてください。
+モデルが要求する入力解像度を指定します。Netronなどで調べてください。
+- 物体検出モデル（YOLOv8等）: 通常 **640x640**
+- 画像分類モデル（YOLO26s-cls等）: 通常 **224x224**
 
-### model_format（3択・必須）
-モデルの座標形式を選択します。**自動判定はありません。** 以下の3つから選択してください：
+### model_format（4択・必須）
+モデルの種類と座標形式を選択します。**自動判定はありません。** 以下の4つから選択してください：
 
 | 選択肢 | 説明 | 典型的なモデル |
 |--------|------|---------------|
-| **YOLO Pixel** | 座標が0~Nのピクセル値 | YOLOv8標準モデル |
-| **YOLO Normalized** | 座標が0~1の正規化値 | カスタムYOLOモデル |
-| **YOLOX Undecoded** | グリッド形式の未デコード座標 | YOLOX標準モデル |
+| **YOLO_Object_Pixel** | 物体検出。座標が0~Nのピクセル値 | YOLOv8標準モデル |
+| **YOLO_Object_Normalized** | 物体検出。座標が0~1の正規化値 | カスタムYOLOモデル |
+| **YOLO_Class** | 画像分類。Top-1クラスを出力 | YOLO26s-cls等 |
+| **YOLOX_Object_Undecoded** | 物体検出。グリッド形式の未デコード座標 | YOLOX標準モデル |
 
-**選択に迷った場合：**
-1. まず **YOLO Pixel** を試す（YOLOv8の標準）
-2. うまくいかなければ **YOLO Normalized** を試す
-3. YOLOXモデルの場合は **YOLOX Undecoded**
+**選択に迷った場合（物体検出）：**
+1. まず **YOLO_Object_Pixel** を試す（YOLOv8の標準）
+2. うまくいかなければ **YOLO_Object_Normalized** を試す
+3. YOLOXモデルの場合は **YOLOX_Object_Undecoded**
 
 ### enable_log
 チェックを入れると、モデルの読み込み結果がログウィンドウに出力されます（推奨）。
@@ -37,75 +40,83 @@ ONNX形式の物体検出モデル（YOLOv8 / YOLOX）をImageJにロードし�
 ## 3. ログ出力の確認方法
 `enable_log` を有効にして実行すると、ImageJの `Log` ウィンドウ（Window > Log）に以下の情報が表示されます。
 
-### 入出力テンソルの形状
+### 物体検出モデルの場合（YOLO_Object_Pixel / Normalized / YOLOX_Object_Undecoded）
 ```
 Input blob shape: [1, 3, 640, 640]
 Output shape: [1, 84, 8400]
+Number of classes: 80
+Has objectness: false
+Model Load Complete:
+  Format: YOLO_Object_Pixel
+  Letterbox Preprocessing: ENABLED
+  Custom NMS: ENABLED
 ```
-- **Input**: バッチサイズ1、3チャンネル（RGB/BGR）、指定した解像度
-- **Output**: 検出候補数（通常8400）と1候補あたりのデータ数（C）
 
-### モデル形式の判定
-出力形状から自動的にYOLO/YOLOXを判定します：
-
-| 出力形状 | 判定結果 | データ構造 |
-|---------|---------|-----------|
-| `[1, C, 8400]` | YOLO | `[cx, cy, w, h, cls_0, cls_1, ..., cls_N]` |
-| `[1, 8400, C]` | YOLOX | `[tx, ty, tw, th, objectness, cls_0, ..., cls_N]` |
-
-### データ数（C）の内訳
-
-**YOLO (YOLOv8等):**
-- 4（座標: cx, cy, w, h）+ クラス数
-- 例：COCO 80クラス → C = 84
-
-**YOLOX:**
-- 5（座標4 + objectness 1）+ クラス数
-- 例：COCO 80クラス → C = 85
+### 画像分類モデルの場合（YOLO_Class）
+```
+Input blob shape: [1, 3, 224, 224]
+Output shape: [1, 1000]
+Number of classes: 1000
+Has objectness: false
+Model Load Complete:
+  Format: YOLO_Class
+```
+- LetterboxおよびNMSのログは分類モデルでは表示されません
 
 ---
 
 ## 4. モデル読み込みの内部処理
 
-### 前処理の違い（YOLO vs YOLOX）
+### 前処理の違い
 
-| 項目 | YOLO | YOLOX |
-|------|------|-------|
-| 正規化 | 0-1 | なし(0-255) |
-| チャンネル順 | RGB | BGR |
-| リサイズ | Letterbox | Letterbox |
+| 項目 | YOLO物体検出 | YOLOX物体検出 | YOLO分類 |
+|------|------------|--------------|---------|
+| 正規化 | 0-1 | なし(0-255) | 0-1 |
+| チャンネル順 | RGB | BGR | RGB |
+| リサイズ方法 | Letterbox | Letterbox | 単純リサイズ |
 
-**Letterbox処理:**
+**Letterbox処理（物体検出のみ）:**
 - アスペクト比を保ったままリサイズ
 - 余白をグレー(114,114,114)でパディング
 - 学習時と同じ前処理を再現
+
+**単純リサイズ（分類のみ）:**
+- 入力解像度に直接リサイズ（アスペクト比非保持）
+- 分類モデルはレターボックスが不要なため
 
 ---
 
 ## 5. 注意事項
 
 ### モデルファイルの要件
+**物体検出モデル:**
 - ✅ ONNX形式（.onnx拡張子）
 - ✅ 入力: `[1, 3, H, W]` 形式
 - ✅ 出力: `[1, C, 8400]` または `[1, 8400, C]` 形式
-- ❌ 動的バッチサイズは非対応
+
+**画像分類モデル:**
+- ✅ ONNX形式（.onnx拡張子）
+- ✅ 入力: `[1, 3, H, W]` 形式（通常224x224）
+- ✅ 出力: `[1, numClasses]` 形式（2次元）
 
 ### クラス名ファイル
 モデルと同じディレクトリに `.txt` ファイルを配置すると自動ロードされます：
 ```
-yolov8n.onnx      ← モデル
-yolov8n.txt       ← クラス名（1行1クラス）
+yolov8n.onnx         ← 物体検出モデル
+yolov8n.txt          ← クラス名（1行1クラス）
+
+yolo26s-cls.onnx     ← 分類モデル
+yolo26s-cls.txt      ← クラス名（1行1クラス、ImageNetなら1000行）
 ```
+
+### 入力画像
+- **RGB画像のみ対応**（8bitグレースケールは非対応）
+- グレースケール画像を処理したい場合はImage > Type > RGB Colorで変換してください
 
 ### エラーが出る場合
 1. **"Model file not found"** → パスを確認
 2. **"Network is empty"** → ONNXファイルが破損しているか、OpenCVが対応していない演算子が含まれている
-3. **形状エラー** → モデルの入力/出力形状がYOLO/YOLOX標準と異なる
-
-### モデル形式が不明な場合
-- まず **YOLO Pixel** で試してみる
-- 検出結果が画像の隅に集中する → **YOLO Normalized** に変更
-- YOLOXモデルであることが分かっている → **YOLOX Undecoded**
+3. **形状エラー** → モデルの入力/出力形状が想定と異なる
 
 ---
 
@@ -127,4 +138,8 @@ yolov8n.txt       ← クラス名（1行1クラス）
 
 ### ケース3: 何も検出されない
 → score_threshold が高すぎる。0.25程度に下げて試してください。
+
+### ケース4: 分類モデルで何も出力されない
+→ score_threshold が高すぎる可能性。0.1程度に下げて試してください。
+→ input_width / input_height がモデルと一致しているか確認してください（例: 224x224）。
 
