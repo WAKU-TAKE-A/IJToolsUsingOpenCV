@@ -2,7 +2,7 @@
 
 ## 概要
 
-ImageJプラグインとして、YOLOv8およびYOLOXのONNXモデルを使った物体検出を実装した。
+ImageJプラグインとして、YOLOv8・YOLOXのONNX物体検出モデル、および**YOLOの画像分類モデル**をサポートする推論パイプラインを実装した。
 Pythonスクリプト（onnxruntime）で動作する推論をJava（OpenCV DNN）に移植する作業であり、多くのトラブルシューティングを経て完成した。
 
 ---
@@ -27,8 +27,9 @@ Pythonスクリプト（onnxruntime）で動作する推論をJava（OpenCV DNN�
 
 | モデル | Output形状 | 意味 |
 |--------|-----------|------|
-| YOLOv8（YOLO_PIXEL / YOLO_NORMALIZED） | `[1, 4+numClasses, 8400]` | 4=bbox(cx,cy,w,h) + クラス数 |
-| YOLOX（YOLOX_UNDECODED） | `[1, 8400, 5+numClasses]` | 5=bbox+objectness + クラス数 |
+| YOLOv8（YOLO_Object_Pixel / YOLO_Object_Normalized） | `[1, 4+numClasses, 8400]` | 4=bbox(cx,cy,w,h) + クラス数 |
+| YOLOX（YOLOX_Object_Undecoded） | `[1, 8400, 5+numClasses]` | 5=bbox+objectness + クラス数 |
+| YOLO分類（YOLO_Class） | `[1, numClasses]` | 各クラスの確率スコア（softmax済み） |
 
 ### 構成の調べ方
 
@@ -282,13 +283,14 @@ per-classを実現するにはクラスごとにループして`NMSBoxes()`を�
 | `OCV_NetFromOnnx_1st_Read.java` | ImageJプラグイン。モデルのロードとフォーマット選択 |
 | `OCV_NetFromOnnx_2nd_Inference.java` | ImageJプラグイン。推論実行と結果表示 |
 
-### フォーマット選択（3択）
+### フォーマット選択（4択）
 
-| 選択肢 | 正規化 | チャンネル | リサイズ |
-|--------|--------|-----------|---------|
-| YOLO Pixel | 0-1 | RGB | Letterbox |
-| YOLO Normalized | 0-1 | RGB | Letterbox |
-| YOLOX Undecoded | なし(0-255) | BGR | Letterbox |
+| 選択肢 | 正規化 | チャンネル | リサイズ | 用途 |
+|--------|--------|-----------|---------|---------|
+| YOLO_Object_Pixel | 0-1 | RGB | Letterbox | 物体検出 |
+| YOLO_Object_Normalized | 0-1 | RGB | Letterbox | 物体検出 |
+| YOLO_Class | 0-1 | RGB | 単純リサイズ | 画像分類 |
+| YOLOX_Object_Undecoded | なし(0-255) | BGR | Letterbox | 物体検出 |
 
 ---
 

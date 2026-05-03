@@ -1,3 +1,19 @@
+# Release v0.9.51.0
+
+Latest update: May 3rd 2026
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.13.0.
+
+## Changes
+
+* OCV_NetFromONNX_*** : Added support for YOLO image classification models (`YOLO_Class` format).
+  - New `YOLO_Class` option in `model_format` selector (alongside existing detection formats).
+  - Classification models use simple resize preprocessing (no letterbox).
+  - Top-1 result is returned as a DetectionResult covering the full image (or cropped ROI).
+  - ROI rectangle selection support: if a rectangular ROI is active, only that region is classified.
+  - `nms_threshold` dialog field is hidden when a classification model is loaded.
+  - Input is restricted to RGB images only (`FLAGS = DOES_RGB`).
+
 # Release v0.9.50.0
 
 Latest update: February 19th 2026

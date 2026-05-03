@@ -27,7 +27,8 @@ public class MyNetFromONNX {
 
     public enum ModelType {
         YOLO,
-        YOLOX
+        YOLOX,
+        CLASSIFICATION
     }
 
     public enum CoordFormat {
@@ -159,20 +160,28 @@ public class MyNetFromONNX {
         net.setInput(preproc.blob);
         Mat out = net.forward();
 
-        int d0 = out.size(0);
-        int d1 = out.size(1);
-        int d2 = out.size(2);
-        outputShape = new int[]{d0, d1, d2};
-
-        if (modelType == ModelType.YOLOX) {
-            // Output shape: [1, 8400, numClasses+5]
-            hasObjectness = true;
-            numClasses    = d2 - 5;
-        } else {
-            // Output shape: [1, numClasses+4, 8400]
+        int[] shape;
+        if (out.dims() == 2) {
+            shape = new int[]{out.size(0), out.size(1)};
             hasObjectness = false;
-            numClasses    = d1 - 4;
+            numClasses    = out.size(1);
+        } else {
+            int d0 = out.size(0);
+            int d1 = out.size(1);
+            int d2 = out.size(2);
+            shape = new int[]{d0, d1, d2};
+
+            if (modelType == ModelType.YOLOX) {
+                // Output shape: [1, 8400, numClasses+5]
+                hasObjectness = true;
+                numClasses    = d2 - 5;
+            } else {
+                // Output shape: [1, numClasses+4, 8400]
+                hasObjectness = false;
+                numClasses    = d1 - 4;
+            }
         }
+        outputShape = shape;
 
         preproc.release();
         out.release();
@@ -260,15 +269,36 @@ public class MyNetFromONNX {
 
         // 1. Preprocess (parameters differ by model type)
         PreprocessResult preproc;
-        if (modelType == ModelType.YOLOX) {
+        if (modelType == ModelType.CLASSIFICATION) {
+            preproc = preprocess(image, SCALE_FACTOR, true, false);  // simple resize for classification (no letterbox)
+        } else if (modelType == ModelType.YOLOX) {
             preproc = preprocess(image, 1.0, false, true);  // letterbox enabled for YOLOX
         } else {
-            preproc = preprocess(image, SCALE_FACTOR, true, true);
+            preproc = preprocess(image, SCALE_FACTOR, true, true);  // letterbox for YOLO detection
         }
 
         // 2. Forward
         net.setInput(preproc.blob);
         Mat outputs = net.forward();
+
+        if (modelType == ModelType.CLASSIFICATION) {
+            List<DetectionResult> results = new ArrayList<>();
+            Mat scores = outputs.row(0);
+            Core.MinMaxLocResult mmr = Core.minMaxLoc(scores);
+            double confidence = mmr.maxVal;
+            int classId = (int) mmr.maxLoc.x;
+
+            if (confidence >= scoreThresh) {
+                String label = (classId < classNames.size())
+                                ? classNames.get(classId)
+                                : String.valueOf(classId);
+                results.add(new DetectionResult(new Rect2d(0, 0, imgW, imgH), (float) confidence, classId, label));
+            }
+            scores.release();
+            preproc.release();
+            outputs.release();
+            return results;
+        }
 
         // 3. Reshape output to [N_boxes, C_channels]
         Mat predictions = parseOutput(outputs);

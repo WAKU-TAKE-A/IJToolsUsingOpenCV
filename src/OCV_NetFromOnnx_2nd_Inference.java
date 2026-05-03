@@ -19,7 +19,7 @@ import org.opencv.core.Mat;
  */
 public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
 
-    private static final int FLAGS = DOES_RGB | DOES_8G;
+    private static final int FLAGS = DOES_RGB;
 
     private static double  scoreThreshold   = 0.25;
     private static double  nmsThreshold     = 0.45;
@@ -38,7 +38,11 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
 
         GenericDialog gd = new GenericDialog("Inference");
         gd.addNumericField("score_threshold",    scoreThreshold,   2);
-        gd.addNumericField("nms_threshold",      nmsThreshold,     2);
+        
+        boolean isClassification = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.CLASSIFICATION);
+        if (!isClassification) {
+            gd.addNumericField("nms_threshold",      nmsThreshold,     2);
+        }
         gd.addCheckbox("enable_results_table",   showResultsTable);
         gd.addCheckbox("enable_refresh_data",    enableRefreshData);
         gd.addCheckbox("enable_log",             showLog);
@@ -47,7 +51,9 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
         if (gd.wasCanceled()) return DONE;
 
         scoreThreshold    = gd.getNextNumber();
-        nmsThreshold      = gd.getNextNumber();
+        if (!isClassification) {
+            nmsThreshold      = gd.getNextNumber();
+        }
         showResultsTable  = gd.getNextBoolean();
         enableRefreshData = gd.getNextBoolean();
         showLog           = gd.getNextBoolean();
@@ -78,10 +84,35 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
 
         String imageTitle = imp.getTitle();
 
+        // Check for ROI cropping
+        java.awt.Rectangle roiRect = null;
+        Roi roi = imp.getRoi();
+        ImageProcessor targetIp = ip;
+        boolean isClassification = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.CLASSIFICATION);
+        
+        if (isClassification && roi != null && roi.getType() == Roi.RECTANGLE) {
+            roiRect = roi.getBounds();
+            targetIp = ip.crop();
+            if (showLog) {
+                IJ.log("Cropped ROI: " + roiRect.x + ", " + roiRect.y + ", " + roiRect.width + "x" + roiRect.height);
+            }
+        }
+
         // Run inference
-        Mat image = OCV__LoadLibrary.ip2mat(ip);
+        Mat image = OCV__LoadLibrary.ip2mat(targetIp);
         List<MyNetFromONNX.DetectionResult> results =
             OCV__LoadLibrary.MyNet.inference(image, scoreThreshold, nmsThreshold);
+            
+        // release the cropped image Mat!
+        image.release();
+        
+        // offset the results if cropped
+        if (roiRect != null && (roiRect.x != 0 || roiRect.y != 0)) {
+            for (MyNetFromONNX.DetectionResult res : results) {
+                res.box.x += roiRect.x;
+                res.box.y += roiRect.y;
+            }
+        }
 
         if (showLog) {
             IJ.log("Inference complete. Detected: " + results.size() + " objects.");
@@ -99,15 +130,18 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
         if (!results.isEmpty()) {
             for (MyNetFromONNX.DetectionResult res : results) {
                 // Add to RoiManager
-                Roi roi = new Roi(res.box.x, res.box.y, res.box.width, res.box.height);
-                roi.setName(String.format("%s: %.2f", res.label, res.confidence));
-                roi.setStrokeColor(getColorForClass(res.classId));
-                roiMan.addRoi(roi);
+                Roi resultRoi = new Roi(res.box.x, res.box.y, res.box.width, res.box.height);
+                resultRoi.setName(String.format("%s: %.2f", res.label, res.confidence));
+                resultRoi.setStrokeColor(getColorForClass(res.classId));
+                roiMan.addRoi(resultRoi);
 
                 // Add to ResultsTable
                 if (showResultsTable && rt != null) {
                     rt.incrementCounter();
                     rt.addValue("Image",      imageTitle);
+                    if (roiRect != null) {
+                        rt.addValue("ROI",    "Yes");
+                    }
                     rt.addValue("Label",      res.label);
                     rt.addValue("Confidence", res.confidence);
                     rt.addValue("X",          res.box.x);

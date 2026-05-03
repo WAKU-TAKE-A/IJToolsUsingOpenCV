@@ -21,11 +21,11 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
     private static int     formatChoice    = 0;    // 0=YOLO_Pixel, 1=YOLO_Normalized, 2=YOLOX_Undecoded
     private static boolean showLog         = true;
 
-    // Format choices (no AUTO)
     private static final String[] FORMAT_LABELS = {
-        "YOLO_Pixel",
-        "YOLO_Normalized",
-        "YOLOX_Undecoded"
+        "YOLO_Object_Pixel",
+        "YOLO_Object_Normalized",
+        "YOLO_Class",
+        "YOLOX_Object_Undecoded"
     };
 
     @Override
@@ -88,15 +88,19 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
 
             // Set model type and coordinate format from user choice
             switch (formatChoice) {
-                case 0: // YOLO_Pixel
+                case 0: // YOLO_Object_Pixel
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.YOLO);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_PIXEL);
                     break;
-                case 1: // YOLO_Normalized
+                case 1: // YOLO_Object_Normalized
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.YOLO);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_NORMALIZED);
                     break;
-                case 2: // YOLOX_Undecoded
+                case 2: // YOLO_Class
+                    OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.CLASSIFICATION);
+                    OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_PIXEL); // Not used
+                    break;
+                case 3: // YOLOX_Object_Undecoded
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.YOLOX);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLOX_UNDECODED);
                     break;
@@ -116,10 +120,16 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
 
                 int[] outShape = OCV__LoadLibrary.MyNet.getOutputShape();
                 if (outShape != null) {
-                    IJ.log("Output shape: ["
-                        + outShape[0] + ", "
-                        + outShape[1] + ", "
-                        + outShape[2] + "]");
+                    if (outShape.length == 2) {
+                        IJ.log("Output shape: ["
+                            + outShape[0] + ", "
+                            + outShape[1] + "]");
+                    } else if (outShape.length >= 3) {
+                        IJ.log("Output shape: ["
+                            + outShape[0] + ", "
+                            + outShape[1] + ", "
+                            + outShape[2] + "]");
+                    }
                 }
 
                 IJ.log("Number of classes: " + OCV__LoadLibrary.MyNet.getNumClasses());
@@ -131,8 +141,10 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
                 IJ.log("  Input Size: " + inputWidth + " x " + inputHeight);
                 IJ.log("  Format: "     + FORMAT_LABELS[formatChoice]);
                 IJ.log("  "             + OCV__LoadLibrary.MyNet.getModelSummary());
-                IJ.log("  Letterbox Preprocessing: ENABLED");
-                IJ.log("  Custom NMS: ENABLED");
+                if (OCV__LoadLibrary.MyNet.getModelType() != MyNetFromONNX.ModelType.CLASSIFICATION) {
+                    IJ.log("  Letterbox Preprocessing: ENABLED");
+                    IJ.log("  Custom NMS: ENABLED");
+                }
                 IJ.log("=".repeat(60));
             }
 
