@@ -2,7 +2,7 @@
 
 ## 概要
 
-ImageJプラグインとして、YOLOv8・YOLOXのONNX物体検出モデル、および**YOLOの画像分類モデル**をサポートする推論パイプラインを実装した。
+ImageJプラグインとして、YOLOv8・YOLOXのONNX物体検出モデル、**YOLO姿勢推定（Pose）モデル**、および**YOLOの画像分類モデル**をサポートする推論パイプラインを実装した。
 Pythonスクリプト（onnxruntime）で動作する推論をJava（OpenCV DNN）に移植する作業であり、多くのトラブルシューティングを経て完成した。
 
 ---
@@ -28,6 +28,7 @@ Pythonスクリプト（onnxruntime）で動作する推論をJava（OpenCV DNN�
 | モデル | Output形状 | 意味 |
 |--------|-----------|------|
 | YOLOv8（YOLO_Object_Pixel / YOLO_Object_Normalized） | `[1, 4+numClasses, 8400]` | 4=bbox(cx,cy,w,h) + クラス数 |
+| YOLO姿勢推定（YOLO_Pose） | `[1, 56, 8400]` | 4=bbox + 1=score + 17kpts(x,y,conf) |
 | YOLOX（YOLOX_Object_Undecoded） | `[1, 8400, 5+numClasses]` | 5=bbox+objectness + クラス数 |
 | YOLO分類（YOLO_Class） | `[1, numClasses]` | 各クラスの確率スコア（softmax済み） |
 
@@ -290,6 +291,7 @@ per-classを実現するにはクラスごとにループして`NMSBoxes()`を�
 | YOLO_Object_Pixel | 0-1 | RGB | Letterbox | 物体検出 |
 | YOLO_Object_Normalized | 0-1 | RGB | Letterbox | 物体検出 |
 | YOLO_Class | 0-1 | RGB | 単純リサイズ | 画像分類 |
+| YOLO_Pose | 0-1 | RGB | Letterbox | 姿勢推定 |
 | YOLOX_Object_Undecoded | なし(0-255) | BGR | Letterbox | 物体検出 |
 
 ---

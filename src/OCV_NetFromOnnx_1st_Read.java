@@ -25,6 +25,7 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
         "YOLO_Object_Pixel",
         "YOLO_Object_Normalized",
         "YOLO_Class",
+        "YOLO_Pose",
         "YOLOX_Object_Undecoded"
     };
 
@@ -100,7 +101,11 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.CLASSIFICATION);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_PIXEL); // Not used
                     break;
-                case 3: // YOLOX_Object_Undecoded
+                case 3: // YOLO_Pose
+                    OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.POSE);
+                    OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_PIXEL);
+                    break;
+                case 4: // YOLOX_Object_Undecoded
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.YOLOX);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLOX_UNDECODED);
                     break;
@@ -143,7 +148,11 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
                 IJ.log("  "             + OCV__LoadLibrary.MyNet.getModelSummary());
                 if (OCV__LoadLibrary.MyNet.getModelType() != MyNetFromONNX.ModelType.CLASSIFICATION) {
                     IJ.log("  Letterbox Preprocessing: ENABLED");
-                    IJ.log("  Custom NMS: ENABLED");
+                    if (OCV__LoadLibrary.MyNet.getModelType() != MyNetFromONNX.ModelType.POSE) {
+                        IJ.log("  Custom NMS: ENABLED");
+                    } else {
+                        IJ.log("  Custom NMS: ENABLED (Box)");
+                    }
                 }
                 IJ.log("=".repeat(60));
             }

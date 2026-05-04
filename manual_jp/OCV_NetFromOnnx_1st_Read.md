@@ -1,7 +1,7 @@
 # OCV_NetFromOnnx_1st_Read（DNNモデルの読み込み）
 
 ## 1. 概要
-ONNX形式のモデル（YOLOv8 / YOLOX 物体検出 または YOLO 画像分類）をImageJにロードし、推論の準備を行います。このプラグインは「推論の前段」として機能し、モデル情報を共有メモリに保持します。
+ONNX形式のモデル（YOLOv8 / YOLOX 物体検出、**YOLO 姿勢推定** または YOLO 画像分類）をImageJにロードし、推論の準備を行います。このプラグインは「推論の前段」として機能し、モデル情報を共有メモリに保持します。
 
 ---
 
@@ -25,6 +25,7 @@ ONNX形式のモデル（YOLOv8 / YOLOX 物体検出 または YOLO 画像分類
 | **YOLO_Object_Pixel** | 物体検出。座標が0~Nのピクセル値 | YOLOv8標準モデル |
 | **YOLO_Object_Normalized** | 物体検出。座標が0~1の正規化値 | カスタムYOLOモデル |
 | **YOLO_Class** | 画像分類。Top-1クラスを出力 | YOLO26s-cls等 |
+| **YOLO_Pose** | 姿勢推定。17点のキーポイントを検出 | YOLOv8-pose等 |
 | **YOLOX_Object_Undecoded** | 物体検出。グリッド形式の未デコード座標 | YOLOX標準モデル |
 
 **選択に迷った場合（物体検出）：**
@@ -69,7 +70,7 @@ Model Load Complete:
 
 ### 前処理の違い
 
-| 項目 | YOLO物体検出 | YOLOX物体検出 | YOLO分類 |
+| 項目 | YOLO物体検出 / Pose | YOLOX物体検出 | YOLO分類 |
 |------|------------|--------------|---------|
 | 正規化 | 0-1 | なし(0-255) | 0-1 |
 | チャンネル順 | RGB | BGR | RGB |
