@@ -1,10 +1,9 @@
 from ultralytics import YOLO
 import os
 
-def main():
-    print("Loading YOLO26s-cls model...")
+def convert(model_path):
     # This will download the .pt file to the current directory if it's not found
-    model = YOLO('yolo26s-cls.pt')
+    model = YOLO(model_path)
     
     print("Exporting to ONNX format...")
     # Export the model. 
@@ -16,4 +15,4 @@ def main():
     print(f"Model exported to: {path}")
 
 if __name__ == "__main__":
-    main()
+    convert('yolo11s-pose.pt')
