@@ -1,3 +1,22 @@
+# Release v0.9.60.0
+
+Latest update: May 4th 2026
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.13.0.
+
+## Changes
+
+* OCV_NetFromONNX_*** : Added support for YOLOv8 Pose models (`YOLO_Pose` format).
+  - New `YOLO_Pose` option in `model_format` selector.
+  - Supports 17-point human pose estimation (COCO format).
+  - Outputs 3 types of ROIs to ROI Manager:
+    1. Bounding Box ([Index]-Box)
+    2. Keypoints as Multi-point ROI ([Index]-Kpt)
+    3. Skeleton as Shape ROI ([Index]-Skel)
+  - Added visibility toggles for Keypoints and Skeletons in the inference dialog.
+  - Quality metrics (`Kpt_Avg`, `Kpt_Min`, `Kpt_Max`) are exported to the Results Table.
+  - Keypoint confidence threshold (`kpt_threshold`) can be adjusted dynamically.
+
 # Release v0.9.51.0
 
 Latest update: May 3rd 2026

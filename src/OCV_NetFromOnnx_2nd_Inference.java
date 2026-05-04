@@ -1,7 +1,9 @@
 import ij.IJ;
 import ij.ImagePlus;
 import ij.gui.GenericDialog;
+import ij.gui.PointRoi;
 import ij.gui.Roi;
+import ij.gui.ShapeRoi;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import static ij.plugin.filter.PlugInFilter.DOES_8G;
@@ -11,6 +13,8 @@ import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
 import ij.process.ImageProcessor;
 import java.awt.Color;
+import java.awt.geom.GeneralPath;
+import java.util.ArrayList;
 import java.util.List;
 import org.opencv.core.Mat;
 
@@ -23,6 +27,9 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
 
     private static double  scoreThreshold   = 0.25;
     private static double  nmsThreshold     = 0.45;
+    private static double  kptThreshold     = 0.50;
+    private static boolean showKeypoints    = true;
+    private static boolean showSkeleton     = true;
     private static boolean showResultsTable = true;
     private static boolean enableRefreshData = true;
     private static boolean showLog          = true;
@@ -40,8 +47,14 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
         gd.addNumericField("score_threshold",    scoreThreshold,   2);
         
         boolean isClassification = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.CLASSIFICATION);
+        boolean isPose = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.POSE);
         if (!isClassification) {
             gd.addNumericField("nms_threshold",      nmsThreshold,     2);
+        }
+        if (isPose) {
+            gd.addNumericField("kpt_threshold",      kptThreshold,     2);
+            gd.addCheckbox("show_keypoints",         showKeypoints);
+            gd.addCheckbox("show_skeleton",          showSkeleton);
         }
         gd.addCheckbox("enable_results_table",   showResultsTable);
         gd.addCheckbox("enable_refresh_data",    enableRefreshData);
@@ -53,6 +66,11 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
         scoreThreshold    = gd.getNextNumber();
         if (!isClassification) {
             nmsThreshold      = gd.getNextNumber();
+        }
+        if (isPose) {
+            kptThreshold      = gd.getNextNumber();
+            showKeypoints     = gd.getNextBoolean();
+            showSkeleton      = gd.getNextBoolean();
         }
         showResultsTable  = gd.getNextBoolean();
         enableRefreshData = gd.getNextBoolean();
@@ -128,12 +146,92 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
         RoiManager roiMan = OCV__LoadLibrary.GetRoiManager(enableRefreshData, true);
 
         if (!results.isEmpty()) {
+            boolean isPose = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.POSE);
+            int poseCount = 1;
+            
             for (MyNetFromONNX.DetectionResult res : results) {
                 // Add to RoiManager
                 Roi resultRoi = new Roi(res.box.x, res.box.y, res.box.width, res.box.height);
-                resultRoi.setName(String.format("%s: %.2f", res.label, res.confidence));
+                String baseName = String.format("%s: %.2f", res.label, res.confidence);
+                resultRoi.setName(isPose ? poseCount + "-Box" : baseName);
                 resultRoi.setStrokeColor(getColorForClass(res.classId));
                 roiMan.addRoi(resultRoi);
+
+                double avgConf = 0, minConf = 1.0, maxConf = 0.0;
+                int validKptCount = 0;
+
+                if (isPose && res.kpts != null) {
+                    List<Float> validX = new ArrayList<>();
+                    List<Float> validY = new ArrayList<>();
+                    boolean[] isValid = new boolean[17];
+                    
+                    for (int i = 0; i < 17; i++) {
+                        if (i * 3 + 2 < res.kpts.length) {
+                            float kconf = res.kpts[i * 3 + 2];
+                            if (kconf >= kptThreshold) {
+                                validX.add(res.kpts[i * 3]);
+                                validY.add(res.kpts[i * 3 + 1]);
+                                isValid[i] = true;
+                                
+                                avgConf += kconf;
+                                minConf = Math.min(minConf, kconf);
+                                maxConf = Math.max(maxConf, kconf);
+                                validKptCount++;
+                            }
+                        }
+                    }
+                    
+                    if (validKptCount > 0) {
+                        avgConf /= validKptCount;
+                        
+                        if (showKeypoints) {
+                            // Add PointRoi
+                            float[] xArr = new float[validX.size()];
+                            float[] yArr = new float[validY.size()];
+                            for (int i = 0; i < validX.size(); i++) {
+                                xArr[i] = validX.get(i);
+                                yArr[i] = validY.get(i);
+                            }
+                            PointRoi ptRoi = new PointRoi(xArr, yArr);
+                            ptRoi.setName(poseCount + "-Kpt");
+                            ptRoi.setStrokeColor(Color.YELLOW);
+                            roiMan.addRoi(ptRoi);
+                        }
+                        
+                        if (showSkeleton) {
+                            // Add ShapeRoi for skeleton
+                            GeneralPath path = new GeneralPath();
+                            int[][] skeleton = {
+                                {3, 1}, {1, 2}, {2, 4}, {1, 0}, {0, 2},
+                                {5, 6},
+                                {5, 7}, {7, 9},
+                                {6, 8}, {8, 10},
+                                {5, 11}, {11, 12}, {12, 6},
+                                {11, 13}, {13, 15},
+                                {12, 14}, {14, 16}
+                            };
+                            
+                            boolean pathAdded = false;
+                            for (int[] bone : skeleton) {
+                                int p1 = bone[0];
+                                int p2 = bone[1];
+                                if (isValid[p1] && isValid[p2]) {
+                                    path.moveTo(res.kpts[p1 * 3], res.kpts[p1 * 3 + 1]);
+                                    path.lineTo(res.kpts[p2 * 3], res.kpts[p2 * 3 + 1]);
+                                    pathAdded = true;
+                                }
+                            }
+                            
+                            if (pathAdded) {
+                                ShapeRoi skeletonRoi = new ShapeRoi(path);
+                                skeletonRoi.setName(poseCount + "-Skel");
+                                skeletonRoi.setStrokeColor(Color.MAGENTA);
+                                roiMan.addRoi(skeletonRoi);
+                            }
+                        }
+                    }
+                    poseCount++;
+                }
 
                 // Add to ResultsTable
                 if (showResultsTable && rt != null) {
@@ -148,6 +246,18 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
                     rt.addValue("Y",          res.box.y);
                     rt.addValue("Width",      res.box.width);
                     rt.addValue("Height",     res.box.height);
+                    
+                    if (isPose) {
+                        if (validKptCount > 0) {
+                            rt.addValue("Kpt_Avg", avgConf);
+                            rt.addValue("Kpt_Min", minConf);
+                            rt.addValue("Kpt_Max", maxConf);
+                        } else {
+                            rt.addValue("Kpt_Avg", Double.NaN);
+                            rt.addValue("Kpt_Min", Double.NaN);
+                            rt.addValue("Kpt_Max", Double.NaN);
+                        }
+                    }
                 }
             }
 

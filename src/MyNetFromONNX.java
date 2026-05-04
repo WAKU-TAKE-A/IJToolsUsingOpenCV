@@ -28,7 +28,8 @@ public class MyNetFromONNX {
     public enum ModelType {
         YOLO,
         YOLOX,
-        CLASSIFICATION
+        CLASSIFICATION,
+        POSE
     }
 
     public enum CoordFormat {
@@ -175,6 +176,10 @@ public class MyNetFromONNX {
                 // Output shape: [1, 8400, numClasses+5]
                 hasObjectness = true;
                 numClasses    = d2 - 5;
+            } else if (modelType == ModelType.POSE) {
+                // Output shape: [1, 56, 8400]
+                hasObjectness = false;
+                numClasses    = 1;
             } else {
                 // Output shape: [1, numClasses+4, 8400]
                 hasObjectness = false;
@@ -307,12 +312,18 @@ public class MyNetFromONNX {
         List<Rect2d>  boxes    = new ArrayList<>();
         List<Float>   confs    = new ArrayList<>();
         List<Integer> classIds = new ArrayList<>();
+        List<float[]> kptsList = new ArrayList<>();
 
         if (modelType == ModelType.YOLOX) {
             processYOLOX(predictions, predictions.rows(), predictions.cols(),
                          imgW, imgH, scoreThresh,
                          preproc.ratioX, preproc.ratioY, preproc.padLeft, preproc.padTop,
                          boxes, confs, classIds);
+        } else if (modelType == ModelType.POSE) {
+            processYOLOPose(predictions, predictions.rows(), predictions.cols(),
+                            imgW, imgH, scoreThresh, coordFormat,
+                            preproc.ratioX, preproc.padLeft, preproc.padTop,
+                            boxes, confs, classIds, kptsList);
         } else {
             processYOLO(predictions, predictions.rows(), predictions.cols(),
                         imgW, imgH, scoreThresh, coordFormat,
@@ -353,7 +364,11 @@ public class MyNetFromONNX {
             String label      = (classId < classNames.size())
                                 ? classNames.get(classId)
                                 : String.valueOf(classId);
-            results.add(new DetectionResult(box, confidence, classId, label));
+            DetectionResult res = new DetectionResult(box, confidence, classId, label);
+            if (modelType == ModelType.POSE && idx < kptsList.size()) {
+                res.kpts = kptsList.get(idx);
+            }
+            results.add(res);
         }
 
         preproc.release();
@@ -466,6 +481,99 @@ public class MyNetFromONNX {
             classIds.add(classId);
 
             scores.release();
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // processYOLOPose() – post-process for YOLO Pose
+    // -------------------------------------------------------------------------
+
+    private void processYOLOPose(Mat predictions, int rows, int cols,
+                                 int imgW, int imgH,
+                                 double scoreThresh, CoordFormat fmt,
+                                 double ratio, int padLeft, int padTop,
+                                 List<Rect2d> boxes, List<Float> confs, List<Integer> classIds, List<float[]> kptsList) {
+
+        for (int i = 0; i < rows; i++) {
+            float[] rowData = new float[cols];
+            predictions.row(i).get(0, 0, rowData);
+            
+            double confidence = rowData[4]; // Person score is at index 4
+
+            if (confidence < scoreThresh) {
+                continue;
+            }
+
+            double cx = rowData[0];
+            double cy = rowData[1];
+            double w  = rowData[2];
+            double h  = rowData[3];
+
+            double x1, y1, x2, y2;
+            boolean isNormalized = (fmt == CoordFormat.YOLO_NORMALIZED);
+
+            if (isNormalized) {
+                double cx_px = cx * inputSize.width;
+                double cy_px = cy * inputSize.height;
+                double w_px  = w  * inputSize.width;
+                double h_px  = h  * inputSize.height;
+                cx_px -= padLeft; cy_px -= padTop;
+                double cx_orig = cx_px / ratio;
+                double cy_orig = cy_px / ratio;
+                double w_orig  = w_px  / ratio;
+                double h_orig  = h_px  / ratio;
+                x1 = cx_orig - w_orig / 2;
+                y1 = cy_orig - h_orig / 2;
+                x2 = cx_orig + w_orig / 2;
+                y2 = cy_orig + h_orig / 2;
+            } else { // YOLO_PIXEL
+                double cx_px = cx - padLeft;
+                double cy_px = cy - padTop;
+                double cx_orig = cx_px / ratio;
+                double cy_orig = cy_px / ratio;
+                double w_orig  = w    / ratio;
+                double h_orig  = h    / ratio;
+                x1 = cx_orig - w_orig / 2;
+                y1 = cy_orig - h_orig / 2;
+                x2 = cx_orig + w_orig / 2;
+                y2 = cy_orig + h_orig / 2;
+            }
+
+            // Clip to image boundaries
+            x1 = Math.max(0, Math.min(x1, imgW));
+            y1 = Math.max(0, Math.min(y1, imgH));
+            x2 = Math.max(0, Math.min(x2, imgW));
+            y2 = Math.max(0, Math.min(y2, imgH));
+
+            if (x2 <= x1 || y2 <= y1) {
+                continue;
+            }
+
+            // Keypoints (5 to end)
+            int numKpts = (cols - 5) / 3;
+            float[] processedKpts = new float[numKpts * 3];
+            for (int k = 0; k < numKpts; k++) {
+                double kx = rowData[5 + k * 3];
+                double ky = rowData[5 + k * 3 + 1];
+                double kconf = rowData[5 + k * 3 + 2];
+                
+                if (isNormalized) {
+                    kx = kx * inputSize.width;
+                    ky = ky * inputSize.height;
+                }
+                
+                kx = (kx - padLeft) / ratio;
+                ky = (ky - padTop) / ratio;
+                
+                processedKpts[k * 3] = (float) kx;
+                processedKpts[k * 3 + 1] = (float) ky;
+                processedKpts[k * 3 + 2] = (float) kconf;
+            }
+
+            boxes.add(new Rect2d(x1, y1, x2 - x1, y2 - y1));
+            confs.add((float) confidence);
+            classIds.add(0); // class 0 for person
+            kptsList.add(processedKpts);
         }
     }
 
@@ -632,6 +740,7 @@ public class MyNetFromONNX {
         public float  confidence;
         public int    classId;
         public String label;
+        public float[] kpts;
 
         public DetectionResult(Rect2d box, float confidence, int classId, String label) {
             this.box        = box;
