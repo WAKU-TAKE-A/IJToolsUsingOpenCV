@@ -2,3 +2,4 @@
 /*.dll
 /build
 /plugins/*.class
+/dist/
