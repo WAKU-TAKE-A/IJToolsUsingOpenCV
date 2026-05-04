@@ -26,6 +26,7 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
         "YOLO_Object_Normalized",
         "YOLO_Class",
         "YOLO_Pose",
+        "YOLO_Pose_E2E",
         "YOLOX_Object_Undecoded"
     };
 
@@ -105,7 +106,11 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.POSE);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_PIXEL);
                     break;
-                case 4: // YOLOX_Object_Undecoded
+                case 4: // YOLO_Pose_E2E
+                    OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.POSE_E2E);
+                    OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLO_PIXEL);
+                    break;
+                case 5: // YOLOX_Object_Undecoded
                     OCV__LoadLibrary.MyNet.setModelType(MyNetFromONNX.ModelType.YOLOX);
                     OCV__LoadLibrary.MyNet.setCoordFormat(MyNetFromONNX.CoordFormat.YOLOX_UNDECODED);
                     break;

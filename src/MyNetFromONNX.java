@@ -29,7 +29,8 @@ public class MyNetFromONNX {
         YOLO,
         YOLOX,
         CLASSIFICATION,
-        POSE
+        POSE,
+        POSE_E2E
     }
 
     public enum CoordFormat {
@@ -180,6 +181,10 @@ public class MyNetFromONNX {
                 // Output shape: [1, 56, 8400]
                 hasObjectness = false;
                 numClasses    = 1;
+            } else if (modelType == ModelType.POSE_E2E) {
+                // YOLO_Pose E2E output is typically [1, 300, 57]
+                hasObjectness = false;
+                numClasses    = 1;
             } else {
                 // Output shape: [1, numClasses+4, 8400]
                 hasObjectness = false;
@@ -324,6 +329,11 @@ public class MyNetFromONNX {
                             imgW, imgH, scoreThresh, coordFormat,
                             preproc.ratioX, preproc.padLeft, preproc.padTop,
                             boxes, confs, classIds, kptsList);
+        } else if (modelType == ModelType.POSE_E2E) {
+            processYOLOPoseE2E(predictions, predictions.rows(), predictions.cols(),
+                               imgW, imgH, scoreThresh,
+                               preproc.ratioX, preproc.padLeft, preproc.padTop,
+                               boxes, confs, classIds, kptsList);
         } else {
             processYOLO(predictions, predictions.rows(), predictions.cols(),
                         imgW, imgH, scoreThresh, coordFormat,
@@ -332,26 +342,33 @@ public class MyNetFromONNX {
         }
 
         // 5. Per-class NMS
-        Set<Integer>  uniqueClasses = new LinkedHashSet<>();
-        for (int id : classIds) uniqueClasses.add(id);
-
         List<Integer> keepIndices = new ArrayList<>();
-        for (int c : uniqueClasses) {
-            List<Integer> classOrigIndices = new ArrayList<>();
-            List<Rect2d>  classBoxes       = new ArrayList<>();
-            List<Float>   classConfs       = new ArrayList<>();
-
-            for (int i = 0; i < classIds.size(); i++) {
-                if (classIds.get(i) == c) {
-                    classOrigIndices.add(i);
-                    classBoxes.add(boxes.get(i));
-                    classConfs.add(confs.get(i));
-                }
+        
+        if (modelType == ModelType.POSE_E2E) {
+            for (int i = 0; i < boxes.size(); i++) {
+                keepIndices.add(i);
             }
+        } else {
+            Set<Integer>  uniqueClasses = new LinkedHashSet<>();
+            for (int id : classIds) uniqueClasses.add(id);
 
-            List<Integer> keep = nmsXYXY(classBoxes, classConfs, nmsThresh);
-            for (int k : keep) {
-                keepIndices.add(classOrigIndices.get(k));
+            for (int c : uniqueClasses) {
+                List<Integer> classOrigIndices = new ArrayList<>();
+                List<Rect2d>  classBoxes       = new ArrayList<>();
+                List<Float>   classConfs       = new ArrayList<>();
+
+                for (int i = 0; i < classIds.size(); i++) {
+                    if (classIds.get(i) == c) {
+                        classOrigIndices.add(i);
+                        classBoxes.add(boxes.get(i));
+                        classConfs.add(confs.get(i));
+                    }
+                }
+
+                List<Integer> keep = nmsXYXY(classBoxes, classConfs, nmsThresh);
+                for (int k : keep) {
+                    keepIndices.add(classOrigIndices.get(k));
+                }
             }
         }
 
@@ -365,7 +382,7 @@ public class MyNetFromONNX {
                                 ? classNames.get(classId)
                                 : String.valueOf(classId);
             DetectionResult res = new DetectionResult(box, confidence, classId, label);
-            if (modelType == ModelType.POSE && idx < kptsList.size()) {
+            if ((modelType == ModelType.POSE || modelType == ModelType.POSE_E2E) && idx < kptsList.size()) {
                 res.kpts = kptsList.get(idx);
             }
             results.add(res);
@@ -383,8 +400,9 @@ public class MyNetFromONNX {
     // -------------------------------------------------------------------------
 
     private Mat parseOutput(Mat outputs) {
-        if (modelType == ModelType.YOLOX) {
-            // Input: [1, 8400, C] → [8400, C]
+        if (modelType == ModelType.YOLOX || modelType == ModelType.POSE_E2E) {
+            // Input: [1, 8400, C] → [8400, C] (YOLOX)
+            // Input: [1, 300, 57] → [300, 57] (POSE_E2E)
             return outputs.reshape(1, outputs.size(1));
         } else {
             // Input: [1, C, 8400] → [C, 8400] → [8400, C]
@@ -578,7 +596,69 @@ public class MyNetFromONNX {
     }
 
     // -------------------------------------------------------------------------
+    // processYOLOPoseE2E() – post-process for YOLO E2E Pose
+    // -------------------------------------------------------------------------
+
+    private void processYOLOPoseE2E(Mat predictions, int rows, int cols,
+                                    int imgW, int imgH,
+                                    double scoreThresh,
+                                    double ratio, int padLeft, int padTop,
+                                    List<Rect2d> boxes, List<Float> confs, List<Integer> classIds,
+                                    List<float[]> kptsList) {
+
+        for (int i = 0; i < rows; i++) {
+            float[] rowData = new float[cols];
+            predictions.row(i).get(0, 0, rowData);
+
+            double score = rowData[4];
+            if (score < scoreThresh) continue;
+
+            int classId = (int) rowData[5];
+
+            // Bounding box (x1, y1, x2, y2)
+            double x1 = rowData[0];
+            double y1 = rowData[1];
+            double x2 = rowData[2];
+            double y2 = rowData[3];
+
+            x1 = (x1 - padLeft) / ratio;
+            y1 = (y1 - padTop) / ratio;
+            x2 = (x2 - padLeft) / ratio;
+            y2 = (y2 - padTop) / ratio;
+
+            x1 = Math.max(0, Math.min(x1, imgW));
+            y1 = Math.max(0, Math.min(y1, imgH));
+            x2 = Math.max(0, Math.min(x2, imgW));
+            y2 = Math.max(0, Math.min(y2, imgH));
+
+            if (x2 <= x1 || y2 <= y1) continue;
+
+            // Keypoints (6 to end)
+            int numKpts = (cols - 6) / 3;
+            float[] processedKpts = new float[numKpts * 3];
+            for (int k = 0; k < numKpts; k++) {
+                double kx = rowData[6 + k * 3];
+                double ky = rowData[6 + k * 3 + 1];
+                double kconf = rowData[6 + k * 3 + 2];
+                
+                kx = (kx - padLeft) / ratio;
+                ky = (ky - padTop) / ratio;
+                
+                processedKpts[k * 3] = (float) kx;
+                processedKpts[k * 3 + 1] = (float) ky;
+                processedKpts[k * 3 + 2] = (float) kconf;
+            }
+
+            boxes.add(new Rect2d(x1, y1, x2 - x1, y2 - y1));
+            confs.add((float) score);
+            classIds.add(classId);
+            kptsList.add(processedKpts);
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // processYOLOX() – post-process for YOLOX (undecoded grid format)
+
     //   ratioX / ratioY : X/Y scale factors
     //                     (letterbox: ratioX == ratioY, force resize: ratioX != ratioY)
     // -------------------------------------------------------------------------

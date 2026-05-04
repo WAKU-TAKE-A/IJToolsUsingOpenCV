@@ -43,13 +43,15 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
             return DONE;
         }
 
-        GenericDialog gd = new GenericDialog("Inference");
+        boolean isClass = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.CLASSIFICATION);
+        boolean isPose = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.POSE) ||
+                         (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.POSE_E2E);
+        boolean isE2E = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.POSE_E2E);
+
+        GenericDialog gd = new GenericDialog("OCV_NetFromOnnx_2nd_Inference");
         gd.addNumericField("score_threshold",    scoreThreshold,   2);
-        
-        boolean isClassification = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.CLASSIFICATION);
-        boolean isPose = (OCV__LoadLibrary.MyNet.getModelType() == MyNetFromONNX.ModelType.POSE);
-        if (!isClassification) {
-            gd.addNumericField("nms_threshold",      nmsThreshold,     2);
+        if (!isClass && !isE2E) {
+            gd.addNumericField("nms_threshold",  nmsThreshold,     2);
         }
         if (isPose) {
             gd.addNumericField("kpt_threshold",      kptThreshold,     2);
@@ -64,7 +66,7 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
         if (gd.wasCanceled()) return DONE;
 
         scoreThreshold    = gd.getNextNumber();
-        if (!isClassification) {
+        if (!isClass && !isE2E) {
             nmsThreshold      = gd.getNextNumber();
         }
         if (isPose) {
