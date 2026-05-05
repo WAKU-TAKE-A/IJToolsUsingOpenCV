@@ -54,6 +54,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
     private RoiManager roiMan = null;
     private int countNPass = 0;
     private Roi roiSrc = null;
+    private String className = null;
 
     @Override
     public void setNPasses(int nPasses) {
@@ -64,7 +65,8 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
         gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
@@ -146,7 +148,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
             showData(rect, numSlice);
         }
         catch(Exception e) {
-            IJ.log("Bounding rect failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Bounding rect failed (" + e.getMessage() + ")");
         }
         finally {
             if(pts != null) {
@@ -160,7 +162,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_BoundingRect", "Library is not loaded.");
             return DONE;
         }
 

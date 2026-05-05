@@ -151,7 +151,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
     @Override
     public int setup(String arg, ImagePlus imp) {
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_FeatDet_2nd_Match", "Library is not loaded.");
             return DONE;
         }
 
@@ -159,7 +159,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             OCV__LoadLibrary.isNullOrEmpty(OCV__LoadLibrary.MyQuery.DetectorType) || 
             OCV__LoadLibrary.MyQuery.QueryKeyPoints.rows() == 0) {
             
-            IJ.error("Query is empty.");
+            OCV__LoadLibrary.logError(className, "Query is empty.");
             return DONE;
         }
 
@@ -176,7 +176,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         }
 
         if(ind_det == -1) {
-            IJ.error("Unknown error.");
+            OCV__LoadLibrary.logError(className, "Unknown error.");
             return DONE;
         }
 
@@ -206,7 +206,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             myQuery.calc_KeyPoints_Descriptors(mat_train, train_key, train_desc);
             
             if(train_key.rows() == 0 || train_desc.rows() == 0) {
-                IJ.log(className + " error: Result is empty.");
+                OCV__LoadLibrary.logError(className, "Result is empty.");
                 return;
             }
             
@@ -245,7 +245,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             }
         }
         catch(Exception ex) {
-            IJ.log("Can not calculation. ( " +  ex.getMessage() + " )"); // Not suitable, but to prevent "Unknown error".
+            OCV__LoadLibrary.logError(className, "Calculation failed (" + ex.getMessage() + ")");
         }
         finally {
             if(mat_train != null) mat_train.release();

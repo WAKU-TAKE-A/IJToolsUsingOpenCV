@@ -56,12 +56,14 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     private ImagePlus impSrc = null;
     private ImagePlus impMsk = null;
     private Rect rect = null;
+    private String className = null;
     private int[] lstWnd;
     private String[] titlesWnd;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
 
         gd.addChoice("src", titlesWnd, titlesWnd[indSrc]);
         gd.addChoice("mask", titlesWnd, titlesWnd[indMsk]);
@@ -119,7 +121,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_GrabCut", "Library is not loaded.");
             return DONE;
         }
 
@@ -132,7 +134,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
             lstWnd = WindowManager.getIDList();
 
             if(lstWnd == null || lstWnd.length < 2) {
-                IJ.error("At least more than 2 images are needed.");
+                OCV__LoadLibrary.logError("OCV_GrabCut", "At least more than 2 images are needed.");
                 return DONE;
             }
 
@@ -202,7 +204,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
             }
         }
         catch(Exception e) {
-            IJ.log("GrabCut failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "GrabCut failed (" + e.getMessage() + ")");
         }
         finally {
             if(matSrc != null) {

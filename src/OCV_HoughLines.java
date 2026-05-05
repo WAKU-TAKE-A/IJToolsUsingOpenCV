@@ -50,11 +50,13 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
     private static double stn = 0;
     private static double minDeg = 0;
     private static double maxDeg = 360;
+    private String className = null;
     private static boolean enAddRoi = true;
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
 
         gd.addNumericField("distance_resolution", resDist, 4);
         gd.addMessage("angle_resolution = CV_PI / angle_resolution_factor");
@@ -156,7 +158,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_HoughLines", "Library is not loaded.");
             return DONE;
         }
 
@@ -196,7 +198,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             showData(dstLines, imw, imh);
         }
         catch(Exception e) {
-            IJ.log("Hough lines failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Hough lines failed (" + e.getMessage() + ")");
         }
         finally {
             if(srcMat != null) {
@@ -214,7 +216,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             int numLines = lines.rows();
 
             if(numLines == 0) {
-                IJ.log("No lines detected.");
+                OCV__LoadLibrary.logError(className, "No lines detected.");
                 return;
             }
 
@@ -227,7 +229,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             if(enAddRoi) {
                 roiMan = OCV__LoadLibrary.GetRoiManager(true, true);
                 if(roiMan == null) {
-                    IJ.log("Failed to get ROI Manager.");
+                    OCV__LoadLibrary.logError(className, "Failed to get ROI Manager.");
                 }
             }
 
@@ -267,7 +269,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             rt.show("Results");
         }
         catch(Exception e) {
-            IJ.log("Show data failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Show data failed (" + e.getMessage() + ")");
         }
     }
 }

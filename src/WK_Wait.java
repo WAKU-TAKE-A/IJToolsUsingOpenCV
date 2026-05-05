@@ -64,19 +64,19 @@ public class WK_Wait implements ExtendedPlugInFilter {
             textWhenFinished = gd.getNextString();
             
             if(inputMaxWaitTime <= MIN_WAIT_TIME) {
-                IJ.error("maxtime must be positive.");
+                OCV__LoadLibrary.logError(className, "maxtime must be positive.");
                 return DONE;               
             }
             
             maxWaitTime = inputMaxWaitTime;
 
             if(inputWaitTime < MIN_WAIT_TIME) {
-                IJ.error("Wait time must be non-negative.");
+                OCV__LoadLibrary.logError(className, "Wait time must be non-negative.");
                 return DONE;
             }
 
             if(inputWaitTime > maxWaitTime) {
-                IJ.error("Wait time must be less than or equal to " + maxWaitTime + " ms.");
+                OCV__LoadLibrary.logError(className, "Wait time must be less than or equal to " + maxWaitTime + " ms.");
                 return DONE;
             }
 
@@ -105,7 +105,7 @@ public class WK_Wait implements ExtendedPlugInFilter {
             }
         }
         catch(Exception e) {
-            IJ.log("Error during wait: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Error during wait (" + e.getMessage() + ")");
         }
     }
     

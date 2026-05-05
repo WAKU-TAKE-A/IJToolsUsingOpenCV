@@ -39,9 +39,11 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
 
     // var.
     ImagePlus impSrc;
+    private String className = "OCV_EqualizeHist";
     
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
+        className = command.trim();
         return FLAGS;
     }
 
@@ -53,7 +55,7 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_EqualizeHist", "Library is not loaded.");
             return DONE;
         }
 
@@ -87,7 +89,7 @@ public class OCV_EqualizeHist implements ij.plugin.filter.ExtendedPlugInFilter {
             impSrc.draw();
         }
         catch(Exception e) {
-            IJ.log("Equalize histogram failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Equalize histogram failed (" + e.getMessage() + ")");
         }
         finally {
             if(srcMat != null) {

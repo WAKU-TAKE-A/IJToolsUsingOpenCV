@@ -62,6 +62,7 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
     private static double sigma_x = 0; // Gaussian kernel standard deviation in x direction
     private static double sigma_y = 0; // Gaussian kernel standard deviation in y direction
     private static int indBorderType = 2; // border type
+    private String className = null;
 
     // instance var.
     private Size ksize = null;
@@ -73,7 +74,8 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("ksize_x", ksize_x, 0);
         gd.addNumericField("ksize_y", ksize_y, 0);
@@ -137,7 +139,7 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_GaussianBlur", "Library is not loaded.");
             return DONE;
         }
 
@@ -167,11 +169,11 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
                 runForFloat32(ip, imw, imh);
             }
             else {
-                IJ.log("Wrong image format");
+                OCV__LoadLibrary.logError(className, "Wrong image format.");
             }
         }
         catch(Exception e) {
-            IJ.log("Gaussian blur failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Gaussian blur failed (" + e.getMessage() + ")");
             releaseResources();
         }
     }

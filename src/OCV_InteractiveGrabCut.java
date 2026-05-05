@@ -112,7 +112,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_InteractiveGrabCut", "Library is not loaded.");
             return DONE;
         }
 
@@ -122,7 +122,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         }
 
         if(imp.getRoi() == null) {
-            IJ.error("Set a rectangular roi.");
+            OCV__LoadLibrary.logError(titleCmd, "Set a rectangular roi.");
             return DONE;
         }
 
@@ -263,7 +263,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
             }
         }
         catch(Exception e) {
-            IJ.log("Interactive GrabCut failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(titleCmd, "Interactive GrabCut failed (" + e.getMessage() + ")");
         }
         finally {
             releaseResources();
@@ -298,7 +298,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
             AND(impSrc, matMsk);
         }
         catch(Exception e) {
-            IJ.log("Create new mask failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(titleCmd, "Create new mask failed (" + e.getMessage() + ")");
         }
         finally {
             if(bgdModel != null) {
@@ -335,7 +335,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
             impMsk.repaintWindow();
         }
         catch(Exception e) {
-            IJ.log("GrabCut with mask failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(titleCmd, "GrabCut with mask failed (" + e.getMessage() + ")");
         }
         finally {
             if(bgdModel != null) {
@@ -359,7 +359,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
             doGrabCutWithMask();
         }
         catch(Exception e) {
-            IJ.log("Restore source failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(titleCmd, "Restore source failed (" + e.getMessage() + ")");
         }
     }
 

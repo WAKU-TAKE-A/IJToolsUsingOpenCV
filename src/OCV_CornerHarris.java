@@ -126,7 +126,7 @@ public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, 
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_CornerHarris", "Library is not loaded.");
             return DONE;
         }
 
@@ -193,11 +193,11 @@ public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, 
                 impDst.show();
             }
             else {
-                IJ.log(className + " error: Wrong image format.");
+                OCV__LoadLibrary.logError(className, "Wrong image format.");
             }
         }
         catch(Exception e) {
-            IJ.log("Corner Harris failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Corner Harris failed (" + e.getMessage() + ")");
         }
         finally {
             if(srcMat != null) {

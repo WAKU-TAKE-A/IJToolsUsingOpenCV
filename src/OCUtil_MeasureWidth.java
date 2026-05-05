@@ -204,7 +204,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCUtil_MeasureWidth", "Library is not loaded.");
             return DONE;
         }
 
@@ -217,7 +217,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             roiImg = imp.getRoi();
 
             if (roiImg == null || (roiImg.getType() != Roi.LINE && roiImg.getType() != Roi.RECTANGLE && roiImg.getType() != Roi.FREEROI)) {
-                IJ.error("A line, rectangle, or rotated rectangle ROI is necessary.");
+                OCV__LoadLibrary.logError("OCUtil_MeasureWidth", "A line, rectangle, or rotated rectangle ROI is necessary.");
                 return DONE;
             }
             
@@ -264,7 +264,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             Plot plot_canny = OCV__LoadLibrary.GetProfilePlot(img_canny);
             
             if (plot_canny == null) {
-                IJ.error("Failed to generate profile plot");
+                OCV__LoadLibrary.logError(className, "Failed to generate profile plot");
                 return;
             }
             
@@ -273,7 +273,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             int prf_len = xpoints.length;
             
             if (prf_len == 0) {
-                IJ.error("Profile length is zero");
+                OCV__LoadLibrary.logError(className, "Profile length is zero");
                 return;
             }
             
@@ -312,12 +312,12 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
 
             // Range check
             if (le < 0 || le >= prf_len || ri < 0 || ri >= prf_len) {
-                IJ.error("Edge not found within threshold");
+                OCV__LoadLibrary.logError(className, "Edge not found within threshold");
                 return;
             }
 
             if (le >= ri) {
-                IJ.error("Left edge is not before right edge");
+                OCV__LoadLibrary.logError(className, "Left edge is not before right edge");
                 return;
             }
 
@@ -417,7 +417,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             Imgproc.Canny(src_mat, dst_mat, threshold1, threshold2, apertureSize, L2gradient);
             dst_mat.get(0, 0, srcdst_bytes);
         } catch (Exception e) {
-            IJ.error("Canny processing failed: " + e.getMessage());
+            OCV__LoadLibrary.logError("OCUtil_MeasureWidth", "Canny processing failed (" + e.getMessage() + ")");
         }
     }
 

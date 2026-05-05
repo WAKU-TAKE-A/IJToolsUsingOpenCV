@@ -148,7 +148,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter {
             showData(rotatedRect, numSlice);
         }
         catch(Exception e) {
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         }
         finally {
             if(pts != null) pts.release();
@@ -159,7 +159,7 @@ public class OCV_MinAreaRect implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_MinAreaRect", "Library is not loaded.");
             return DONE;
         }
 

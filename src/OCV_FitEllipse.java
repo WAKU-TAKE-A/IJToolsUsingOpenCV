@@ -56,6 +56,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
     private RoiManager roiMan = null;
     private int countNPass = 0;
     private Roi roiSrc = null;
+    private String className = null;
 
     @Override
     public void setNPasses(int nPasses) {
@@ -66,7 +67,8 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        GenericDialog gd = new GenericDialog(cmd.trim() + "...");
+        className = cmd.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
         gd.addCheckbox("enable_refresh_data", enRefData);
         gd.showDialog();
 
@@ -134,7 +136,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
             }
 
             if(lstPt.size() < MIN_POINTS_FOR_ELLIPSE) {
-                IJ.log("Fit ellipse requires at least " + MIN_POINTS_FOR_ELLIPSE + " points, found: " + lstPt.size());
+                OCV__LoadLibrary.logError(className, "Fit ellipse requires at least " + MIN_POINTS_FOR_ELLIPSE + " points (found " + lstPt.size() + ")");
                 return;
             }
 
@@ -153,7 +155,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
             showData(rect, numSlice);
         }
         catch(Exception e) {
-            IJ.log("Fit ellipse failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Fit ellipse failed (" + e.getMessage() + ")");
         }
         finally {
             if(pts != null) {
@@ -166,7 +168,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_FitEllipse", "Library is not loaded.");
             return DONE;
         }
 
@@ -221,7 +223,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
             roiMan.select(numRoiMan - 1);
         }
         catch(Exception e) {
-            IJ.log("Show data failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Show data failed (" + e.getMessage() + ")");
         }
     }
 }

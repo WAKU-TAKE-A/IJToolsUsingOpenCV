@@ -149,7 +149,7 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_Resize", "Library is not loaded.");
             return DONE;
         }
 
@@ -272,9 +272,8 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener {
                     if(dstMat != null) dstMat.release();
                 }
             }
-        }
-        catch(Exception e) {
-            IJ.log(className + " error: " + e.getMessage());
+        } catch(Exception e) {
+            OCV__LoadLibrary.logError(className, e.getMessage());
         }
     }
 }

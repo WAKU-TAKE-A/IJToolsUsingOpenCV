@@ -101,7 +101,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter {
             roiMan = getRoiManager(false, true);
             
             if(roiMan.getCount() == 0) {
-                IJ.error("ROI is vacant.");
+                OCV__LoadLibrary.logError("WK_RoiMan_LinearFitting", "ROI is vacant.");
                 return DONE;
             }
 
@@ -127,7 +127,7 @@ public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter {
         int num_all = lstPt.size();
 
         if (num_all < 2) {
-            IJ.error("At least 2 points are required.");
+            OCV__LoadLibrary.logError(className, "At least 2 points are required.");
             return;
         }
 

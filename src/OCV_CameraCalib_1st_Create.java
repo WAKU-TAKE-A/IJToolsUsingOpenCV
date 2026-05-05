@@ -173,7 +173,7 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
             }
 
         } catch (Exception e) {
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         } finally {
             isRunning = false;
         }
@@ -181,7 +181,7 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
 
     private void processStack(ImagePlus imp) {
         if (imp == null || imp.getStackSize() < 1) {
-            IJ.log(className + " error: Requires an image stack.");
+            OCV__LoadLibrary.logError(className, "Requires an image stack.");
             return;
         }
 
@@ -220,7 +220,7 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
                 mCalib.calibrate(objectPoints, imagePoints, new Size(imp.getWidth(), imp.getHeight()));
                 saveResults();
             } else {
-                IJ.log(className + " error: No patterns detected in stack.");
+                OCV__LoadLibrary.logError(className, "No patterns detected in stack.");
             }
         } finally {
             obj.release();
@@ -345,14 +345,14 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
             mCalib.write();
             IJ.showStatus(className + ": Calibration saved \"" + calibName + "\" (Error: " + String.format("%.4f", mCalib.reprojectionError) + ")");
         } catch (IOException e) {
-            IJ.log(className + " error: Failed to save calibration files: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Failed to save calibration files (" + e.getMessage() + ")");
         }
     }
 
     @Override public void setNPasses(int n) {}
     @Override public int setup(String arg, ImagePlus imp) { 
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library not loaded.");
+            OCV__LoadLibrary.logError("OCV_CameraCalib_1st_Create", "Library not loaded.");
             return DONE;
         }
         impActive = imp;

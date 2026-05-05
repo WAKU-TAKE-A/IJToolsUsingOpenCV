@@ -48,7 +48,7 @@ public class OCV_CameraCalib_2nd_Undistort implements ExtendedPlugInFilter {
 
         // Check if calibration data is loaded in the shared area
         if (mCalib == null || !mCalib.hasResult || OCV__LoadLibrary.isNullOrEmpty(mCalib.calibName)) {
-            IJ.error(className, "No calibration data loaded. Please run 'OCV_CameraCalib_1st_Create' first.");
+            OCV__LoadLibrary.logError(className, "No calibration data loaded. Please run 'OCV_CameraCalib_1st_Create' first.");
             return DONE;
         }
 
@@ -75,7 +75,7 @@ public class OCV_CameraCalib_2nd_Undistort implements ExtendedPlugInFilter {
         try {
             // Double check if matrices exist
             if (mCalib.cameraMatrix.empty() || mCalib.distCoeffs.empty()) {
-                IJ.log(className + " error: Calibration matrices are empty.");
+                OCV__LoadLibrary.logError(className, "Calibration matrices are empty.");
                 return;
             }
 
@@ -95,7 +95,7 @@ public class OCV_CameraCalib_2nd_Undistort implements ExtendedPlugInFilter {
 
         } catch (Exception e) {
             // Failure: use log for errors during run
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         } finally {
             // Release OpenCV resources
             if (matSrc != null) {
@@ -115,7 +115,7 @@ public class OCV_CameraCalib_2nd_Undistort implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg, ImagePlus imp) {
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_CameraCalib_2nd_Undistort", "Library is not loaded.");
             return DONE;
         }
         return FLAGS;

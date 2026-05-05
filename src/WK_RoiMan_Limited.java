@@ -108,14 +108,14 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
             roiManager = getRoiManager(false, true);
             
             if(roiManager == null) {
-                IJ.error("Failed to get ROI Manager");
+                OCV__LoadLibrary.logError("WK_RoiMan_Limited", "Failed to get ROI Manager");
                 return DONE;
             }
 
             roiCount = roiManager.getCount();
 
             if(roiCount == 0) {
-                IJ.error("ROI is vacant.");
+                OCV__LoadLibrary.logError("WK_RoiMan_Limited", "ROI is vacant.");
                 return DONE;
             }
 
@@ -133,7 +133,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
                     useExistingResults = false;
                 }
                 catch(Exception e) {
-                    IJ.log("Failed to measure ROIs: " + e.getMessage());
+                    OCV__LoadLibrary.logError("WK_RoiMan_Limited", "Failed to measure ROIs (" + e.getMessage() + ")");
                     return DONE;
                 }
             }
@@ -153,7 +153,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
             int columnIndex = resultsTable.getColumnIndex(type);
             
             if(columnIndex == ResultsTable.COLUMN_NOT_FOUND) {
-                IJ.log("Column '" + type + "' not found in Results Table");
+                OCV__LoadLibrary.logError("WK_RoiMan_Limited", "Column '" + type + "' not found in Results Table");
                 macroRunner.runMacro("setBatchMode(false);", "");
                 return;
             }
@@ -172,7 +172,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
                     }
                 }
                 catch(Exception e) {
-                    IJ.log("Error processing ROI " + i + ": " + e.getMessage());
+                    OCV__LoadLibrary.logError("WK_RoiMan_Limited", "Error processing ROI " + i + " (" + e.getMessage() + ")");
                 }
             }
 
@@ -181,7 +181,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
             roiManager.runCommand("show all");
         }
         catch(Exception e) {
-            IJ.log("Error in WK_RoiMan_Limited: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_Limited", "Error in processing (" + e.getMessage() + ")");
             try {
                 macroRunner.runMacro("setBatchMode(false);", "");
             }
@@ -242,7 +242,7 @@ public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
             return roiManager;
         }
         catch(Exception e) {
-            IJ.log("Failed to get ROI Manager: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_Limited", "Failed to get ROI Manager (" + e.getMessage() + ")");
             return null;
         }
     }

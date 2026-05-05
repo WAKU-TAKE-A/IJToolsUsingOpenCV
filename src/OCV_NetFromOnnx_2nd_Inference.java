@@ -39,7 +39,7 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         if (OCV__LoadLibrary.MyNet == null || !OCV__LoadLibrary.MyNet.isLoaded()) {
-            IJ.error("Model is not loaded. Please run '1st_Read' first.");
+            OCV__LoadLibrary.logError("OCV_NetFromOnnx_2nd_Inference", "Model is not loaded. Please run '1st_Read' first.");
             return DONE;
         }
 
@@ -85,7 +85,7 @@ public class OCV_NetFromOnnx_2nd_Inference implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg, ImagePlus imp) {
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("OpenCV Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_NetFromOnnx_2nd_Inference", "OpenCV Library is not loaded.");
             return DONE;
         }
         this.imp = imp;

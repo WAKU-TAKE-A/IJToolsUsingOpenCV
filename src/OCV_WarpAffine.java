@@ -86,7 +86,7 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_WarpAffine", "Library is not loaded.");
             return PlugInFilter.DONE;
         }
 
@@ -96,7 +96,7 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
         }
 
         if (!OCV__LoadLibrary.MyAffine.hasMatrix) {
-            IJ.error("Matrix has not been generated yet.");
+            OCV__LoadLibrary.logError("OCV_WarpAffine", "Matrix has not been generated yet.");
             return PlugInFilter.DONE;
         }
 
@@ -119,7 +119,7 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
         }
 
         if (mat == null || mat.empty()) {
-            IJ.log(className + " error: Invalid transformation matrix");
+            OCV__LoadLibrary.logError(className, "Invalid transformation matrix");
             return;
         }
 
@@ -165,7 +165,7 @@ public class OCV_WarpAffine implements ExtendedPlugInFilter, DialogListener {
             }
         }
         catch(Exception e) {
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         }
         finally {
             if (srcMat != null) srcMat.release();
