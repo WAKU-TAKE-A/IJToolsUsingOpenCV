@@ -49,11 +49,11 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
         showLog      = gd.getNextBoolean();
 
         if (modelPath.isEmpty() || !new File(modelPath).exists()) {
-            IJ.error("Model file not found: " + modelPath);
+            OCV__LoadLibrary.logError("OCV_NetFromOnnx_1st_Read", "Model file not found (" + modelPath + ")");
             return DONE;
         }
         if (inputWidth <= 0 || inputHeight <= 0) {
-            IJ.error("Input dimensions must be positive.");
+            OCV__LoadLibrary.logError("OCV_NetFromOnnx_1st_Read", "Input dimensions must be positive.");
             return DONE;
         }
 
@@ -66,7 +66,7 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg, ImagePlus imp) {
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("OpenCV Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_NetFromOnnx_1st_Read", "OpenCV Library is not loaded.");
             return DONE;
         }
         return NO_IMAGE_REQUIRED;
@@ -160,7 +160,7 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
             IJ.showStatus("Model loaded: " + OCV__LoadLibrary.MyNet.getModelName());
 
         } catch (Exception e) {
-            IJ.error("Failed to load model: " + e.getMessage());
+            OCV__LoadLibrary.logError("OCV_NetFromOnnx_1st_Read", e.getMessage());
         }
     }
 

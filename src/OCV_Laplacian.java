@@ -120,7 +120,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_Laplacian", "Library is not loaded.");
             return DONE;
         }
 
@@ -175,11 +175,11 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                 dstMat.get(0, 0, srcdstFloats);
             }
             else {
-                IJ.log(className + " error: Wrong image format.");
+                OCV__LoadLibrary.logError(className, "Wrong image format.");
             }
         }
         catch(Exception e) {
-            IJ.log(className + " error: Laplacian failed. (" + e.getMessage() + ")");
+            OCV__LoadLibrary.logError(className, "Laplacian failed. (" + e.getMessage() + ")");
         }
         finally {
             if(srcMat != null) {

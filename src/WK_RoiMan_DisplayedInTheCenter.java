@@ -84,7 +84,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
             roiMan = getRoiManager(false, true);
 
             if(roiMan == null) {
-                IJ.error("Failed to get ROI Manager");
+                OCV__LoadLibrary.logError("WK_RoiMan_DisplayedInTheCenter", "Failed to get ROI Manager");
                 return DONE;
             }
 
@@ -101,7 +101,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
 
             ImageCanvas canvas = impSrc.getCanvas();
             if(canvas == null) {
-                IJ.log("Canvas is not available");
+                OCV__LoadLibrary.logError("WK_RoiMan_DisplayedInTheCenter", "Canvas is not available");
                 return;
             }
 
@@ -142,7 +142,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
                     centerY = (int)Math.round(sumY / totalPoints);
                 }
                 else {
-                    IJ.log("No valid coordinates found in selected ROIs");
+                    OCV__LoadLibrary.logError("WK_RoiMan_DisplayedInTheCenter", "No valid coordinates found in selected ROIs");
                     return;
                 }
             }
@@ -151,7 +151,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
             setViewCenter(centerX, centerY, zoomPercent);
         }
         catch(Exception e) {
-            IJ.log("Error in WK_RoiMan_DisplayedInTheCenter: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_DisplayedInTheCenter", "Error in processing (" + e.getMessage() + ")");
         }
     }
 
@@ -171,7 +171,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
             macroRunner.runMacro(macro, "");
         }
         catch(Exception e) {
-            IJ.log("Failed to set view center: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_DisplayedInTheCenter", "Failed to set view center (" + e.getMessage() + ")");
         }
     }
 
@@ -229,7 +229,7 @@ public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
             return roiManager;
         }
         catch(Exception e) {
-            IJ.log("Failed to get ROI Manager: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_DisplayedInTheCenter", "Failed to get ROI Manager (" + e.getMessage() + ")");
             return null;
         }
     }

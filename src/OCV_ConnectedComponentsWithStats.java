@@ -86,7 +86,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_ConnectedComponentsWithStats", "Library is not loaded.");
             return DONE;
         }
 
@@ -143,7 +143,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
             }
         }
         catch(Exception e) {
-            IJ.log("Connected components analysis failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Connected components analysis failed (" + e.getMessage() + ")");
         }
         finally {
             // Release OpenCV resources
@@ -180,7 +180,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
             int statsCols = statsMat.cols();
             
             if(statsRows != outputCon || statsCols < 5) {
-                IJ.log("Warning: Unexpected stats matrix size: " + statsRows + "x" + statsCols);
+                OCV__LoadLibrary.logError(className, "Unexpected stats matrix size (" + statsRows + "x" + statsCols + ")");
                 return;
             }
 
@@ -231,7 +231,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
             roiManager.runCommand("show all");
         }
         catch(Exception e) {
-            IJ.log("Show data failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Show data failed (" + e.getMessage() + ")");
         }
     }
 
@@ -264,7 +264,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
             }
         }
         catch(Exception e) {
-            IJ.log("DoWand processing failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "DoWand processing failed (" + e.getMessage() + ")");
         }
     }
 }

@@ -87,7 +87,7 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, Dialog
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_GetPerspectiveTransform", "Library is not loaded.");
             return DONE;
         }
 
@@ -102,7 +102,7 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, Dialog
                 roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
                 int roiNum = roiMan.getCount();
                 if (roiNum < 2) {
-                    IJ.log(className + " error: At least two ROIs are required.");
+                    OCV__LoadLibrary.logError(className, "At least two ROIs are required.");
                     return;
                 }
                 Roi roiSrc = roiMan.getRoi(0);
@@ -111,14 +111,14 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, Dialog
             } else if (indCmd == 2) {
                 // compute_dst: need existing src and 1 new ROI
                 if (!myPerspective.finSetRoi) {
-                    IJ.log(className + " error: Source ROI is not set. Use 'compute' first.");
+                    OCV__LoadLibrary.logError(className, "Source ROI is not set. Use 'compute' first.");
                     return;
                 }
                 
                 roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
                 int roiNum = roiMan.getCount();
                 if (roiNum < 1) {
-                    IJ.log(className + " error: At least one ROI is required for new destination.");
+                    OCV__LoadLibrary.logError(className, "At least one ROI is required for new destination.");
                     return;
                 }
                 
@@ -140,7 +140,7 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, Dialog
                 myPerspective.setFileName(targetName);
                 myPerspective.read();
             } else {
-                IJ.log(className + " error: Invalid command index.");
+                OCV__LoadLibrary.logError(className, "Invalid command index.");
                 return;
             }
 
@@ -153,11 +153,11 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, Dialog
             myPerspective.copyTo(OCV__LoadLibrary.MyPerspective);
             
         } catch(java.io.IOException e) {
-            IJ.log(className + " IO error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "IO error (" + e.getMessage() + ")");
         } catch(IllegalStateException | IllegalArgumentException e) {
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         } catch(Exception e) {
-            IJ.log(className + " unexpected error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Unexpected error (" + e.getMessage() + ")");
         }
     }
 }

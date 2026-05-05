@@ -59,6 +59,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static double upDiff_1 = 5.0;
     private static double upDiff_2 = 5.0;
     private static int indFlags = 1;
+    private String className = null;
 
     // var.
     private RoiManager roiMan = null;
@@ -69,7 +70,8 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("newVal_B", newVal_0, 3);
         gd.addNumericField("newVal_G", newVal_1, 3);
@@ -139,7 +141,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     @Override
     public int setup(String string, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_FloodFill", "Library is not loaded.");
             return DONE;
         }
 
@@ -153,7 +155,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             int numRoi = roiMan.getCount();
 
             if(numRoi == 0) {
-                IJ.error("ROI is vacant. Select points.");
+                OCV__LoadLibrary.logError(className, "ROI is vacant. Select points.");
                 return DONE;
             }
 
@@ -189,7 +191,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             }
 
             if(lstPt.isEmpty()) {
-                IJ.log("No valid seed points found.");
+                OCV__LoadLibrary.logError(className, "No valid seed points found.");
                 return;
             }
 
@@ -208,7 +210,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                     Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
                     
                     if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
-                        IJ.log("Seed point out of bounds: (" + pt.x + ", " + pt.y + ")");
+                        OCV__LoadLibrary.logError(className, "Seed point out of bounds (" + pt.x + ", " + pt.y + ")");
                         continue;
                     }
 
@@ -234,7 +236,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                     Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
                     
                     if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
-                        IJ.log("Seed point out of bounds: (" + pt.x + ", " + pt.y + ")");
+                        OCV__LoadLibrary.logError(className, "Seed point out of bounds (" + pt.x + ", " + pt.y + ")");
                         continue;
                     }
 
@@ -260,7 +262,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                     Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
                     
                     if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
-                        IJ.log("Seed point out of bounds: (" + pt.x + ", " + pt.y + ")");
+                        OCV__LoadLibrary.logError(className, "Seed point out of bounds (" + pt.x + ", " + pt.y + ")");
                         continue;
                     }
 
@@ -275,7 +277,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             }
         }
         catch(Exception e) {
-            IJ.log("Flood fill failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Flood fill failed (" + e.getMessage() + ")");
         }
         finally {
             if(srcdstMat != null) {

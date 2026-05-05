@@ -97,7 +97,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             mat = Imgproc.getRotationMatrix2D(center, angle, scale);
 
             if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
-                IJ.log("Output is null or error");
+                OCV__LoadLibrary.logError(className, "Output is null or error.");
                 return;
             }
             
@@ -123,7 +123,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             IJ.showStatus(className + ": Matrix updated.");
         }
         catch(Exception e) {
-            IJ.log(className + " failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Processing failed (" + e.getMessage() + ")");
         }
         finally {
             if(mat != null) mat.release();
@@ -134,7 +134,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_GetRotationMatrix2D", "Library is not loaded.");
             return DONE;
         }
         return FLAGS;

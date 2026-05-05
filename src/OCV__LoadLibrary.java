@@ -72,7 +72,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
             disposed = false;
         }
         catch(Throwable ex) {
-            IJ.log("ERR : " + ex.toString());
+            OCV__LoadLibrary.logError("OCV__LoadLibrary", "Loading failed (" + ex.toString() + ")");
             disposed = true;
         }
     }
@@ -156,7 +156,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
     public static void mat2intarray(Mat src_cv_8uc3, int[] dst_ar, int imw, int imh) {
         if((src_cv_8uc3.width() != imw) || (src_cv_8uc3.height() != imh) || dst_ar.length != imw * imh) {
-            IJ.error("Wrong image size");
+            logError("OCV__LoadLibrary", "Wrong image size");
             return;
         }
         int totalPixels = imw * imh;
@@ -172,7 +172,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
     public static void intarray2mat(int[] src_ar, Mat dst_cv_8uc3, int imw, int imh) {
         if((dst_cv_8uc3.width() != imw) || (dst_cv_8uc3.height() != imh) || src_ar.length != imw * imh) {
-            IJ.error("Wrong image size");
+            logError("OCV__LoadLibrary", "Wrong image size");
             return;
         }
         int totalPixels = imw * imh;
@@ -297,5 +297,9 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
         };
         return "rows=" + m.rows() + ", cols=" + m.cols() + ", type=" + m.type()
                 + " (depth=" + depthName + ", channels=" + m.channels() + ")";
+    }
+
+    public static void logError(String className, String msg) {
+        IJ.log(className + " error: " + msg);
     }
 }

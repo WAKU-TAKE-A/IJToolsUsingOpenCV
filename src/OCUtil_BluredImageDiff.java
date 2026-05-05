@@ -176,7 +176,7 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCUtil_BluredImageDiff", "Library is not loaded.");
             return DONE;
         }
 
@@ -217,7 +217,7 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
                 processGrayscaleWithOpenCV(ip, borderType);
             }
         } catch (Exception e) {
-            IJ.error(className, "Error during processing: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         }
         finally {
             allocateMats(imw, imh, bitDepth);
@@ -332,7 +332,7 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
             case 32:
                 return CvType.CV_32F;
             default:
-                IJ.error(className + " error: Unsupported bit depth: " + bitDepth);
+                OCV__LoadLibrary.logError(className, "Unsupported bit depth (" + bitDepth + ")");
                 return -1;
         }
     }

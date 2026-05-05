@@ -59,6 +59,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
 
     // var.
     private String titleSrc = null;
+    private String className = null;
     private ImagePlus impSrc = null;
     private ImagePlus impTmp = null;
     private int[] lstWid;
@@ -66,7 +67,8 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + "...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + "...");
 
         gd.addChoice("src", titles, titles[indSrc]);
         gd.addChoice("template", titles, titles[indTmp]);
@@ -135,7 +137,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_MatchTemplate", "Library is not loaded.");
             return DONE;
         }
 
@@ -147,7 +149,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             lstWid = WindowManager.getIDList();
 
             if(lstWid == null || lstWid.length < 2) {
-                IJ.error("At least more than 2 images are needed.");
+                OCV__LoadLibrary.logError("OCV_MatchTemplate", "At least more than 2 images are needed.");
                 return DONE;
             }
 
@@ -213,7 +215,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             }
         }
         catch(Exception e) {
-            IJ.log("Match template failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Match template failed (" + e.getMessage() + ")");
         }
         finally {
             if(matSrc != null) {
@@ -278,7 +280,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             roiMan.runCommand("Show All");
         }
         catch(Exception e) {
-            IJ.log("Show data failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Show data failed (" + e.getMessage() + ")");
         }
     }
 
@@ -354,7 +356,7 @@ public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter,
             roiMan.runCommand("Show All");
         }
         catch(Exception e) {
-            IJ.log("Show data (search max point) failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Show data (search max point) failed (" + e.getMessage() + ")");
         }
         finally {
             if(impBin != null) {

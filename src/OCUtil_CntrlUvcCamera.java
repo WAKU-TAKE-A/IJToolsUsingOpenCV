@@ -149,7 +149,7 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg0, ImagePlus arg1) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCUtil_CntrlUvcCamera", "Library is not loaded.");
             return DONE;
         }
 
@@ -160,7 +160,7 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
     public void run(ImageProcessor arg0) {
         // Check for duplicate execution
         if (isRunning) {
-            IJ.error(className, "Already running. Please stop the current session first.");
+            OCV__LoadLibrary.logError(className, "Already running. Please stop the current session first.");
             return;
         }
                 
@@ -342,7 +342,7 @@ public class OCUtil_CntrlUvcCamera implements ExtendedPlugInFilter {
             }
             
         } catch (RuntimeException e) {
-            IJ.log(className + " exception: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Exception (" + e.getMessage() + ")");
             // Mark camera as unhealthy on exception
             OCV__LoadLibrary.MarkCameraUnhealthy();
         } finally {

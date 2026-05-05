@@ -129,7 +129,7 @@ public class WK_GetProperty implements ExtendedPlugInFilter {
         String value = System.getProperty(key);
         
         if(value == null) {
-            IJ.log("Property '" + key + "' is not available.");
+            OCV__LoadLibrary.logError(className, "Property '" + key + "' is not available.");
             return;
         }
         
@@ -141,7 +141,7 @@ public class WK_GetProperty implements ExtendedPlugInFilter {
             clipboard.setContents(selection, null);
         }
         catch(Exception e) {
-            IJ.log("Failed to copy to clipboard: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Failed to copy to clipboard (" + e.getMessage() + ")");
         }
 
         IJ.showMessageWithCancel(key, value);

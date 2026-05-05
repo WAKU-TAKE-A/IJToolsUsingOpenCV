@@ -80,14 +80,14 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
             roiManager = getRoiManager(false, true);
 
             if(roiManager == null) {
-                IJ.error("Failed to get ROI Manager");
+                OCV__LoadLibrary.logError("WK_RoiMan_SelectAll", "Failed to get ROI Manager");
                 return DONE;
             }
 
             roiCount = roiManager.getCount();
 
             if(roiCount == 0) {
-                IJ.error("ROI is vacant.");
+                OCV__LoadLibrary.logError("WK_RoiMan_SelectAll", "ROI is vacant.");
                 return DONE;
             }
 
@@ -109,7 +109,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
                 int[] allIndexes = roiManager.getIndexes();
 
                 if(allIndexes == null || allIndexes.length == 0) {
-                    IJ.log("Failed to get ROI indexes");
+                    OCV__LoadLibrary.logError("WK_RoiMan_SelectAll", "Failed to get ROI indexes");
                     return;
                 }
 
@@ -123,7 +123,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
             macroRunner.runMacro("setBatchMode(false);", "");
         }
         catch(Exception e) {
-            IJ.log("Error in WK_RoiMan_SelectAll: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_SelectAll", "Error in processing (" + e.getMessage() + ")");
             try {
                 macroRunner.runMacro("setBatchMode(false);", "");
             }
@@ -163,7 +163,7 @@ public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilte
             return roiManager;
         }
         catch(Exception e) {
-            IJ.log("Failed to get ROI Manager: " + e.getMessage());
+            OCV__LoadLibrary.logError("WK_RoiMan_SelectAll", "Failed to get ROI Manager (" + e.getMessage() + ")");
             return null;
         }
     }

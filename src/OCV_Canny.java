@@ -53,10 +53,12 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     private Mat dst_mat = null;
     private int cachedWidth = -1;
     private int cachedHeight = -1;
+    private String className = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("threshold1", thr1, 4);
         gd.addNumericField("threshold2", thr2, 4);
@@ -114,7 +116,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_Canny", "Library is not loaded.");
             return DONE;
         }
 
@@ -141,7 +143,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
             dst_mat.get(0, 0, srcdst_bytes);
         }
         catch(Exception e) {
-            IJ.log("Canny edge detection failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Canny edge detection failed (" + e.getMessage() + ")");
             releaseResources();
         }
     }

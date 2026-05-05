@@ -100,7 +100,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_MedianBlur", "Library is not loaded.");
             return DONE;
         }
 
@@ -132,7 +132,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
                 dstMat.get(0, 0, srcdstBytes);
             }
             catch(Exception e) {
-                IJ.log(className + " error: " + e.getMessage());
+                OCV__LoadLibrary.logError(className, e.getMessage());
             }
             finally {
                 if(srcMat != null) srcMat.release();
@@ -153,7 +153,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
                 dstMat.get(0, 0, srcdstShorts);
             }
             catch(Exception e) {
-                IJ.log(className + " error: " + e.getMessage());
+                OCV__LoadLibrary.logError(className, e.getMessage());
             }
             finally {
                 if(srcMat != null) srcMat.release();
@@ -174,7 +174,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
                 OCV__LoadLibrary.mat2intarray(dstMat, srcdstInts, imw, imh);
             }
             catch(Exception e) {
-                IJ.log(className + " error: " + e.getMessage());
+                OCV__LoadLibrary.logError(className, e.getMessage());
             }
             finally {
                 if(srcMat != null) srcMat.release();
@@ -195,7 +195,7 @@ public class OCV_MedianBlur implements ij.plugin.filter.ExtendedPlugInFilter, Di
                 dstMat.get(0, 0, srcdstFloats);
             }
             catch(Exception e) {
-                IJ.log(className + " error: " + e.getMessage());
+                OCV__LoadLibrary.logError(className, e.getMessage());
             }
             finally {
                 if(srcMat != null) srcMat.release();

@@ -115,7 +115,7 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_AdaptiveThreshold", "Library is not loaded.");
             return DONE;
         }
 
@@ -149,7 +149,7 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
             Imgproc.adaptiveThreshold(src_mat, dst_mat, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, constantOffset);
             dst_mat.get(0, 0, srcdst_ar);
         } catch(Exception e) {
-            IJ.log("Adaptive threshold failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Adaptive threshold failed (" + e.getMessage() + ")");
             releaseResources();
         }
     }

@@ -70,10 +70,12 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     private int cachedWidth = -1;
     private int cachedHeight = -1;
     private int cachedBitDepth = -1;
+    private String className = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addNumericField("ksize_x", ksize_x, 4);
         gd.addNumericField("ksize_y", ksize_y, 4);
@@ -126,7 +128,7 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_Blur", "Library is not loaded.");
             return DONE;
         }
 
@@ -159,11 +161,11 @@ public class OCV_Blur implements ij.plugin.filter.ExtendedPlugInFilter, DialogLi
                 runForFloat32(ip, imw, imh);
             }
             else {
-                IJ.error("Wrong image format");
+                OCV__LoadLibrary.logError(className, "Wrong image format.");
             }
         }
         catch(Exception e) {
-            IJ.log("Blur filter failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Blur filter failed (" + e.getMessage() + ")");
             releaseResources();
         }
     }

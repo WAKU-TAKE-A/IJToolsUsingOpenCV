@@ -181,7 +181,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
 
         // fin
         if(err != ERR_OK) {
-            IJ.log(className + " error: " + String.valueOf(err));
+            OCV__LoadLibrary.logError(className, "Error code (" + err + ")");
             return;
         }
 

@@ -67,10 +67,12 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     private int cachedWidth = -1;
     private int cachedHeight = -1;
     private int cachedBitDepth = -1;
+    private String className = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addMessage("If diameter is negative, it is computed from sigmaSpace.");
         gd.addNumericField("diameter", diameter, 0);
@@ -130,7 +132,7 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_BilateralFilter", "Library is not loaded.");
             return DONE;
         }
 
@@ -160,11 +162,11 @@ public class OCV_BilateralFilter implements ij.plugin.filter.ExtendedPlugInFilte
                 runForFloat32(ip, imw, imh);
             }
             else {
-                IJ.error("Wrong image format");
+                OCV__LoadLibrary.logError(className, "Wrong image format.");
             }
         }
         catch(Exception e) {
-            IJ.log("Bilateral filter failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Bilateral filter failed (" + e.getMessage() + ")");
             releaseResources();
         }
     }

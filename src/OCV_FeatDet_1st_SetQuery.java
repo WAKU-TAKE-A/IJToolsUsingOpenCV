@@ -87,7 +87,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
         }
         
         if (ind_cmd == CMD_NEW && OCV__LoadLibrary.isNullOrEmpty(query_name)) {
-            IJ.error("query_name is empty.");
+            OCV__LoadLibrary.logError(className, "query_name is empty.");
             return DONE;
         }
 
@@ -145,7 +145,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
     @Override
     public int setup(String arg, ImagePlus imp) {
         if (!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_FeatDet_1st_SetQuery", "Library is not loaded.");
             return DONE;
         }
 
@@ -166,7 +166,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
             // 2:remake  
             if (ind_cmd == CMD_NEW){
                 if(imp_query == null) {
-                    IJ.log(className + " error: No image.");
+                    OCV__LoadLibrary.logError(className, "No image.");
                     return;
                 }
                 
@@ -193,7 +193,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                     detector.initialize(TYPE_STR_DET[ind_det], query_name);
                     detector.generateQuery(mat_query);
                 } catch(IOException ex) {
-                    IJ.log(className + " error: " + ex.getMessage());
+                    OCV__LoadLibrary.logError(className, ex.getMessage());
                     return;
                 }            
             } else if (ind_cmd == CMD_READ){
@@ -201,7 +201,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                     detector.initialize(TYPE_STR_DET[ind_det], query_name);
                     detector.readQuery();
                 } catch(IOException ex) {
-                    IJ.log(className + " error: " + ex.getMessage());
+                    OCV__LoadLibrary.logError(className, ex.getMessage());
                     return;
                 }
             } else if (ind_cmd == CMD_REMAKE){
@@ -209,29 +209,29 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                     detector.initialize(TYPE_STR_DET[ind_det], query_name);
                     detector.remakeQuery();
                 } catch(IOException ex) {
-                    IJ.log(className + " error: " + ex.getMessage());
+                    OCV__LoadLibrary.logError(className, ex.getMessage());
                     return;
                 }        
             } else {
-                IJ.log(className + " error: Wrong command index.");
+                OCV__LoadLibrary.logError(className, "Wrong command index.");
                 return;
             }
 
             // post-processing
             if (detector == null) {
-                IJ.log(className + " error: Can not create detector.");
+                OCV__LoadLibrary.logError(className, "Can not create detector.");
                 return;
             }
 
             if (detector.QueryKeyPoints == null || detector.QueryKeyPoints.rows() == EMPTY_ROWS) {
-                IJ.log(className + " error: KeyPoint is empty.");
+                OCV__LoadLibrary.logError(className, "KeyPoint is empty.");
                 return;
             }
 
             try{
                 detector.CopyTo(OCV__LoadLibrary.MyQuery);
             } catch(IOException ex) {
-                IJ.log(className + " error: " + ex.getMessage());
+                OCV__LoadLibrary.logError(className, ex.getMessage());
                 return;
             }
 

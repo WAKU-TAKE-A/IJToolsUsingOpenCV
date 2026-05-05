@@ -68,10 +68,12 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     private Mat dstMat32f = null;
     private int cachedWidth = -1;
     private int cachedHeight = -1;
+    private String className = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
-        GenericDialog gd = new GenericDialog(command.trim() + " ...");
+        className = command.trim();
+        GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addChoice("distanceType", STR_DISTANCETYPE, STR_DISTANCETYPE[indDistType]);
         gd.addChoice("maskSize", STR_DISTANCETRANSFORMMASKS, STR_DISTANCETRANSFORMMASKS[indMskSize]);
@@ -106,7 +108,7 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_DistanceTransform", "Library is not loaded.");
             return DONE;
         }
 
@@ -134,7 +136,7 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
             dstMat32f.get(0, 0, srcdstFloats);
         }
         catch(Exception e) {
-            IJ.log("Distance transform failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Distance transform failed (" + e.getMessage() + ")");
             releaseResources();
         }
     }

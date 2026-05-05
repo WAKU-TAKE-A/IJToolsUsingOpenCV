@@ -120,7 +120,7 @@ public class OCV_Scharr implements ExtendedPlugInFilter, DialogListener {
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_Scharr", "Library is not loaded.");
             return PlugInFilter.DONE;
         }
 
@@ -196,7 +196,7 @@ public class OCV_Scharr implements ExtendedPlugInFilter, DialogListener {
             }
         }
         catch(Exception e) {
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         }
     }
 }

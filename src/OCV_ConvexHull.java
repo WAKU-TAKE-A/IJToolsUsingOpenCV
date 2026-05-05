@@ -143,7 +143,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             Imgproc.convexHull(pts, hull, enCW);
             
             if(hull.empty()) {
-                IJ.log("Convex hull is empty.");
+                OCV__LoadLibrary.logError(className, "Convex hull is empty.");
                 return;
             }
 
@@ -159,7 +159,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             showData(pts, hull);
         }
         catch(Exception e) {
-            IJ.log("Convex hull failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Convex hull failed (" + e.getMessage() + ")");
         }
         finally {
             if(pts != null) {
@@ -175,7 +175,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
     @Override
     public int setup(String arg0, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_ConvexHull", "Library is not loaded.");
             return DONE;
         }
 
@@ -220,7 +220,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             roiMan.select(numRoiMan - 1);
         }
         catch(Exception e) {
-            IJ.log("Show data failed: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, "Show data failed (" + e.getMessage() + ")");
         }
     }
 }

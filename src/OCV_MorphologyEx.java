@@ -136,7 +136,7 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_MorphologyEx", "Library is not loaded.");
             return DONE;
         }
 
@@ -235,7 +235,7 @@ public class OCV_MorphologyEx implements ij.plugin.filter.ExtendedPlugInFilter, 
             }
         }
         catch(Exception e) {
-            IJ.log(className + " error: " + e.getMessage());
+            OCV__LoadLibrary.logError(className, e.getMessage());
         }
         finally {
             if(kernel != null) kernel.release();

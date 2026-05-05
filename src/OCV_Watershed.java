@@ -107,7 +107,7 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     @Override
     public int setup(String arg, ImagePlus imp) {
         if(!OCV__LoadLibrary.isLoad()) {
-            IJ.error("Library is not loaded.");
+            OCV__LoadLibrary.logError("OCV_Watershed", "Library is not loaded.");
             return DONE;
         }
 
@@ -120,7 +120,7 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             lstWnd = WindowManager.getIDList();
 
             if(lstWnd == null || lstWnd.length < 2) {
-                IJ.error("At least more than 2 images are needed.");
+                OCV__LoadLibrary.logError("OCV_Watershed", "At least more than 2 images are needed.");
                 return DONE;
             }
 
@@ -166,7 +166,7 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             matMap32f.get(0, 0, arrMap32f);
         }
         catch(Exception e) {
-            IJ.log(className + " error: Watershed failed. (" + e.getMessage() + ")");
+            OCV__LoadLibrary.logError(className, "Watershed failed. (" + e.getMessage() + ")");
         }
         finally {
             if(matSrcRgb != null) {
