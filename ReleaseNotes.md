@@ -7,6 +7,7 @@ Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.13.0.
 ## Changes
 
 * OCV_NetFromONNX_*** : Added support for YOLOv8 Pose models (`YOLO_Pose` format).
+  - Changed `model_path` input in `1st_Read` to use a file selection dialog.
   - New `YOLO_Pose` option in `model_format` selector.
   - Supports 17-point human pose estimation (COCO format).
   - Outputs 3 types of ROIs to ROI Manager:

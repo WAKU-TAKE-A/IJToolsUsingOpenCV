@@ -32,7 +32,7 @@ public class OCV_NetFromOnnx_1st_Read implements ExtendedPlugInFilter {
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
         GenericDialog gd = new GenericDialog("Load ONNX Model");
-        gd.addStringField("model_path", modelPath, 40);
+        gd.addFileField("model_path", modelPath, 40);
         gd.addNumericField("input_width",  inputWidth,  0);
         gd.addNumericField("input_height", inputHeight, 0);
         gd.addChoice("model_format", FORMAT_LABELS, FORMAT_LABELS[formatChoice]);

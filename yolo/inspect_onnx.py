@@ -17,4 +17,4 @@ def inspect_onnx(model_path):
         print(f"  Name: {name}, Shape: {shape}, Type: {output.type.tensor_type.elem_type}")
 
 if __name__ == "__main__":
-    inspect_onnx("yolo26s-cls.onnx")
+    inspect_onnx("model.onnx")
