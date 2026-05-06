@@ -3,3 +3,5 @@
 /build
 /plugins/*.class
 /dist/
+/yolo/*.onnx
+/yolo/*.pt
