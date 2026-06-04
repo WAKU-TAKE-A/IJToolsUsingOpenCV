@@ -218,7 +218,7 @@ public class MyPerspectiveTransform {
         RoiManager roiMan = new RoiManager(false);
         roiMan.addRoi(PerspectiveSrc);
         roiMan.addRoi(PerspectiveDst);
-        roiMan.save(dir.resolve(FILE_ROI).toString());
+        roiMan.runCommand("Save", dir.resolve(FILE_ROI).toString());
         roiMan.close();
         
         // Write Matrix.mat
@@ -252,7 +252,7 @@ public class MyPerspectiveTransform {
         }
         
         RoiManager roiMan = new RoiManager(false);
-        roiMan.open(roiPath.toString());
+        roiMan.runCommand("Open", roiPath.toString());
         
         if (roiMan.getCount() < 2) {
             roiMan.close();

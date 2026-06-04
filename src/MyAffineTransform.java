@@ -238,7 +238,7 @@ public class MyAffineTransform {
         RoiManager roiMan = new RoiManager(false);
         roiMan.addRoi(AffineSrc);
         roiMan.addRoi(AffineDst);
-        roiMan.save(dir.resolve(FILE_ROI).toString());
+        roiMan.runCommand("Save", dir.resolve(FILE_ROI).toString());
         roiMan.close();
         
         // Write Matrix.mat
@@ -272,7 +272,7 @@ public class MyAffineTransform {
         }
         
         RoiManager roiMan = new RoiManager(false);
-        roiMan.open(roiPath.toString());
+        roiMan.runCommand("Open", roiPath.toString());
         
         if (roiMan.getCount() < 2) {
             roiMan.close();
