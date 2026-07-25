@@ -5,3 +5,6 @@
 /dist/
 /yolo/*.onnx
 /yolo/*.pt
+nbproject/private/private.properties
+nbproject/private/private.xml
+
