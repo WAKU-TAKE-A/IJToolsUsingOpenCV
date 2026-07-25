@@ -1,10 +1,19 @@
-# Release v0.9.60.0
+# Release v0.9.61.0
 
-Latest update: May 4th 2026
+Latest update: July 25th 2026
 
 Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.13.0.
 
 ## Changes
+
+* WK_RoiMan_PeriodDetector : Added a new plugin to detect periods from ROI profiles.
+  - Automatically calculates periods from image profiles using Autocorrelation.
+  - Supports Moving Average and Linear Regression for trend removal.
+  - Implements sub-pixel precision estimation using parabolic interpolation.
+  - Calculates confidence scores based on normalized autocorrelation.
+  - Output results are seamlessly integrated into the ImageJ Results Table.
+
+# Release v0.9.60.0
 
 * OCV_NetFromONNX_*** : Added support for YOLOv8 Pose models (`YOLO_Pose` format).
   - Changed `model_path` input in `1st_Read` to use a file selection dialog.
