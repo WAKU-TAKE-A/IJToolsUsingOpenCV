@@ -70,4 +70,32 @@
     nbproject/build-impl.xml file. 
 
     -->
+    <target name="-post-compile">
+        <move todir="plugins">
+            <fileset dir="${build.classes.dir}" includes="OCV_*.class"/>
+            <fileset dir="${build.classes.dir}" includes="OCUtil_*.class"/>
+            <fileset dir="${build.classes.dir}" includes="WK_*.class"/>
+            <fileset dir="${build.classes.dir}" includes="My*.class"/>
+        </move>
+        <jar jarfile="IJTools_UsingOpenCV.jar">
+            <fileset dir="plugins" includes="OCV_*.class"/>
+            <fileset dir="plugins" includes="OCUtil_*.class"/>
+            <fileset dir="plugins" includes="My*.class"/>
+            <manifest>
+                <attribute name="Main-Class" value="Main" />
+            </manifest>
+        </jar>
+        <jar jarfile="IJTools_Waku.jar">
+            <fileset dir="plugins" includes="WK_*.class"/>
+            <fileset dir="${build.classes.dir}" includes="PeriodDetector*.class"/>
+            <fileset dir="${build.classes.dir}" includes="PeriodResult*.class"/>
+            <fileset dir="${build.classes.dir}" includes="PeriodRefiner*.class"/>
+            <fileset dir="${build.classes.dir}" includes="Autocorrelation*.class"/>
+            <fileset dir="${build.classes.dir}" includes="PeakDetector*.class"/>
+            <fileset dir="${build.classes.dir}" includes="Detrend*.class"/>
+            <manifest>
+                <attribute name="Main-Class" value="Main" />
+            </manifest>
+        </jar>
+    </target>
 </project>
