@@ -234,15 +234,13 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             }
 
             // show
-            float[] res = new float[2];
+            int channels = lines.channels();
+            float[] data = new float[numLines * channels];
+            lines.get(0, 0, data);
 
             for(int i = 0; i < numLines; i++) {
-                int r = (lines.rows() == 1) ? 0 : i;
-                int c = (lines.rows() == 1) ? i : 0;
-                lines.get(r, c, res);
-
-                float rho = res[0];
-                float theta = res[1];
+                float rho = data[i * channels + 0];
+                float theta = data[i * channels + 1];
                 double a = Math.cos(theta);
                 double b = Math.sin(theta);
                 double x0 = a * rho;

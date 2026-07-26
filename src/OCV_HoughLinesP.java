@@ -198,17 +198,14 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener {
             }
 
             // show
-            int[] line = new int[4];
+            int[] data = new int[4 * numLines];
+            lines.get(0, 0, data);
 
             for(int i = 0; i < numLines; i++) {
-                int r = (lines.rows() == 1) ? 0 : i;
-                int c = (lines.rows() == 1) ? i : 0;
-                lines.get(r, c, line);
-
-                int x1 = line[0];
-                int y1 = line[1];
-                int x2 = line[2];
-                int y2 = line[3];
+                int x1 = data[i * 4 + 0];
+                int y1 = data[i * 4 + 1];
+                int x2 = data[i * 4 + 2];
+                int y2 = data[i * 4 + 3];
 
                 rt.incrementCounter();
                 rt.addValue("No", i + 1);

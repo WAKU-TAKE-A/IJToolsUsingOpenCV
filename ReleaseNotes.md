@@ -1,3 +1,20 @@
+# Release v0.9.62.0
+
+Latest update: July 26th 2026
+
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV5.0.0.
+
+## Changes
+
+* **Fixed Mat.get() bugs in OpenCV 5**:
+  - Addressed the `1 x N` matrix iteration issues in `OCV_HoughCircles`, `OCV_HoughLinesP`, `OCV_HoughLines`, and `OCV_ConvexHull` where OpenCV 5 returns transposed data.
+  - Fixed `KeyPoint` feature iteration in `MyFeatureDetector.java`.
+* **Fixed Watershed Macro Bug**:
+  - Fixed a typo in `sample/Sample_Watershed/Watershed_Macro.txt` (`adaptivemethod` -> `type`) which was inadvertently causing the foreground/background inversion.
+* **Added Documentation**:
+  - Added Japanese documentation for `OCV_HoughCircles`.
+  - Added sample macro `HoughCircles_Macro.txt` for circle extraction.
+
 # Release v0.9.61.0
 
 Latest update: July 25th 2026

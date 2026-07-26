@@ -440,16 +440,18 @@ public class MyFeatureDetector {
      */
     public void showData(MatOfKeyPoint key_query) {
         ResultsTable rt = OCV__LoadLibrary.GetResultsTable(true);
-        int num = key_query.rows();
+        KeyPoint[] kpArr = key_query.toArray();
+        int num = kpArr.length;
 
         for(int i = 0; i < num; i++) {
-            double query_x = key_query.get(i, 0)[0];
-            double query_y = key_query.get(i, 0)[1];
-            double query_size = key_query.get(i, 0)[2];
-            double query_angle = key_query.get(i, 0)[3];
-            double query_response = key_query.get(i, 0)[4];
-            double query_octave = key_query.get(i, 0)[5];
-            double query_class_id = key_query.get(i, 0)[6];
+            KeyPoint kp = kpArr[i];
+            double query_x = kp.pt.x;
+            double query_y = kp.pt.y;
+            double query_size = kp.size;
+            double query_angle = kp.angle;
+            double query_response = kp.response;
+            double query_octave = kp.octave;
+            double query_class_id = kp.class_id;
 
             rt.incrementCounter();
             rt.addValue("query_x", query_x);

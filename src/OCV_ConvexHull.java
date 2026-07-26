@@ -194,14 +194,17 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
     private void showData(MatOfPoint pts, MatOfInt hull) {
         try {
             // set the ResultsTable
-            int numHull = (int)hull.size().height;
+            int[] hullArr = hull.toArray();
+            Point[] ptsArr = pts.toArray();
+            int numHull = hullArr.length;
+            
             float[] xPoints = new float[numHull];
             float[] yPoints = new float[numHull];
 
             for(int i = 0; i < numHull; i++) {
-                int index = (int)hull.get(i, 0)[0];
-                xPoints[i] = (float)pts.get(index, 0)[0];
-                yPoints[i] = (float)pts.get(index, 0)[1];
+                int index = hullArr[i];
+                xPoints[i] = (float)ptsArr[index].x;
+                yPoints[i] = (float)ptsArr[index].y;
 
                 rt.incrementCounter();
                 rt.addValue("X", xPoints[i]);
