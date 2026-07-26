@@ -13,7 +13,8 @@ import java.util.List;
 import javax.swing.JButton;
 import javax.swing.JDialog;
 import javax.swing.JPanel;
-import org.opencv.calib3d.Calib3d;
+import org.opencv.calib.Calib;
+import org.opencv.objdetect.Objdetect;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
@@ -217,7 +218,7 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
             }
 
             if (imagePoints.size() > 0) {
-                mCalib.calibrate(objectPoints, imagePoints, new Size(imp.getWidth(), imp.getHeight()));
+                Calib.calibrateCamera(objectPoints, imagePoints, new Size(imp.getWidth(), imp.getHeight()), mCalib.cameraMatrix, mCalib.distCoeffs, new ArrayList<Mat>(), new ArrayList<Mat>(), 0);
                 saveResults();
             } else {
                 OCV__LoadLibrary.logError(className, "No patterns detected in stack.");
@@ -268,7 +269,7 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
                 }
 
                 if (found) {
-                    Calib3d.drawChessboardCorners(frame, boardSize, corners, found);
+                    Objdetect.drawChessboardCorners(frame, boardSize, corners, found);
                 }
 
                 OCV__LoadLibrary.mat2intarray(frame, pixels, w, h);
@@ -292,9 +293,9 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
     }
 
     private boolean findPattern(Mat gray, Size size, MatOfPoint2f corners) {
-        if (indPattern == 0) return Calib3d.findChessboardCorners(gray, size, corners);
-        if (indPattern == 1) return Calib3d.findCirclesGrid(gray, size, corners, Calib3d.CALIB_CB_SYMMETRIC_GRID);
-        if (indPattern == 2) return Calib3d.findCirclesGrid(gray, size, corners, Calib3d.CALIB_CB_ASYMMETRIC_GRID);
+        if (indPattern == 0) return Objdetect.findChessboardCorners(gray, size, corners);
+        if (indPattern == 1) return Objdetect.findCirclesGrid(gray, size, corners, Objdetect.CALIB_CB_SYMMETRIC_GRID);
+        if (indPattern == 2) return Objdetect.findCirclesGrid(gray, size, corners, Objdetect.CALIB_CB_ASYMMETRIC_GRID);
         return false;
     }
 

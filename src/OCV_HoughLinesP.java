@@ -177,7 +177,7 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener {
     // private
     private void showData(Mat lines) {
         try {
-            int numLines = lines.rows();
+            int numLines = (lines.rows() == 1) ? lines.cols() : lines.rows();
 
             if(numLines == 0) {
                 OCV__LoadLibrary.logError(className, "No lines detected.");
@@ -201,7 +201,9 @@ public class OCV_HoughLinesP implements ExtendedPlugInFilter, DialogListener {
             int[] line = new int[4];
 
             for(int i = 0; i < numLines; i++) {
-                lines.get(i, 0, line);
+                int r = (lines.rows() == 1) ? 0 : i;
+                int c = (lines.rows() == 1) ? i : 0;
+                lines.get(r, c, line);
 
                 int x1 = line[0];
                 int y1 = line[1];

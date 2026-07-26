@@ -9,8 +9,9 @@ import org.opencv.core.MatOfKeyPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.calib3d.Calib3d;
-import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.calib.Calib;
+import org.opencv.geometry.Geometry;
+import org.opencv.features.DescriptorMatcher;
 import ij.gui.PolygonRoi;
 import ij.gui.Roi;
 import ij.measure.ResultsTable;
@@ -339,10 +340,10 @@ public class MyFeatureMatcher {
             
             // Correct order: src=query (template), dst=train (detection target)
             // This computes the transformation from query to train
-            homography = Calib3d.findHomography(
+            homography = Geometry.findHomography(
                 queryPointsMat,  // src: query points (template)
                 trainPointsMat,  // dst: train points (where to find)
-                Calib3d.RANSAC,
+                Geometry.RANSAC,
                 ransacThreshold,
                 mask,
                 2000,

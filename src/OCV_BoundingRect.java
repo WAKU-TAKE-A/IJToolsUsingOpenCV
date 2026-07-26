@@ -12,7 +12,7 @@ import java.util.ArrayList;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.geometry.Geometry;
 
 /*
  * The MIT License
@@ -135,7 +135,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
 
             pts = new MatOfPoint();
             pts.fromList(lstPt);
-            Rect rect = Imgproc.boundingRect(pts);
+            Rect rect = Geometry.boundingRect(pts);
 
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);

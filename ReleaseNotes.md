@@ -2,9 +2,14 @@
 
 Latest update: July 25th 2026
 
-Confirmed with ImageJ 1.54r + JDK17 + OpenCV4.13.0.
+Confirmed with ImageJ 1.54r + JDK17 + OpenCV5.0.0.
 
 ## Changes
+
+* **Migrated to OpenCV 5**:
+  - Addressed major package structural changes (e.g., `Imgproc` geometric functions moved to `Geometry`, `features2d` renamed to `features`, `findChessboardCorners` moved to `Objdetect`).
+  - Fixed `HoughLinesP` and `HoughLines` data output due to `Mat` return shape changes (now outputs `1 x N`).
+  - Deprecated `AKAZE` and `BRISK` detectors as they were removed from the core `features` module in OpenCV 5 Java API.
 
 * WK_RoiMan_PeriodDetector : Added a new plugin to detect periods from ROI profiles.
   - Automatically calculates periods from image profiles using Autocorrelation.

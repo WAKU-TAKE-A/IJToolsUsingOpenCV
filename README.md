@@ -18,7 +18,7 @@ I have made plugins for ImageJ that uses a part of OpenCV's functions.
 
 Copy this repository to the "NetBeansProjects" folder.
 
-Copy "ij.jar", "opencv-000.jar" and "opencv_java000.dll" to the root of this repository.
+Copy "ij.jar", "opencv-500.jar" and "opencv_java500.dll" to the root of this repository.
 
 Start NetBeans.
 
@@ -26,7 +26,7 @@ File ⇒ Open Project
 
 Select the folder you copied earlier.
 
-Add "ij.jar" and "opencv-000.jar" to the "Classpath" in Properties - Libraries.
+Add "ij.jar" and "opencv-500.jar" to the "Classpath" in Properties - Libraries.
 
 Please run the build.
 
@@ -48,7 +48,7 @@ OpenCVの関数の一部を利用するImageJ用プラグインを作りまし�
 
 本リポジトリを「NetBeansProjects」のフォルダにコピーします。
 
-本リポジトリのルートに「ij.jar」「opencv-000.jar」「opencv_java000.dll」をコピーします。
+本リポジトリのルートに「ij.jar」「opencv-500.jar」「opencv_java500.dll」をコピーします。
 
 NetBeansを起動します。
 
@@ -56,7 +56,7 @@ NetBeansを起動します。
 
 先ほどコピーしたフォルダを選択します。
 
-プロパティ－ライブラリのコンパイル時ライブラリの「Classpath」に「ij.jar」「opencv-000.jar」を追加します。
+プロパティ－ライブラリのコンパイル時ライブラリの「Classpath」に「ij.jar」「opencv-500.jar」を追加します。
 
 ビルドを実行してください。
 

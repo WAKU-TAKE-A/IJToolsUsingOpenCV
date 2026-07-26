@@ -11,7 +11,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.geometry.Geometry;
 
 /*
  * The MIT License
@@ -149,7 +149,7 @@ public class MyPerspectiveTransform {
         matPt_dst.fromList(lstPt_dst);
 
         // Compute perspective transformation matrix
-        Mat matrix = Imgproc.getPerspectiveTransform(matPt_src, matPt_dst);
+        Mat matrix = Geometry.getPerspectiveTransform(matPt_src, matPt_dst);
 
         if (matrix == null || matrix.empty() || matrix.rows() != 3 || matrix.cols() != 3) {
             throw new RuntimeException("Failed to compute perspective transformation matrix");

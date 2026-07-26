@@ -4,8 +4,8 @@ import ij.gui.GenericDialog;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.process.ImageProcessor;
-import org.opencv.calib3d.Calib3d;
 import org.opencv.core.Mat;
+import org.opencv.imgproc.Imgproc;
 
 /*
  * The MIT License
@@ -83,8 +83,8 @@ public class OCV_CameraCalib_2nd_Undistort implements ExtendedPlugInFilter {
             matSrc = OCV__LoadLibrary.ip2mat(ip);
             matDst = new Mat();
 
-            // Perform undistortion using OpenCV Calib3d.undistort
-            Calib3d.undistort(matSrc, matDst, mCalib.cameraMatrix, mCalib.distCoeffs);
+            // Perform undistortion using OpenCV Imgproc.undistort
+            Imgproc.undistort(matSrc, matDst, mCalib.cameraMatrix, mCalib.distCoeffs);
 
             // Convert result back to ImageProcessor and copy pixels
             ImageProcessor ipRes = OCV__LoadLibrary.mat2ip(matDst);

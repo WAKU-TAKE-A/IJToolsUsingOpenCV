@@ -3,8 +3,11 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/admin/Documents/NetBeansProjects/IJToolsUsingOpenCV/src/OCUtil_BluredImageDiff.java</file>
-            <file>file:/C:/Users/admin/Documents/NetBeansProjects/IJToolsUsingOpenCV/src/OCV_MedianBlur.java</file>
+            <file>file:/C:/Users/user/Documents/NetBeansProjects/IJToolsUsingOpenCV/src/MyAffineTransform.java</file>
+            <file>file:/C:/Users/user/Documents/NetBeansProjects/IJToolsUsingOpenCV/src/MyCameraCalibration.java</file>
+            <file>file:/C:/Users/user/Documents/NetBeansProjects/IJToolsUsingOpenCV/src/MyFeatureDetector.java</file>
+            <file>file:/C:/Users/user/Documents/NetBeansProjects/IJToolsUsingOpenCV/src/OCV_BoundingRect.java</file>
+            <file>jar:file:/C:/Users/user/Documents/NetBeansProjects/IJToolsUsingOpenCV/opencv-500.jar!/org/opencv/imgproc/Imgproc.java</file>
         </group>
     </open-files>
 </project-private>

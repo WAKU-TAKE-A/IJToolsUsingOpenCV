@@ -52,10 +52,13 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     DIST_WELSCH : distance = c^2/2(1-exp(-(x/c)^2)), c = 2.9846
     DIST_HUBER : distance = |x|<c ? x^2/2 : c(|x|-c/2), c=1.345
     */
-    private static final int[] INT_DISTANCETYPE = { Imgproc.CV_DIST_L1, Imgproc.CV_DIST_L2, Imgproc.CV_DIST_C };
+    private static final int CV_DIST_L1 = 1;
+    private static final int CV_DIST_L2 = 2;
+    private static final int CV_DIST_C = 3;
+    private static final int[] INT_DISTANCETYPE = { CV_DIST_L1, CV_DIST_L2, CV_DIST_C };
     private static final String[] STR_DISTANCETYPE = { "CV_DIST_L1", "CV_DIST_L2", "CV_DIST_C" };
 
-    private static final int[] INT_DISTANCETRANSFORMMASKS = { Imgproc.CV_DIST_MASK_3, Imgproc.CV_DIST_MASK_5, Imgproc.CV_DIST_MASK_PRECISE };
+    private static final int[] INT_DISTANCETRANSFORMMASKS = { Imgproc.DIST_MASK_3, Imgproc.DIST_MASK_5, Imgproc.DIST_MASK_PRECISE };
     private static final String[] STR_DISTANCETRANSFORMMASKS = { "CV_DIST_MASK_3", "CV_DIST_MASK_5", "CV_DIST_MASK_PRECISE" };
 
     // static var.

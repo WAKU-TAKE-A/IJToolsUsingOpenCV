@@ -9,7 +9,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.core.TermCriteria;
 import org.opencv.imgproc.Imgproc;
-import org.opencv.calib3d.Calib3d;
+import org.opencv.calib.Calib;
 
 /*
  * The MIT License
@@ -124,7 +124,7 @@ public class MyCameraCalibration {
         cameraMatrix = Mat.eye(3, 3, CvType.CV_64F);
         distCoeffs = Mat.zeros(5, 1, CvType.CV_64F);
 
-        reprojectionError = Calib3d.calibrateCamera(
+        reprojectionError = Calib.calibrateCamera(
                 objectPoints, 
                 imagePoints, 
                 imageSize, 
@@ -149,7 +149,7 @@ public class MyCameraCalibration {
         
         if (size.width != lastImageSize.width || size.height != lastImageSize.height || map1.empty()) {
             resetCache();
-            Calib3d.initUndistortRectifyMap(
+            Imgproc.initUndistortRectifyMap(
                 cameraMatrix, distCoeffs, new Mat(), 
                 cameraMatrix, size, CvType.CV_16SC2, map1, map2
             );

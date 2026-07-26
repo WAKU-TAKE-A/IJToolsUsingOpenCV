@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import org.opencv.core.MatOfInt;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.Point;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.geometry.Geometry;
 
 /*
  * The MIT License
@@ -140,7 +140,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             pts = new MatOfPoint();
             pts.fromList(lstPt);
             hull = new MatOfInt();
-            Imgproc.convexHull(pts, hull, enCW);
+            Geometry.convexHull(pts, hull, enCW);
             
             if(hull.empty()) {
                 OCV__LoadLibrary.logError(className, "Convex hull is empty.");

@@ -51,3 +51,13 @@ This project heavily utilizes the Java wrapper for OpenCV. When creating or modi
 ## 7. Documentation
 - When creating a new plugin, always create a corresponding manual in the `manual_jp/` directory.
 - Follow the existing Markdown format (e.g., `manual_jp/WK_RoiMan_LinearFitting.md`).
+
+## 8. Analyzing and Migrating OpenCV Versions
+If you encounter compilation errors due to OpenCV version upgrades (e.g., migrating to OpenCV 5 where many classes and methods are restructured):
+- **Do not rely on web searches for Java API documentation**, as OpenCV Java wrappers often have poor or outdated documentation online.
+- **Analyze the JAR directly**: Use the `jar` and `javap` tools to dynamically inspect the contents of the local OpenCV JAR file (e.g., `opencv-500.jar`).
+  - To find new modules/packages: `jar tf opencv-500.jar > jar_contents.txt` and search for `.class` files.
+  - To locate missing methods (e.g., `convexHull` moved from `Imgproc` to `Geometry`): Run `javap -cp opencv-500.jar org.opencv.geometry.Geometry` to list available methods and their precise signatures.
+  - To find constants (e.g., `CV_DIST_L1` or `CALIB_CB_SYMMETRIC_GRID`): Run `javap -cp opencv-500.jar -constants org.opencv.calib.Calib` to dump the constant values.
+- **Handling Removed Constants**: Sometimes constants (like `CV_DIST_L1 = 1`) are completely removed from the Java wrapper (or lose their `CV_` prefix). Use `javap -constants` to verify. If they are truly gone, redefine them locally in your Java file as `private static final int` to maintain backward compatibility with the C++ backend.
+- **Removed Algorithms**: If an algorithm (like `AKAZE` or `BRISK`) is removed from the core modules, gracefully remove it from the UI arrays (`String[]`) and fallback/branching logic.

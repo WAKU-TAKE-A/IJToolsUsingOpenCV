@@ -12,7 +12,7 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.geometry.Geometry;
 
 /*
  * The MIT License
@@ -136,7 +136,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
             pts.fromList(lstPt);
             float[] radius = new float[1];
             Point center = new Point();
-            Imgproc.minEnclosingCircle(pts, center, radius);
+            Geometry.minEnclosingCircle(pts, center, radius);
 
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);

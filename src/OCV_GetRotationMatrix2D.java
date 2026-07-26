@@ -9,6 +9,7 @@ import ij.process.ImageProcessor;
 import java.awt.AWTEvent;
 import org.opencv.core.Mat;
 import org.opencv.core.Point;
+import org.opencv.geometry.Geometry;
 import org.opencv.imgproc.Imgproc;
 
 /*
@@ -94,7 +95,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
 
         try {
             // 回転行列(2x3)を計算
-            mat = Imgproc.getRotationMatrix2D(center, angle, scale);
+            mat = Geometry.getRotationMatrix2D(center, angle, scale);
 
             if(mat == null || mat.rows() <= 0 || mat.cols() <= 0) {
                 OCV__LoadLibrary.logError(className, "Output is null or error.");
@@ -103,7 +104,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             
             // 逆行列の計算 (OCV_WarpAffine の inverse 指定用)
             inv = new Mat();
-            Imgproc.invertAffineTransform(mat, inv);
+            Geometry.invertAffineTransform(mat, inv);
 
             // 一時的な MyAffineTransform にデータを格納
             MyAffineTransform tmpAffine = new MyAffineTransform();

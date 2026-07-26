@@ -45,7 +45,7 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
     // constant var.
     private final int FLAGS = NO_IMAGE_REQUIRED;
     private final String[] TYPE_STR_CMD = new String[] { "new_query", "read_query", "remake_query"};
-    private final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB", "SIFT"};
+    private final String[] TYPE_STR_DET = new String[] { "ORB", "SIFT"};
     
     // Command indices
     private final int CMD_NEW = 0;

@@ -9,7 +9,7 @@ import java.util.List;
 import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
-import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features.DescriptorMatcher;
 import org.opencv.imgcodecs.Imgcodecs;
 
 /*
@@ -45,7 +45,7 @@ import org.opencv.imgcodecs.Imgcodecs;
 public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
     private static final int FLAGS = DOES_RGB;
-    private static final String[] TYPE_STR_DET = new String[] { "AKAZE", "BRISK", "ORB", "SIFT"};
+    private static final String[] TYPE_STR_DET = new String[] { "ORB", "SIFT"};
     
     // static var.
     private static String[] type_str_match;

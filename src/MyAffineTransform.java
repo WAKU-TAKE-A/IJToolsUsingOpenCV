@@ -10,7 +10,7 @@ import org.opencv.core.CvType;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.geometry.Geometry;
 
 /*
  * The MIT License
@@ -154,7 +154,7 @@ public class MyAffineTransform {
             matPt_dst.fromList(lstPt_dst);
 
             // Compute affine transformation matrix
-            matrix = Imgproc.getAffineTransform(matPt_src, matPt_dst);
+            matrix = Geometry.getAffineTransform(matPt_src, matPt_dst);
 
             if (matrix == null || matrix.empty() || matrix.rows() != 2 || matrix.cols() != 3) {
                 throw new RuntimeException("Failed to compute affine transformation matrix");
@@ -162,7 +162,7 @@ public class MyAffineTransform {
 
             // Compute inverse matrix using OpenCV's invertAffineTransform
             inverse = new Mat();
-            Imgproc.invertAffineTransform(matrix, inverse);
+            Geometry.invertAffineTransform(matrix, inverse);
 
             if (inverse == null || inverse.empty()) {
                 throw new RuntimeException("Failed to compute inverse matrix");

@@ -15,12 +15,11 @@ import org.opencv.core.CvType;
 import org.opencv.core.KeyPoint;
 import org.opencv.core.Mat;
 import org.opencv.core.MatOfKeyPoint;
-import org.opencv.features2d.AKAZE;
-import org.opencv.features2d.BRISK;
-import org.opencv.features2d.Feature2D;
-import org.opencv.features2d.Features2d;
-import org.opencv.features2d.ORB;
-import org.opencv.features2d.SIFT;
+
+import org.opencv.features.Feature2D;
+import org.opencv.features.Features;
+import org.opencv.features.ORB;
+import org.opencv.features.SIFT;
 import org.opencv.imgcodecs.Imgcodecs;
 /*
  * The MIT License
@@ -106,11 +105,7 @@ public class MyFeatureDetector {
             detector.clear();
         }        
         
-        if (DetectorType.equals(STR_AKAZE)) {
-            detector = AKAZE.create();
-        } else if (DetectorType.equals(STR_BRISK)) {
-            detector = BRISK.create();
-        } else if (DetectorType.equals(STR_ORB)) {
+        if (DetectorType.equals(STR_ORB)) {
             detector = ORB.create();
         } else if (DetectorType.equals(STR_SIFT)) {
             detector = SIFT.create();
@@ -146,7 +141,7 @@ public class MyFeatureDetector {
             calc_KeyPoints_Descriptors(image, QueryKeyPoints, QueryDescriptors);
             
             image_key = new Mat();
-            Features2d.drawKeypoints(image, QueryKeyPoints, image_key);
+            Features.drawKeypoints(image, QueryKeyPoints, image_key);
             
             detector.write(FileParam.toString());
             boolean bret1 = Imgcodecs.imwrite(FileQueryImage.toString(), image);
@@ -186,7 +181,7 @@ public class MyFeatureDetector {
             calc_KeyPoints_Descriptors(image, QueryKeyPoints, QueryDescriptors);
             
             image_key = new Mat();
-            Features2d.drawKeypoints(image, QueryKeyPoints, image_key);
+            Features.drawKeypoints(image, QueryKeyPoints, image_key);
             
             boolean bret2 = Imgcodecs.imwrite(FileQueryImage_Key.toString(), image_key);
             writeMatOfKeyPoint(QueryKeyPoints, FileQueryKeyPoints.toString());
@@ -479,7 +474,7 @@ public class MyFeatureDetector {
         
         try {
             mat_dst = new Mat();
-            Features2d.drawKeypoints(mat_query, key_query, mat_dst);
+            Features.drawKeypoints(mat_query, key_query, mat_dst);
 
             String title_dst = WindowManager.getUniqueName("FeatureDetection_Extract");
             int imw_dst = mat_dst.cols();

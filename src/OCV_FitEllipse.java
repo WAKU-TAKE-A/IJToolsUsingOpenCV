@@ -13,7 +13,7 @@ import java.util.ArrayList;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
 import org.opencv.core.RotatedRect;
-import org.opencv.imgproc.Imgproc;
+import org.opencv.geometry.Geometry;
 
 /*
  * The MIT License
@@ -142,7 +142,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
 
             pts = new MatOfPoint2f();
             pts.fromList(lstPt);
-            RotatedRect rect = Imgproc.fitEllipse(pts);
+            RotatedRect rect = Geometry.fitEllipse(pts);
 
             rt = OCV__LoadLibrary.GetResultsTable(false);
             roiMan = OCV__LoadLibrary.GetRoiManager(false, true);
