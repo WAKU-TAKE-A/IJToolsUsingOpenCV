@@ -71,10 +71,7 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
     private Size small_ksize = null;
     private Size large_ksize = null;
     
-    // Variables for Mat reuse
-    private int lastWidth = 0;
-    private int lastHeight = 0;
-    private int lastBitDepth = 0;
+    // Per-run native buffers (also released after each preview).
     private Mat src_mat = null;
     private Mat blur_small = null;
     private Mat blur_large = null;
@@ -200,14 +197,8 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
             imh = ip.getHeight();
             int borderType = INT_BORDERTYPE[indBorderType];
             
-            // Reallocate Mats if image size or bit depth changed
-            if (imw != lastWidth || imh != lastHeight || bitDepth != lastBitDepth) {
-                releaseAllMats();
-                allocateMats(imw, imh, bitDepth);
-                lastWidth = imw;
-                lastHeight = imh;
-                lastBitDepth = bitDepth;
-            }
+            bitDepth = ip.getBitDepth();
+            allocateMats(imw, imh, bitDepth);
             
             if (bitDepth == 24) {
                 // RGB processing fully implemented with OpenCV
@@ -220,12 +211,12 @@ public class OCUtil_BluredImageDiff implements ij.plugin.filter.ExtendedPlugInFi
             OCV__LoadLibrary.logError(className, e.getMessage());
         }
         finally {
-            allocateMats(imw, imh, bitDepth);
+            releaseAllMats();
         }
     }
     
     /**
-     * Allocate Mats (for reuse)
+     * Allocate Mats for the current run
      */
     private void allocateMats(int imw, int imh, int bitDepth) {
         if (bitDepth == 24) {

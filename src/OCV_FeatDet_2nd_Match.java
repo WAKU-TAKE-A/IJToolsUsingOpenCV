@@ -65,6 +65,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
 
     // var.
     private String className;
+    private ImagePlus sourceImage;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -180,6 +181,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             return DONE;
         }
 
+        sourceImage = imp;
         return FLAGS;
     }
 
@@ -190,6 +192,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
         Mat train_desc = null;
         Mat mat_query = null;
         DescriptorMatcher dm = null;
+        List<MyFeatureMatcher.DetectionResult> results = null;
         
         try {
             // train image
@@ -225,7 +228,7 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             matcher.setRansacThreshold(ransacThreshold);
             matcher.setRatioThreshold(ratioThreshold);
             
-            List<MyFeatureMatcher.DetectionResult> results = matcher.detect(
+            results = matcher.detect(
                     myQuery.QueryKeyPoints,
                     myQuery.QueryDescriptors,
                     imw_query,
@@ -241,13 +244,17 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             }
 
             if(enAddRoi) {                
-                matcher.addRoiManager(results, resetResult, false);
+                matcher.addRoiManager(results, resetResult, false, sourceImage);
             }
         }
         catch(Exception ex) {
             OCV__LoadLibrary.logError(className, "Calculation failed (" + ex.getMessage() + ")");
         }
         finally {
+            if (results != null) {
+                for (MyFeatureMatcher.DetectionResult result : results) result.close();
+            }
+            if (dm != null) dm.clear();
             if(mat_train != null) mat_train.release();
             if(train_key != null) train_key.release();
             if(train_desc != null) train_desc.release();

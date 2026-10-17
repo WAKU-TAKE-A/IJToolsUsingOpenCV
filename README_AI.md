@@ -2,6 +2,14 @@
 
 This document contains important guidelines for AI coding assistants working on the `IJToolsUsingOpenCV` project. Please read these instructions carefully before proposing or implementing changes.
 
+## Current Scope (v0.9.62.2)
+- OpenCV DNN ONNX inference (object detection, pose estimation, and image classification) has been removed, together with its wrapper, manuals, and YOLO helper files. These tasks are maintained in [IJToolsUsingOnnxruntime](https://github.com/WAKU-TAKE-A/IJToolsUsingOnnxruntime).
+- Feature detection and matching remain part of this project.
+- Keep the version in `src/OCV__LoadLibrary.java`, `README.md`, `manual_jp/README.md`, and the latest entry in `ReleaseNotes.md` consistent when releasing.
+- Use Clean and Build after deleting or renaming source files. Ant's `clean` target now removes generated `OCV_*.class`, `OCUtil_*.class`, `WK_*.class`, and `My*.class` files from `plugins/`, preventing obsolete classes from entering the next distribution JAR.
+- The official distribution artifacts are `IJTools_UsingOpenCV.jar` and `IJTools_Waku.jar` in the project root. The NetBeans-generated JAR in `dist/` is not the distribution artifact.
+- User migration instructions are in `README.md` and `manual_jp/README.md`. Historical release notes describe the functionality available in their respective versions.
+
 ## 1. Project Structure and Build System
 - **Build System**: This is an Apache Ant-based NetBeans project.
 - **Compilation**: Do not rely solely on the IDE. To compile and package the project, use the Ant binary provided by NetBeans.
@@ -21,9 +29,9 @@ When you create a new class, you must pay attention to how it gets packaged into
   - Example: `<fileset dir="${build.classes.dir}" includes="YourNewUtility*.class"/>`
   - **Failure to do this will result in a `java.lang.NoClassDefFoundError` when the user tries to run the plugin in ImageJ.**
 
-## 3. The "My" Prefix Classes (e.g., MyNetFromONNX, MyFeatureMatcher)
+## 3. The "My" Prefix Classes (e.g., MyFeatureDetector, MyFeatureMatcher)
 This project utilizes a design pattern where complex OpenCV operations are encapsulated into helper classes prefixed with `My` (e.g., `MyCameraCalibration`, `MyFeatureDetector`).
-- **Encapsulation**: These classes abstract away the heavy C++-like OpenCV APIs (like DNN module handling, descriptor matching, and calibration) into clean, object-oriented Java interfaces.
+- **Encapsulation**: These classes abstract away the heavy C++-like OpenCV APIs (like feature detection, descriptor matching, and calibration) into clean, object-oriented Java interfaces.
 - **Not Plugins**: Because their class names do not contain an underscore (`_`), ImageJ's plugin loader automatically ignores them and does not attempt to add them to the Plugins menu. This is intentional.
 - **Resource Management**: These classes often manage the lifecycle of complex OpenCV `Mat` objects internally. When using them or creating new ones, ensure they provide proper cleanup methods or handle memory efficiently.
 
@@ -42,7 +50,7 @@ This project heavily utilizes the Java wrapper for OpenCV. When creating or modi
 - **Defaults**: Choose algorithmic defaults carefully. For signal processing or generic algorithms, prefer the most robust defaults (e.g., Linear Regression over Moving Average) when dealing with unknown data.
 
 ## 5. ROI (Region of Interest) Handling
-- When processing an image with an active ROI, calculate the coordinate offsets. OpenCV processes the cropped `Mat`, so output coordinates (like bounding boxes or point coordinates) must be shifted back by `roiRect.x` and `roiRect.y` to align with the original image (see `OCV_NetFromOnnx_2nd_Inference.java` and `OCV_BoundingRect.java`).
+- When processing an image with an active ROI, calculate the coordinate offsets. OpenCV processes the cropped `Mat`, so output coordinates (like bounding boxes or point coordinates) must be shifted back by `roiRect.x` and `roiRect.y` to align with the original image (see `OCV_BoundingRect.java`).
 - For complex ROI shapes, duplicate the `ImageProcessor`, use `.fillOutside(roiSrc)` with a background color, and then `.crop()` to ensure only the masked pixels are sent to OpenCV.
 
 ## 6. Outputting Results (ResultsTable & RoiManager)

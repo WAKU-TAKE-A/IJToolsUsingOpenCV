@@ -25,17 +25,15 @@ import org.opencv.core.Point;
 import org.opencv.videoio.VideoCapture;
 
 public class OCV__LoadLibrary implements ExtendedPlugInFilter {
-    public static final String VERSION = "0.9.62.0";
+    public static final String VERSION = "0.9.62.2";
     public static final String URL_HELP = "https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV";
 
     private static boolean disposed = true;
-    private static Mat dummy = null;
 
     public static MyFeatureDetector MyQuery;
     public static MyAffineTransform MyAffine;
     public static MyPerspectiveTransform MyPerspective;
     public static MyCameraCalibration MyCameraCalib;
-    public static MyNetFromONNX MyNet;
     
     // カメラキャッシュ
     private static VideoCapture cachedCamera = null;
@@ -50,26 +48,22 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner prf) {
-        if(!disposed) {
-            return DONE;
-        } else {
-            return NO_IMAGE_REQUIRED;
-        }
+        // Always complete helper initialization, even if OpenCV was loaded elsewhere.
+        return NO_IMAGE_REQUIRED;
     }
 
     @Override
     public void run(ImageProcessor arg0) {
         try {           
             System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-            IJ.showStatus("Loading succeeded. (Plugin: " + VERSION + ", OpenCV: " + Core.VERSION + ")");
             
             if (MyQuery == null) MyQuery = new MyFeatureDetector();
             if (MyAffine == null) MyAffine = new MyAffineTransform();
             if (MyPerspective == null) MyPerspective = new MyPerspectiveTransform();
             if (MyCameraCalib == null) MyCameraCalib = new MyCameraCalibration();
-            if (MyNet == null) MyNet = new MyNetFromONNX();
             
             disposed = false;
+            IJ.showStatus("Loading succeeded. (Plugin: " + VERSION + ", OpenCV: " + Core.VERSION + ")");
         }
         catch(Throwable ex) {
             OCV__LoadLibrary.logError("OCV__LoadLibrary", "Loading failed (" + ex.toString() + ")");
@@ -79,18 +73,7 @@ public class OCV__LoadLibrary implements ExtendedPlugInFilter {
 
     @Override
     public int setup(String arg0, ImagePlus imp) {
-        disposed = !isLoadOpenCV();
         return NO_IMAGE_REQUIRED;
-    }
-    
-    private boolean isLoadOpenCV() {
-        try {
-            if(dummy != null) dummy.release();
-            dummy = new Mat();
-            return true;
-        } catch(Throwable ex) {
-            return false;
-        }
     }
 
     public static boolean isLoad() { return !disposed; }

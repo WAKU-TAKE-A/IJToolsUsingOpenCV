@@ -70,6 +70,13 @@
     nbproject/build-impl.xml file. 
 
     -->
+    <!-- Clean generated plugin classes as well as NetBeans build output. -->
+    <target name="-post-clean">
+        <delete>
+            <fileset dir="plugins" erroronmissingdir="false"
+                     includes="OCV_*.class,OCUtil_*.class,WK_*.class,My*.class"/>
+        </delete>
+    </target>
     <target name="-post-compile">
         <move todir="plugins">
             <fileset dir="${build.classes.dir}" includes="OCV_*.class"/>

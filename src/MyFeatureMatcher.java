@@ -61,7 +61,7 @@ public class MyFeatureMatcher {
     /**
      * Detection result
      */
-    public static class DetectionResult {
+    public static class DetectionResult implements AutoCloseable {
         public Point[] corners;
         public int matchCount;
         public int inlierCount;
@@ -85,6 +85,15 @@ public class MyFeatureMatcher {
             this.confidence = this.inlierRatio;
             this.inlierMatches = inlierMatches;
             this.outlierMatches = outlierMatches;
+        }
+
+        /** Release the native matrix owned by this result. */
+        @Override
+        public void close() {
+            if (homography != null) {
+                homography.release();
+                homography = null;
+            }
         }
     }
     
@@ -232,58 +241,55 @@ public class MyFeatureMatcher {
         KeyPoint[] queryKPs = queryKeyPoints.toArray();
         KeyPoint[] trainKPs = trainKeyPoints.toArray();
         
-        // 1. knnMatch
         List<MatOfDMatch> knnMatches = new ArrayList<>();
+        List<GoodMatch> allGoodMatches = new ArrayList<>();
         try {
             matcher.knnMatch(queryDescriptors, trainDescriptors, knnMatches, 2);
-        } catch (Exception e) {
-            throw new RuntimeException("knnMatch failed: " + e.getMessage(), e);
-        }
-        
-        // 2. Lowe's ratio test (improved with toArray() and order guarantee)
-        List<GoodMatch> allGoodMatches = new ArrayList<>();
-        
-        for (MatOfDMatch matOfDMatch : knnMatches) {
-            if (matOfDMatch.rows() >= 2) {
-                DMatch[] matches = matOfDMatch.toArray();
-                
-                // Ensure order: matches[0] should have smaller distance
-                if (matches[0].distance > matches[1].distance) {
-                    DMatch temp = matches[0];
-                    matches[0] = matches[1];
-                    matches[1] = temp;
-                }
-                
-                DMatch best = matches[0];
-                DMatch second = matches[1];
-                
-                if (best.distance < ratioThreshold * second.distance) {
-                    int queryIdx = best.queryIdx;
-                    int trainIdx = best.trainIdx;
-                    
-                    // Exception handling: index validation
-                    if (queryIdx < 0 || queryIdx >= queryKPs.length ||
-                        trainIdx < 0 || trainIdx >= trainKPs.length) {
-                        continue;
+            for (MatOfDMatch matOfDMatch : knnMatches) {
+                if (matOfDMatch.total() >= 2) {
+                    DMatch[] matches = matOfDMatch.toArray();
+
+                    // Ensure order: matches[0] should have smaller distance
+                    if (matches[0].distance > matches[1].distance) {
+                        DMatch temp = matches[0];
+                        matches[0] = matches[1];
+                        matches[1] = temp;
                     }
-                    
-                    // Correct way to get KeyPoint coordinates
-                    Point queryPoint = queryKPs[queryIdx].pt;
-                    Point trainPoint = trainKPs[trainIdx].pt;
-                    
-                    if (queryPoint != null && trainPoint != null) {
-                        allGoodMatches.add(new GoodMatch(
-                            queryIdx,
-                            trainIdx,
-                            queryPoint,
-                            trainPoint,
-                            best.distance
-                        ));
+
+                    DMatch best = matches[0];
+                    DMatch second = matches[1];
+
+                    if (best.distance < ratioThreshold * second.distance) {
+                        int queryIdx = best.queryIdx;
+                        int trainIdx = best.trainIdx;
+
+                        // Exception handling: index validation
+                        if (queryIdx < 0 || queryIdx >= queryKPs.length ||
+                            trainIdx < 0 || trainIdx >= trainKPs.length) {
+                            continue;
+                        }
+
+                        // Correct way to get KeyPoint coordinates
+                        Point queryPoint = queryKPs[queryIdx].pt;
+                        Point trainPoint = trainKPs[trainIdx].pt;
+
+                        if (queryPoint != null && trainPoint != null) {
+                            allGoodMatches.add(new GoodMatch(
+                                queryIdx,
+                                trainIdx,
+                                queryPoint,
+                                trainPoint,
+                                best.distance
+                            ));
+                        }
                     }
                 }
             }
+
+        } finally {
+            for (MatOfDMatch match : knnMatches) match.release();
         }
-        
+
         // Store for later use
         lastAllGoodMatches = allGoodMatches;
         
@@ -462,11 +468,13 @@ public class MyFeatureMatcher {
             
             if (shouldAdd) {
                 results.add(result);
+            } else {
+                result.close();
             }
-            
+
             List<GoodMatch> newRemaining = new ArrayList<>();
             for (int i = 0; i < remainingMatches.size(); i++) {
-                if (!result.usedIndices.contains(allMatches.indexOf(remainingMatches.get(i)))) {
+                if (!result.usedIndices.contains(i)) {
                     newRemaining.add(remainingMatches.get(i));
                 }
             }
@@ -688,6 +696,11 @@ public class MyFeatureMatcher {
      * @param showNone true: hide all ROIs, false: show all
      */
     public void addRoiManager(List<DetectionResult> results, boolean resetRoiManager, boolean showNone) {
+        addRoiManager(results, resetRoiManager, showNone, null);
+    }
+
+    public void addRoiManager(List<DetectionResult> results, boolean resetRoiManager,
+                              boolean showNone, ij.ImagePlus source) {
         if (results == null || results.isEmpty()) {
             return;
         }
@@ -710,7 +723,13 @@ public class MyFeatureMatcher {
             
             // Create and add ROI
             PolygonRoi roi = new PolygonRoi(pnts_x, pnts_y, Roi.POLYLINE);
-            roi.setPosition(num_roiMan + 1);  // Start from one
+            if (source != null && source.getStackSize() > 1) {
+                if (source.isHyperStack()) {
+                    roi.setPosition(source.getC(), source.getZ(), source.getT());
+                } else {
+                    roi.setPosition(source.getCurrentSlice());
+                }
+            }
             roiMan.addRoi(roi);
             roiMan.select(num_roiMan);  // Start from zero
         }

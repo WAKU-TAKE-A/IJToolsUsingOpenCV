@@ -152,11 +152,14 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
             }
             else if(ip.getBitDepth() == 16) {
                 short[] srcdstShorts = (short[])ip.getPixels();
-                srcMat = new Mat(imh, imw, CvType.CV_16S);
-                dstMat = new Mat(imh, imw, CvType.CV_16S);
+                srcMat = new Mat(imh, imw, CvType.CV_16U);
+                dstMat = new Mat();
                 srcMat.put(0, 0, srcdstShorts);
-                Imgproc.Laplacian(srcMat, dstMat, dstMat.depth(), ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
-                dstMat.get(0, 0, srcdstShorts);
+                Imgproc.Laplacian(srcMat, dstMat, CvType.CV_32F, ksize, scale, delta, INT_BORDERTYPE[indBorderType]);
+                // Preserve the ImageJ pixel type; saturate to the unsigned range.
+                // Use a FloatProcessor input when negative derivatives are needed.
+                dstMat.convertTo(srcMat, CvType.CV_16U);
+                srcMat.get(0, 0, srcdstShorts);
             }
             else if(ip.getBitDepth() == 24) {
                 int[] srcdstInts = (int[])ip.getPixels();

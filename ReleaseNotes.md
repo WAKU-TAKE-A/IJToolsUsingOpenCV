@@ -1,3 +1,27 @@
+# Release v0.9.62.2
+
+Latest update: October 17th 2026
+
+## Changes
+
+* Fixed unsigned 16-bit Laplacian input handling; calculate in float and saturate the output to the 16-bit range. Use 32-bit Float images to preserve negative derivatives.
+* Fixed native buffer cleanup in blurred-image difference, Hough circle detection, and feature matching.
+* Fixed correspondence removal during multiple-object feature matching and associated result ROIs with the source slice (including hyperstack positions).
+* Fixed period search at the requested upper bound and kept refinement results within the requested period range.
+* Initialize shared helpers even when OpenCV has already been loaded by another component.
+* Clean now removes generated plugin classes from `plugins/` before rebuilding. Official distribution JARs remain in the project root.
+
+# Release v0.9.62.1
+
+Latest update: October 17th 2026
+
+## Changes
+
+* Removed the OpenCV DNN ONNX inference plugins (`OCV_NetFromOnnx_1st_Read` and `OCV_NetFromOnnx_2nd_Inference`), their model wrapper, manuals, and YOLO helper files.
+  - Use [IJToolsUsingOnnxruntime](https://github.com/WAKU-TAKE-A/IJToolsUsingOnnxruntime) for object detection, pose estimation, and image classification.
+  - Existing macros calling these plugins must be updated to use the ONNX Runtime plugin commands and arguments.
+  - When upgrading an existing ImageJ installation, replace the old JAR and remove any separately installed `OCV_NetFromOnnx_*.class` and `MyNetFromONNX*.class` files from its plugins folder.
+
 # Release v0.9.62.0
 
 Latest update: July 26th 2026

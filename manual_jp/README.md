@@ -2,6 +2,8 @@
 
 このフォルダには、ImageJプラグイン「IJToolsUsingOpenCV」の各機能に関するヘルプファイルが格納されています。
 
+対象バージョン: **0.9.62.2**（2026年10月17日）。[変更履歴](../ReleaseNotes.md)
+
 ## プロジェクト概要
 OpenCVの強力な画像処理ライブラリをImageJ上でシームレスに利用するためのプラグイン群です。
 全てのOpenCV系プラグインは、実行前に `OCV__LoadLibrary` が呼び出されている必要があります。
@@ -42,9 +44,26 @@ OpenCVの強力な画像処理ライブラリをImageJ上でシームレスに�
 - [WK_RoiMan_SelectAll](WK_RoiMan_SelectAll.md) / [WK_RoiMan_Limited](WK_RoiMan_Limited.md) / [WK_RoiMan_LinearFitting](WK_RoiMan_LinearFitting.md) / [WK_RoiMan_DisplayedInTheCenter](WK_RoiMan_DisplayedInTheCenter.md)
 - [WK_Wait](WK_Wait.md) / [WK_GetProperty](WK_GetProperty.md)
 
-### 8. ディープラーニング (DNN)
-- [OCV_NetFromOnnx_1st_Read](OCV_NetFromOnnx_1st_Read.md) / [OCV_NetFromOnnx_2nd_Inference](OCV_NetFromOnnx_2nd_Inference.md)
-- [OCV_NetFromONNX_Summary](OCV_NetFromONNX_Summary.md) (技術解説)
+## ONNX推論機能の移行先
+v0.9.62.1で、物体検出・姿勢推定・画像分類のONNX推論プラグインを本プロジェクトから削除しました。
+今後は [IJToolsUsingOnnxruntime](https://github.com/WAKU-TAKE-A/IJToolsUsingOnnxruntime) を使用してください。
+既存のマクロで旧プラグインを呼び出している場合は、移行先のコマンドと引数に書き換える必要があります。
+
+| 旧プラグイン・用途 | 移行先のImageJメニュー |
+| --- | --- |
+| `OCV_NetFromOnnx_1st_Read`（モデル読み込み） | `Plugins > ORT > 1st Read and Release` |
+| `OCV_NetFromOnnx_2nd_Inference`（物体検出） | `Plugins > ORT > 2nd Detection` |
+| `OCV_NetFromOnnx_2nd_Inference`（姿勢推定） | `Plugins > ORT > 2nd Pose` |
+| `OCV_NetFromOnnx_2nd_Inference`（画像分類） | `Plugins > ORT > 2nd Classify` |
+
+更新・移行手順:
+
+1. ImageJを終了し、古い `IJTools_UsingOpenCV.jar` をv0.9.62.2のJARで置き換えます。
+2. pluginsフォルダに個別配置した `OCV_NetFromOnnx_*.class` と `MyNetFromONNX*.class` があれば削除します。
+3. 移行先のREADMEに従って `IJTools_UsingOnnxruntime.jar` をpluginsフォルダに配置し、ImageJを再起動します。
+4. `1st Read and Release` でモデルを読み込み、用途に合う推論メニューを実行します。マクロを使用する場合は、移行先の操作をマクロレコーダーで記録し、コマンドと引数を更新してください。
+
+特徴点マッチング（`OCV_FeatDet_*`）は引き続き本プロジェクトで利用できます。
 
 ---
 ## 開発者向け引き継ぎ事項

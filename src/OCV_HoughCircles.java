@@ -155,12 +155,12 @@ public class OCV_HoughCircles implements ExtendedPlugInFilter, DialogListener {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
         byte[] src_ar = (byte[])ip.getPixels();
-        Mat srcMat = new Mat(imh, imw, CvType.CV_8UC1);
-
-        // dst
-        Mat dstCircles = new Mat();
+        Mat srcMat = null;
+        Mat dstCircles = null;
 
         try {
+            srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+            dstCircles = new Mat();
             srcMat.put(0, 0, src_ar);
             int method = INT_METHOD[indMethod];
             Imgproc.HoughCircles(srcMat, dstCircles, method, dp, minDist, param1, param2, minRadius, maxRadius);
@@ -168,6 +168,10 @@ public class OCV_HoughCircles implements ExtendedPlugInFilter, DialogListener {
         }
         catch(Exception e) {
             OCV__LoadLibrary.logError(className, "Hough circles failed (" + e.getMessage() + ")");
+        }
+        finally {
+            if (dstCircles != null) dstCircles.release();
+            if (srcMat != null) srcMat.release();
         }
     }
 

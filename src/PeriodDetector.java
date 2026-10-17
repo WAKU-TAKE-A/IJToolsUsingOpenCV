@@ -78,7 +78,9 @@ public final class PeriodDetector {
         // Fix #3: other invalid-input cases (null input, etc.) return -1
         // instead of throwing, so keep that convention consistent here
         // instead of letting the switch below throw an NPE.
-        if (detrendMethod == null) {
+        if (detrendMethod == null || peakMethod == null
+                || !Double.isFinite(relativeThreshold)
+                || relativeThreshold < 0 || relativeThreshold > 1) {
             return null;
         }
 
@@ -130,15 +132,22 @@ public final class PeriodDetector {
         // 自己相関
         //----------------------------------------
 
+        minPeriod = Math.max(1, minPeriod);
+        maxPeriod = Math.min(maxPeriod, signal.length - 2);
+        if (minPeriod > maxPeriod) return null;
+
+        // Include the right neighbor so a peak at maxPeriod can be evaluated.
         double[] acf =
                 Autocorrelation.compute(
                         signal,
                         minPeriod,
-                        maxPeriod);
+                        maxPeriod + 1);
 
         if (acf.length == 0) {
             return null;
         }
+        maxPeriod = Math.min(maxPeriod, acf.length - 2);
+        if (minPeriod > maxPeriod) return null;
 
         //----------------------------------------
         // ピーク検出
@@ -160,11 +169,11 @@ public final class PeriodDetector {
         // 倍周期補正
         //----------------------------------------
 
-        period =
-                PeriodRefiner.refine(
-                        acf,
-                        period,
-                        PeriodRefiner.DEFAULT_HALF_RATIO);
+        int refined = PeriodRefiner.refine(
+                acf, period, PeriodRefiner.DEFAULT_HALF_RATIO);
+        if (refined >= minPeriod && refined <= maxPeriod) {
+            period = refined;
+        }
 
         //----------------------------------------
         // サブピクセル精度の推定
@@ -176,9 +185,11 @@ public final class PeriodDetector {
             double y3 = acf[period + 1];
             
             double denom = 2.0 * (y1 - 2.0 * y2 + y3);
-            if (denom != 0) {
+            if (denom < 0) {
                 double delta = (y1 - y3) / denom;
-                subpixelPeriod = period + delta;
+                if (Double.isFinite(delta) && Math.abs(delta) <= 0.5) {
+                    subpixelPeriod = Math.max(minPeriod, Math.min(maxPeriod, period + delta));
+                }
             }
         }
         
