@@ -1,4 +1,40 @@
 
+## 日本語
+
+OpenCVの関数の一部を利用するImageJ用プラグインを作りました。
+
+ONNX推論プラグイン（物体検出・姿勢推定・画像分類）は削除しました。これらの機能には [IJToolsUsingOnnxruntime](https://github.com/WAKU-TAKE-A/IJToolsUsingOnnxruntime) を使用してください。旧プラグインを呼び出す既存のマクロは、移行先のコマンドと引数に書き換える必要があります。
+
+v0.9.62.0以前からの更新時は、古い `IJTools_UsingOpenCV.jar` を置き換え、ImageJのpluginsフォルダに個別配置した `OCV_NetFromOnnx_*.class` と `MyNetFromONNX*.class` があれば削除してから、ImageJを再起動してください。ONNX推論を続ける場合は `IJTools_UsingOnnxruntime.jar` を導入してください。具体的な移行先メニューは[日本語マニュアル](manual_jp/README.md#onnx推論機能の移行先)に記載しています。特徴点マッチング（`OCV_FeatDet_*`）は引き続き利用できます。
+
+## 目的
+
+* 手軽にOpenCVの関数を利用したい
+* OpenCVの関数の処理の結果を簡単に確認したい
+* ImageJにない機能を追加したい
+
+## ビルド方法
+
+本リポジトリを「NetBeansProjects」のフォルダにコピーします。
+
+本リポジトリのルートに「ij.jar」「opencv-500.jar」「opencv_java500.dll」をコピーします。
+
+NetBeansを起動します。
+
+ファイル⇒プロジェクトを開く
+
+先ほどコピーしたフォルダを選択します。
+
+プロパティ－ライブラリのコンパイル時ライブラリの「Classpath」に「ij.jar」「opencv-500.jar」を追加します。
+
+ビルドを実行してください。
+
+## バイナリー
+
+作成したプラグインのバイナリー(jarファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
+
+-----
+
 # IJToolsUsingOpenCV
 
 Version: **0.9.62.2** (2026-10-17) — [Release notes](ReleaseNotes.md)
@@ -39,37 +75,3 @@ Please run the build.
 ## Binaries
 
 There are the binaries (jar files) of the created plugins in [here](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases). Please try using it.
-
-## 日本語
-
-OpenCVの関数の一部を利用するImageJ用プラグインを作りました。
-
-ONNX推論プラグイン（物体検出・姿勢推定・画像分類）は削除しました。これらの機能には [IJToolsUsingOnnxruntime](https://github.com/WAKU-TAKE-A/IJToolsUsingOnnxruntime) を使用してください。旧プラグインを呼び出す既存のマクロは、移行先のコマンドと引数に書き換える必要があります。
-
-v0.9.62.0以前からの更新時は、古い `IJTools_UsingOpenCV.jar` を置き換え、ImageJのpluginsフォルダに個別配置した `OCV_NetFromOnnx_*.class` と `MyNetFromONNX*.class` があれば削除してから、ImageJを再起動してください。ONNX推論を続ける場合は `IJTools_UsingOnnxruntime.jar` を導入してください。具体的な移行先メニューは[日本語マニュアル](manual_jp/README.md#onnx推論機能の移行先)に記載しています。特徴点マッチング（`OCV_FeatDet_*`）は引き続き利用できます。
-
-## 目的
-
-* 手軽にOpenCVの関数を利用したい
-* OpenCVの関数の処理の結果を簡単に確認したい
-* ImageJにない機能を追加したい
-
-## ビルド方法
-
-本リポジトリを「NetBeansProjects」のフォルダにコピーします。
-
-本リポジトリのルートに「ij.jar」「opencv-500.jar」「opencv_java500.dll」をコピーします。
-
-NetBeansを起動します。
-
-ファイル⇒プロジェクトを開く
-
-先ほどコピーしたフォルダを選択します。
-
-プロパティ－ライブラリのコンパイル時ライブラリの「Classpath」に「ij.jar」「opencv-500.jar」を追加します。
-
-ビルドを実行してください。
-
-## バイナリー
-
-作成したプラグインのバイナリー(jarファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
