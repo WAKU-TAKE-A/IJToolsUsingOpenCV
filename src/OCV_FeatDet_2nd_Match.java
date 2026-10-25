@@ -40,7 +40,7 @@ import org.opencv.imgcodecs.Imgcodecs;
  * Matching in FeatureDetection.
  *
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
- * * AKAZE, BRISK, ORB
+ * * ORB, SIFT
  */
 public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.

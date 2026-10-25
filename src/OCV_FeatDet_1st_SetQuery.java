@@ -39,7 +39,7 @@ import org.opencv.imgcodecs.Imgcodecs;
  * Setting a query in FeatureDetection.
  *
  * * Feature detection using FeatureDetector, DescriptorExtractor, DescriptorMatcher
- * * AKAZE, BRISK, ORB
+ * * ORB, SIFT
  */
 public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
