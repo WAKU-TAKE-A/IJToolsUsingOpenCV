@@ -51,8 +51,6 @@ import org.opencv.imgcodecs.Imgcodecs;
  */
 public class MyFeatureDetector {
     // const var.
-    private static final String STR_AKAZE = "AKAZE";
-    private static final String STR_BRISK = "BRISK";
     private static final String STR_ORB = "ORB";
     private static final String STR_SIFT = "SIFT";
     private static final String STR_BASE_FOLDER = "features";
