@@ -99,7 +99,7 @@ public class OCV_Laplacian implements ij.plugin.filter.ExtendedPlugInFilter, Dia
         }
 
         if(ksize % 2 == 0) {
-            IJ.showStatus("'ksize is odd.");
+            IJ.showStatus("'ksize must be odd.'");
             return false;
         }
 
