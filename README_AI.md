@@ -2,7 +2,7 @@
 
 This document contains important guidelines for AI coding assistants working on the `IJToolsUsingOpenCV` project. Please read these instructions carefully before proposing or implementing changes.
 
-## Current Scope (v0.9.62.2)
+## Current Scope (v0.9.62.3)
 - OpenCV DNN ONNX inference (object detection, pose estimation, and image classification) has been removed, together with its wrapper, manuals, and YOLO helper files. These tasks are maintained in [IJToolsUsingOnnxruntime](https://github.com/WAKU-TAKE-A/IJToolsUsingOnnxruntime).
 - Feature detection and matching remain part of this project.
 - Keep the version in `src/OCV__LoadLibrary.java`, `README.md`, `manual_jp/README.md`, and the latest entry in `ReleaseNotes.md` consistent when releasing.

@@ -1,3 +1,11 @@
+# Release v0.9.62.3
+
+Latest update: October 25th 2026
+
+## Changes
+
+* Cleaned up deprecated AKAZE and BRISK constants, Javadoc comments, and Japanese manual references in Feature Matching plugins.
+
 # Release v0.9.62.2
 
 Latest update: October 17th 2026
