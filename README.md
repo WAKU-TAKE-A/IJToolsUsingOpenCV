@@ -37,7 +37,7 @@ NetBeansを起動します。
 
 # IJToolsUsingOpenCV
 
-Version: **0.9.62.3** (2026-10-25) — [Release notes](ReleaseNotes.md)
+Version: **0.9.62.4** (2026-10-26) — [Release notes](ReleaseNotes.md)
 
 [The english discriptions - >](#English)  
 [日本語の説明 - >](#日本語)

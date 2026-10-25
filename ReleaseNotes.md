@@ -1,3 +1,13 @@
+# Release v0.9.62.4
+
+Latest update: October 26th 2026
+
+## Changes
+
+* Fixed `OCV_CornerHarris` runtime exceptions by commenting out unsupported border types (`BORDER_WRAP` and `BORDER_TRANSPARENT`).
+* Fixed memory leak in `OCV_Canny` by allocating native `Mat` objects locally in `run()` with proper `try-finally` release instead of caching in instance variables.
+* Corrected status message typo and unclosed quote in `OCV_Laplacian` (`'ksize must be odd.'`).
+
 # Release v0.9.62.3
 
 Latest update: October 25th 2026
