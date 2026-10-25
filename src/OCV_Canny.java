@@ -49,10 +49,6 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
     private static boolean l2grad = false; // L2gradient;
 
     // instance var.
-    private Mat src_mat = null;
-    private Mat dst_mat = null;
-    private int cachedWidth = -1;
-    private int cachedHeight = -1;
     private String className = null;
 
     @Override
@@ -70,7 +66,7 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            releaseResources();
+
             return DONE;
         }
         else {
@@ -135,8 +131,12 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         int imh = ip.getHeight();
         byte[] srcdst_bytes = (byte[])ip.getPixels();
 
+        Mat src_mat = null;
+        Mat dst_mat = null;
+
         try {
-            allocateMatIfNeeded(imw, imh);
+            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
 
             src_mat.put(0, 0, srcdst_bytes);
             Imgproc.Canny(src_mat, dst_mat, thr1, thr2, SIZE_VALUES[indSize], l2grad);
@@ -144,30 +144,11 @@ public class OCV_Canny implements ij.plugin.filter.ExtendedPlugInFilter, DialogL
         }
         catch(Exception e) {
             OCV__LoadLibrary.logError(className, "Canny edge detection failed (" + e.getMessage() + ")");
-            releaseResources();
+        }
+        finally {
+            if(src_mat != null) { src_mat.release(); }
+            if(dst_mat != null) { dst_mat.release(); }
         }
     }
 
-    private void allocateMatIfNeeded(int imw, int imh) {
-        if(src_mat == null || cachedWidth != imw || cachedHeight != imh) {
-            releaseResources();
-            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            cachedWidth = imw;
-            cachedHeight = imh;
-        }
-    }
-
-    private void releaseResources() {
-        if(src_mat != null) {
-            src_mat.release();
-            src_mat = null;
-        }
-        if(dst_mat != null) {
-            dst_mat.release();
-            dst_mat = null;
-        }
-        cachedWidth = -1;
-        cachedHeight = -1;
-    }
 }

@@ -49,12 +49,12 @@ public class OCV_CornerHarris implements ij.plugin.filter.ExtendedPlugInFilter, 
      * BORDER_REPLICATE:     aaaaaa|abcdefgh|hhhhhhh
      * BORDER_REFLECT:       fedcba|abcdefgh|hgfedcb
      * BORDER_REFLECT_101:   gfedcb|abcdefgh|gfedcba
-     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg
-     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno
+     * BORDER_WRAP:          cdefgh|abcdefgh|abcdefg (Error occurred)
+     * BORDER_TRANSPARENT:   uvwxyz|abcdefgh|ijklmno (Error occurred)
      * BORDER_ISOLATED:      do not look outside of ROI
      */
-    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, Core.BORDER_WRAP, Core.BORDER_TRANSPARENT, Core.BORDER_ISOLATED };
-    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", "BORDER_WRAP", "BORDER_TRANSPARENT", "BORDER_ISOLATED" };
+    private static final int[] INT_BORDERTYPE = { Core.BORDER_CONSTANT, Core.BORDER_REPLICATE, Core.BORDER_REFLECT, Core.BORDER_REFLECT101, /*Core.BORDER_WRAP, Core.BORDER_TRANSPARENT,*/ Core.BORDER_ISOLATED };
+    private static final String[] STR_BORDERTYPE = { "BORDER_CONSTANT", "BORDER_REPLICATE", "BORDER_REFLECT", "BORDER_REFLECT101", /*"BORDER_WRAP", "BORDER_TRANSPARENT",*/ "BORDER_ISOLATED" };
 
     // static var.
     private static int blockSize = 2; // Neighborhood size.
