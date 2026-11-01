@@ -1,3 +1,16 @@
+# Release v0.9.62.6
+
+Latest update: November 1st 2026
+
+## Changes
+
+* Fixed native `Mat` memory leaks in `OCV_Blur`, `OCV_GaussianBlur`, `OCV_BilateralFilter`, `OCV_AdaptiveThreshold`, and `OCV_DistanceTransform` by allocating `Mat` objects locally and releasing them in `finally` blocks.
+* Updated `OCV_GaussianBlur` parameter validation to prevent OpenCV kernel assertions when `ksize = 0` and `sigma <= 0`, changed `OCV_Blur` kernel sizes to integer types, and simplified `OCV_BilateralFilter` `diameter == 0` validation.
+* Restored ImageJ `Edit > Undo` support in `OCV_EqualizeHist` by removing `NO_CHANGES` from `FLAGS` and updated Japanese manuals for `OCV_GaussianBlur` and `OCV_EqualizeHist`.
+* Removed `KEEP_PREVIEW` from `OCV_Watershed` and `OCV_GrabCut` to prevent secondary mask image corruption/crashes during preview, and added explicit `updateAndDraw()` calls on the target mask windows.
+* Added `iterCount > 0` validation and full-image ROI clamping in `OCV_GrabCut`.
+* Fixed `className`/`titleCmd` initialization in `OCV_FloodFill` and `OCV_InteractiveGrabCut`, preserved fractional `opacity` in `OCV_InteractiveGrabCut`, and flushed `impOv` during resource cleanup.
+
 # Release v0.9.62.5
 
 Latest update: November 1st 2026
