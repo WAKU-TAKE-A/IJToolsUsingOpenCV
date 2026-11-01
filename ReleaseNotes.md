@@ -1,3 +1,13 @@
+# Release v0.9.62.5
+
+Latest update: November 1st 2026
+
+## Changes
+
+* Unified `PeriodDetector` and `WK_RoiMan_PeriodDetector` output (`Period` column) to subpixel precision using 3-point parabolic interpolation (`PeriodResult.period`).
+* Improved harmonic refinement in `PeriodRefiner` by searching for local peaks around the subpixel-divided period and comparing interpolated peak values.
+* Improved numerical stability of linear trend removal in `Detrend` by centering x-coordinates.
+
 # Release v0.9.62.4
 
 Latest update: October 26th 2026
