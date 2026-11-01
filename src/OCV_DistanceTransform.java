@@ -52,10 +52,7 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     DIST_WELSCH : distance = c^2/2(1-exp(-(x/c)^2)), c = 2.9846
     DIST_HUBER : distance = |x|<c ? x^2/2 : c(|x|-c/2), c=1.345
     */
-    private static final int CV_DIST_L1 = 1;
-    private static final int CV_DIST_L2 = 2;
-    private static final int CV_DIST_C = 3;
-    private static final int[] INT_DISTANCETYPE = { CV_DIST_L1, CV_DIST_L2, CV_DIST_C };
+    private static final int[] INT_DISTANCETYPE = { Imgproc.DIST_L1, Imgproc.DIST_L2, Imgproc.DIST_C };
     private static final String[] STR_DISTANCETYPE = { "CV_DIST_L1", "CV_DIST_L2", "CV_DIST_C" };
 
     private static final int[] INT_DISTANCETRANSFORMMASKS = { Imgproc.DIST_MASK_3, Imgproc.DIST_MASK_5, Imgproc.DIST_MASK_PRECISE };
@@ -66,11 +63,6 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
     private static int indMskSize = 0;
 
     // instance var.
-    private Mat srcMat32f = null;
-    private Mat srcMat8u = null;
-    private Mat dstMat32f = null;
-    private int cachedWidth = -1;
-    private int cachedHeight = -1;
     private String className = null;
 
     @Override
@@ -86,7 +78,6 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            releaseResources();
             return DONE;
         }
         else {
@@ -126,12 +117,18 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
 
     @Override
     public void run(ImageProcessor ip) {
+        Mat srcMat32f = null;
+        Mat srcMat8u = null;
+        Mat dstMat32f = null;
+
         try {
             int imw = ip.getWidth();
             int imh = ip.getHeight();
             float[] srcdstFloats = (float[])ip.getPixels();
 
-            allocateMatIfNeeded(imw, imh);
+            srcMat32f = new Mat(imh, imw, CvType.CV_32FC1);
+            srcMat8u = new Mat(imh, imw, CvType.CV_8UC1);
+            dstMat32f = new Mat(imh, imw, CvType.CV_32FC1);
 
             srcMat32f.put(0, 0, srcdstFloats);
             srcMat32f.convertTo(srcMat8u, CvType.CV_8UC1);
@@ -140,35 +137,11 @@ public class OCV_DistanceTransform implements ij.plugin.filter.ExtendedPlugInFil
         }
         catch(Exception e) {
             OCV__LoadLibrary.logError(className, "Distance transform failed (" + e.getMessage() + ")");
-            releaseResources();
         }
-    }
-
-    private void allocateMatIfNeeded(int imw, int imh) {
-        if(srcMat32f == null || cachedWidth != imw || cachedHeight != imh) {
-            releaseResources();
-            srcMat32f = new Mat(imh, imw, CvType.CV_32FC1);
-            srcMat8u = new Mat(imh, imw, CvType.CV_8UC1);
-            dstMat32f = new Mat(imh, imw, CvType.CV_32FC1);
-            cachedWidth = imw;
-            cachedHeight = imh;
+        finally {
+            if(srcMat32f != null) srcMat32f.release();
+            if(srcMat8u != null) srcMat8u.release();
+            if(dstMat32f != null) dstMat32f.release();
         }
-    }
-
-    private void releaseResources() {
-        if(srcMat32f != null) {
-            srcMat32f.release();
-            srcMat32f = null;
-        }
-        if(srcMat8u != null) {
-            srcMat8u.release();
-            srcMat8u = null;
-        }
-        if(dstMat32f != null) {
-            dstMat32f.release();
-            dstMat32f = null;
-        }
-        cachedWidth = -1;
-        cachedHeight = -1;
     }
 }
