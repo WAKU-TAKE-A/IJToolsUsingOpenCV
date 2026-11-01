@@ -178,30 +178,18 @@ public final class PeriodDetector {
         //----------------------------------------
         // サブピクセル精度の推定
         //----------------------------------------
-        double subpixelPeriod = period;
-        if (period > 0 && period < acf.length - 1) {
-            double y1 = acf[period - 1];
-            double y2 = acf[period];
-            double y3 = acf[period + 1];
-            
-            double denom = 2.0 * (y1 - 2.0 * y2 + y3);
-            if (denom < 0) {
-                double delta = (y1 - y3) / denom;
-                if (Double.isFinite(delta) && Math.abs(delta) <= 0.5) {
-                    subpixelPeriod = Math.max(minPeriod, Math.min(maxPeriod, period + delta));
-                }
-            }
-        }
-        
+        double subpixelPeriod = PeakDetector.interpolatePeakPosition(acf, period);
+        subpixelPeriod = Math.max(minPeriod, Math.min(maxPeriod, subpixelPeriod));
+
         //----------------------------------------
         // 確信度（正規化自己相関値）の計算
         //----------------------------------------
         double confidence = 0.0;
         if (acf.length > 0 && acf[0] != 0.0) {
-            confidence = acf[period] / acf[0];
+            confidence = PeakDetector.interpolatePeakValue(acf, period) / acf[0];
         }
 
-        return new PeriodResult(period, subpixelPeriod, confidence);
+        return new PeriodResult(subpixelPeriod, confidence);
     }
 
 }

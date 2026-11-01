@@ -64,11 +64,11 @@ public final class PeriodRefiner {
             return period;
         }
 
-        if (acf == null || period >= acf.length) {
+        if (acf == null || period <= 1 || period >= acf.length) {
             return period;
         }
 
-        double peakValue = acf[period];
+        double peakValue = PeakDetector.interpolatePeakValue(acf, period);
 
         // Fix #2: If the peak itself is non-positive, the ratio comparison
         // (candidate >= peakValue * halfRatio) is not meaningful (a negative
@@ -78,6 +78,8 @@ public final class PeriodRefiner {
             return period;
         }
 
+        double subpxPeriod = PeakDetector.interpolatePeakPosition(acf, period);
+
         if (maxDivisor < 2) {
             maxDivisor = 2;
         }
@@ -86,14 +88,25 @@ public final class PeriodRefiner {
 
         for (int divisor = 2; divisor <= maxDivisor; divisor++) {
 
-            int candidate = period / divisor;
+            int center = (int) Math.round(subpxPeriod / divisor);
+            int start = Math.max(1, center - 1);
+            int end = Math.min(acf.length - 2, center + 1);
 
-            if (candidate < 1 || candidate >= acf.length) {
-                continue;
+            int bestCand = -1;
+            double bestCandValue = Double.NEGATIVE_INFINITY;
+
+            for (int cand = start; cand <= end; cand++) {
+                if (PeakDetector.isPeak(acf, cand)) {
+                    double val = PeakDetector.interpolatePeakValue(acf, cand);
+                    if (val > bestCandValue) {
+                        bestCandValue = val;
+                        bestCand = cand;
+                    }
+                }
             }
 
-            if (acf[candidate] >= peakValue * halfRatio) {
-                best = candidate;
+            if (bestCand != -1 && bestCandValue >= peakValue * halfRatio) {
+                best = bestCand;
                 break;
             }
         }

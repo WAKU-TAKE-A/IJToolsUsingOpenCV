@@ -155,8 +155,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                 if (result != null) {
                     rsTbl.incrementCounter();
                     rsTbl.addValue("ROI_Name", roiName);
-                    rsTbl.addValue("Period", result.integerPeriod);
-                    rsTbl.addValue("Period_Subpx", result.subpixelPeriod);
+                    rsTbl.addValue("Period", result.period);
                     rsTbl.addValue("Confidence", result.confidence);
                     rsTbl.addValue("Profile_Len", profile.length);
                 } else {
