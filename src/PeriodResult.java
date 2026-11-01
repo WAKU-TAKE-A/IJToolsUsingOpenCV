@@ -4,19 +4,15 @@
  * 周期検出の戻り値を格納するクラス。
  */
 public class PeriodResult {
-    
-    /** ピクセル単位での検出周期 */
-    public final int integerPeriod;
-    
-    /** サブピクセル精度の周期（放物線近似による） */
-    public final double subpixelPeriod;
-    
+
+    /** サブピクセル精度の検出周期（ピクセル単位） */
+    public final double period;
+
     /** 確信度（正規化自己相関値） */
     public final double confidence;
 
-    public PeriodResult(int integerPeriod, double subpixelPeriod, double confidence) {
-        this.integerPeriod = integerPeriod;
-        this.subpixelPeriod = subpixelPeriod;
+    public PeriodResult(double period, double confidence) {
+        this.period = period;
         this.confidence = confidence;
     }
 }

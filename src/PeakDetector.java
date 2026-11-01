@@ -123,12 +123,59 @@ public final class PeakDetector {
     /**
      * 局所最大判定
      */
-    private static boolean isPeak(
+    public static boolean isPeak(
             double[] acf,
             int index) {
 
+        if (acf == null || index < 1 || index >= acf.length - 1) {
+            return false;
+        }
+
         return acf[index] > acf[index - 1]
                 && acf[index] >= acf[index + 1];
+    }
+
+    /**
+     * 3点放物線近似によるサブピクセルピーク位置を算出する。
+     */
+    public static double interpolatePeakPosition(double[] acf, int peakIndex) {
+        if (acf == null || peakIndex <= 0 || peakIndex >= acf.length - 1) {
+            return peakIndex;
+        }
+        double y1 = acf[peakIndex - 1];
+        double y2 = acf[peakIndex];
+        double y3 = acf[peakIndex + 1];
+        double denom = 2.0 * (y1 - 2.0 * y2 + y3);
+        if (denom < 0) {
+            double delta = (y1 - y3) / denom;
+            if (Double.isFinite(delta) && Math.abs(delta) <= 0.5) {
+                return peakIndex + delta;
+            }
+        }
+        return peakIndex;
+    }
+
+    /**
+     * 3点放物線近似による補間後のピーク頂点値を算出する。
+     */
+    public static double interpolatePeakValue(double[] acf, int peakIndex) {
+        if (acf == null || peakIndex < 0 || peakIndex >= acf.length) {
+            return 0.0;
+        }
+        if (peakIndex == 0 || peakIndex == acf.length - 1) {
+            return acf[peakIndex];
+        }
+        double y1 = acf[peakIndex - 1];
+        double y2 = acf[peakIndex];
+        double y3 = acf[peakIndex + 1];
+        double denom = 2.0 * (y1 - 2.0 * y2 + y3);
+        if (denom < 0) {
+            double delta = (y1 - y3) / denom;
+            if (Double.isFinite(delta) && Math.abs(delta) <= 0.5) {
+                return y2 - 0.25 * (y1 - y3) * delta;
+            }
+        }
+        return y2;
     }
 
     /**

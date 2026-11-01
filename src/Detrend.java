@@ -84,34 +84,30 @@ public final class Detrend {
             return input.clone();
         }
 
-        double sumX = 0.0;
-        double sumY = 0.0;
+        double meanX = (n - 1) * 0.5;
+        double meanY = 0.0;
+        for (int i = 0; i < n; i++) {
+            meanY += input[i];
+        }
+        meanY /= n;
+
         double sumXY = 0.0;
         double sumX2 = 0.0;
-
         for (int i = 0; i < n; i++) {
-
-            sumX += i;
-            sumY += input[i];
-            sumXY += (double) i * input[i];
-            sumX2 += (double) i * i;
+            double dx = i - meanX;
+            double dy = input[i] - meanY;
+            sumXY += dx * dy;
+            sumX2 += dx * dx;
         }
 
-        double denominator = n * sumX2 - sumX * sumX;
-
-        if (Math.abs(denominator) < EPSILON) {
+        if (sumX2 < EPSILON) {
             return input.clone();
         }
 
-        double a = (n * sumXY - sumX * sumY) / denominator;
-        double b = (sumY - a * sumX) / n;
-
+        double a = sumXY / sumX2;
         double[] output = new double[n];
-
         for (int i = 0; i < n; i++) {
-
-            double trend = a * i + b;
-
+            double trend = a * (i - meanX) + meanY;
             output[i] = input[i] - trend;
         }
 
