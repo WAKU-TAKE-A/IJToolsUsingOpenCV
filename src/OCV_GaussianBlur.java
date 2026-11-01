@@ -66,11 +66,6 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
 
     // instance var.
     private Size ksize = null;
-    private Mat srcMat = null;
-    private Mat dstMat = null;
-    private int cachedWidth = -1;
-    private int cachedHeight = -1;
-    private int cachedBitDepth = -1;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -89,7 +84,6 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            releaseResources();
             return DONE;
         }
         else {
@@ -122,6 +116,21 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
 
         if(Double.isNaN(sigma_x) || Double.isNaN(sigma_y)) {
             IJ.showStatus("ERR : NaN");
+            return false;
+        }
+
+        if(sigma_x < 0 || sigma_y < 0) {
+            IJ.showStatus("'0 <= sigma_*' is necessary.");
+            return false;
+        }
+
+        if(ksize_x == 0 && sigma_x <= 0) {
+            IJ.showStatus("When ksize_x is 0, sigma_x must be > 0.");
+            return false;
+        }
+
+        if(ksize_y == 0 && sigma_y <= 0 && sigma_x <= 0) {
+            IJ.showStatus("When ksize_y is 0, sigma_x or sigma_y must be > 0.");
             return false;
         }
 
@@ -174,62 +183,54 @@ public class OCV_GaussianBlur implements ij.plugin.filter.ExtendedPlugInFilter, 
         }
         catch(Exception e) {
             OCV__LoadLibrary.logError(className, "Gaussian blur failed (" + e.getMessage() + ")");
-            releaseResources();
         }
     }
 
     private void runForGrayscale8(ImageProcessor ip, int imw, int imh) {
-        byte[] srcdstBytes = (byte[])ip.getPixels();
-        
-        allocateMatIfNeeded(imw, imh, 8, CvType.CV_8UC1);
-        
-        srcMat.put(0, 0, srcdstBytes);
-        Imgproc.GaussianBlur(srcMat, dstMat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
-        dstMat.get(0, 0, srcdstBytes);
+        Mat srcMat = null;
+        Mat dstMat = null;
+        try {
+            byte[] srcdstBytes = (byte[])ip.getPixels();
+            srcMat = new Mat(imh, imw, CvType.CV_8UC1);
+            dstMat = new Mat(imh, imw, CvType.CV_8UC1);
+            srcMat.put(0, 0, srcdstBytes);
+            Imgproc.GaussianBlur(srcMat, dstMat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
+            dstMat.get(0, 0, srcdstBytes);
+        } finally {
+            if (srcMat != null) srcMat.release();
+            if (dstMat != null) dstMat.release();
+        }
     }
 
     private void runForGrayscale16(ImageProcessor ip, int imw, int imh) {
-        short[] srcdstShorts = (short[])ip.getPixels();
-        
-        allocateMatIfNeeded(imw, imh, 16, CvType.CV_16U);
-        
-        srcMat.put(0, 0, srcdstShorts);
-        Imgproc.GaussianBlur(srcMat, dstMat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
-        dstMat.get(0, 0, srcdstShorts);
+        Mat srcMat = null;
+        Mat dstMat = null;
+        try {
+            short[] srcdstShorts = (short[])ip.getPixels();
+            srcMat = new Mat(imh, imw, CvType.CV_16U);
+            dstMat = new Mat(imh, imw, CvType.CV_16U);
+            srcMat.put(0, 0, srcdstShorts);
+            Imgproc.GaussianBlur(srcMat, dstMat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
+            dstMat.get(0, 0, srcdstShorts);
+        } finally {
+            if (srcMat != null) srcMat.release();
+            if (dstMat != null) dstMat.release();
+        }
     }
 
     private void runForFloat32(ImageProcessor ip, int imw, int imh) {
-        float[] srcdstFloats = (float[])ip.getPixels();
-        
-        allocateMatIfNeeded(imw, imh, 32, CvType.CV_32F);
-        
-        srcMat.put(0, 0, srcdstFloats);
-        Imgproc.GaussianBlur(srcMat, dstMat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
-        dstMat.get(0, 0, srcdstFloats);
-    }
-
-    private void allocateMatIfNeeded(int imw, int imh, int bitDepth, int cvType) {
-        if(srcMat == null || cachedWidth != imw || cachedHeight != imh || cachedBitDepth != bitDepth) {
-            releaseResources();
-            srcMat = new Mat(imh, imw, cvType);
-            dstMat = new Mat(imh, imw, cvType);
-            cachedWidth = imw;
-            cachedHeight = imh;
-            cachedBitDepth = bitDepth;
+        Mat srcMat = null;
+        Mat dstMat = null;
+        try {
+            float[] srcdstFloats = (float[])ip.getPixels();
+            srcMat = new Mat(imh, imw, CvType.CV_32F);
+            dstMat = new Mat(imh, imw, CvType.CV_32F);
+            srcMat.put(0, 0, srcdstFloats);
+            Imgproc.GaussianBlur(srcMat, dstMat, ksize, sigma_x, sigma_y, INT_BORDERTYPE[indBorderType]);
+            dstMat.get(0, 0, srcdstFloats);
+        } finally {
+            if (srcMat != null) srcMat.release();
+            if (dstMat != null) dstMat.release();
         }
-    }
-
-    private void releaseResources() {
-        if(srcMat != null) {
-            srcMat.release();
-            srcMat = null;
-        }
-        if(dstMat != null) {
-            dstMat.release();
-            dstMat = null;
-        }
-        cachedWidth = -1;
-        cachedHeight = -1;
-        cachedBitDepth = -1;
     }
 }
