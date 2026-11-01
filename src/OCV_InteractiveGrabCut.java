@@ -57,7 +57,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     private static boolean enRepMskWithOut = false;
 
     // var.
-    private String titleCmd = null;
+    private String titleCmd = "OCV_InteractiveGrabCut";
     private ImagePlus impSrc = null;
     private ImagePlus impOv = null;
     private Mat matSrcOrg = null;
@@ -98,7 +98,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
         }
         else {
             iter = (int)gd.getNextNumber();
-            opacity = (int)gd.getNextNumber();
+            opacity = gd.getNextNumber();
             enRepMskWithOut = gd.getNextBoolean();
             return FLAGS;
         }
@@ -279,7 +279,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
             titleMsk = WindowManager.getUniqueName("GrabCut_Mask");
             impMsk = IJ.createImage(titleMsk, imwSrc, imhSrc, 1, 8);
             byte[] arrMsk = (byte[])impMsk.getProcessor().getPixels();
-            
+
             if(matMsk != null) {
                 matMsk.release();
             }
@@ -317,7 +317,7 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
 
         try {
             tempMask = convertMask(impMsk);
-            
+
             if(matMsk != null) {
                 matMsk.release();
             }
@@ -425,6 +425,10 @@ public class OCV_InteractiveGrabCut implements ij.plugin.filter.ExtendedPlugInFi
     }
 
     private void releaseResources() {
+        if(impOv != null) {
+            impOv.flush();
+            impOv = null;
+        }
         if(matSrcOrg != null) {
             matSrcOrg.release();
             matSrcOrg = null;

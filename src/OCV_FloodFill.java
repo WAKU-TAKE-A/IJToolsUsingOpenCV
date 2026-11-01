@@ -59,7 +59,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
     private static double upDiff_1 = 5.0;
     private static double upDiff_2 = 5.0;
     private static int indFlags = 1;
-    private String className = null;
+    private String className = "OCV_FloodFill";
 
     // var.
     private RoiManager roiMan = null;
@@ -208,7 +208,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                 // run
                 for(int i = 0; i < num; i++) {
                     Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
-                    
+
                     if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
                         OCV__LoadLibrary.logError(className, "Seed point out of bounds (" + pt.x + ", " + pt.y + ")");
                         continue;
@@ -234,7 +234,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                 // run
                 for(int i = 0; i < num; i++) {
                     Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
-                    
+
                     if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
                         OCV__LoadLibrary.logError(className, "Seed point out of bounds (" + pt.x + ", " + pt.y + ")");
                         continue;
@@ -260,7 +260,7 @@ public class OCV_FloodFill implements ij.plugin.filter.ExtendedPlugInFilter, Dia
                 // run
                 for(int i = 0; i < num; i++) {
                     Point pt = new Point(lstPt.get(i).x, lstPt.get(i).y);
-                    
+
                     if(pt.x < 0 || pt.x >= imw || pt.y < 0 || pt.y >= imh) {
                         OCV__LoadLibrary.logError(className, "Seed point out of bounds (" + pt.x + ", " + pt.y + ")");
                         continue;
