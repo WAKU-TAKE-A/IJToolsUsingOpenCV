@@ -41,7 +41,7 @@ import org.opencv.core.Rect;
  */
 public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 8-bit single-channel mask.
+    private static final int FLAGS = DOES_8G | DOES_RGB; // Input 8-bit 3-channel image, and Input/output 8-bit single-channel mask.
     private static final String[] TYPE_STR = new String[] { "GC_INIT_WITH_RECT", "GC_INIT_WITH_MASK" };
     private static final int[] TYPE_VAL = new int[] { Imgproc.GC_INIT_WITH_RECT, Imgproc.GC_INIT_WITH_MASK };
 
@@ -70,7 +70,6 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         gd.addNumericField("iterCount", iter, 0);
         gd.addChoice("mode", TYPE_STR, TYPE_STR[indType]);
         gd.addCheckbox("enable_foreground_is_255", enFgd);
-        gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -90,6 +89,11 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
         iter = (int)gd.getNextNumber();
         indType = (int)gd.getNextChoiceIndex();
         enFgd = (boolean)gd.getNextBoolean();
+
+        if(iter <= 0) {
+            IJ.showStatus("'0 < iterCount' is necessary.");
+            return false;
+        }
 
         if(indSrc == indMsk) {
             IJ.showStatus("The same image can not be selected.");
@@ -150,9 +154,12 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
 
             if(imp.getRoi() != null) {
                 rectJava = imp.getRoi().getBounds();
+                if(rectJava.x <= 0 && rectJava.y <= 0 && rectJava.width >= imp.getWidth() && rectJava.height >= imp.getHeight()) {
+                    rectJava = new Rectangle(1, 1, Math.max(1, imp.getWidth() - 2), Math.max(1, imp.getHeight() - 2));
+                }
             }
             else {
-                rectJava = new Rectangle(1, 1, imp.getWidth() - 2, imp.getHeight() - 2);
+                rectJava = new Rectangle(1, 1, Math.max(1, imp.getWidth() - 2), Math.max(1, imp.getHeight() - 2));
             }
 
             rect = new Rect(rectJava.x, rectJava.y, rectJava.width, rectJava.height);
@@ -202,6 +209,7 @@ public class OCV_GrabCut implements ij.plugin.filter.ExtendedPlugInFilter, Dialo
                     }
                 }
             }
+            impMsk.updateAndDraw();
         }
         catch(Exception e) {
             OCV__LoadLibrary.logError(className, "GrabCut failed (" + e.getMessage() + ")");

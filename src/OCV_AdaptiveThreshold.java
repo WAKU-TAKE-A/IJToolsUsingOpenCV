@@ -50,11 +50,9 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     private static int indType = 0;
     private static int blockSize = 5;
     private static double constantOffset = 10.0;
-    
+
     // var.
     private String className;
-    private Mat src_mat = null;
-    private Mat dst_mat = null;
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -72,7 +70,6 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
         gd.showDialog();
 
         if(gd.wasCanceled()) {
-            releaseResources();
             return DONE;
         }
         else {
@@ -132,36 +129,22 @@ public class OCV_AdaptiveThreshold implements ij.plugin.filter.ExtendedPlugInFil
     public void run(ImageProcessor ip) {
         int imw = ip.getWidth();
         int imh = ip.getHeight();
-
-        // srcdst
         byte[] srcdst_ar = (byte[])ip.getPixels();
 
-        // mat - allocate or reuse
-        if(src_mat == null || src_mat.width() != imw || src_mat.height() != imh) {
-            releaseResources();
+        Mat src_mat = null;
+        Mat dst_mat = null;
+
+        try {
             src_mat = new Mat(imh, imw, CvType.CV_8UC1);
             dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        }
-
-        // run
-        try {
             src_mat.put(0, 0, srcdst_ar);
             Imgproc.adaptiveThreshold(src_mat, dst_mat, maxValue, INT_ADAPTIVEMETHOD[indMethod], INT_THRESHOLDTYPE[indType], blockSize, constantOffset);
             dst_mat.get(0, 0, srcdst_ar);
         } catch(Exception e) {
             OCV__LoadLibrary.logError(className, "Adaptive threshold failed (" + e.getMessage() + ")");
-            releaseResources();
-        }
-    }
-
-    private void releaseResources() {
-        if(src_mat != null) {
-            src_mat.release();
-            src_mat = null;
-        }
-        if(dst_mat != null) {
-            dst_mat.release();
-            dst_mat = null;
+        } finally {
+            if (src_mat != null) src_mat.release();
+            if (dst_mat != null) dst_mat.release();
         }
     }
 }

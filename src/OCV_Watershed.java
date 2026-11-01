@@ -39,7 +39,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_32 | DOES_RGB | KEEP_PREVIEW; // Input 8-bit 3-channel image, and Input/output 32-bit single-channel map.
+    private static final int FLAGS = DOES_32 | DOES_RGB; // Input 8-bit 3-channel image, and Input/output 32-bit single-channel map.
 
     // static var.
     private static int indSrc = 0;
@@ -59,7 +59,6 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
         gd.addChoice("src", titlesWnd, titlesWnd[indSrc]);
         gd.addChoice("mask", titlesWnd, titlesWnd[indMsk]);
-        gd.addPreviewCheckbox(pfr);
         gd.addDialogListener(this);
 
         gd.showDialog();
@@ -164,6 +163,7 @@ public class OCV_Watershed implements ij.plugin.filter.ExtendedPlugInFilter, Dia
 
             matMap32s.convertTo(matMap32f, CvType.CV_32FC1);
             matMap32f.get(0, 0, arrMap32f);
+            impMap.updateAndDraw();
         }
         catch(Exception e) {
             OCV__LoadLibrary.logError(className, "Watershed failed. (" + e.getMessage() + ")");

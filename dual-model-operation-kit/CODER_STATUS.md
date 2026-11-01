@@ -4,28 +4,28 @@ Last updated: 2026-11-01
 
 ## Based On Instruction ID
 
-`I-0004`
+`I-0005`
 
 ## Current Phase
 
-`Group G1 Bug Fixes`: `Step 4 - Fix native Mat memory leaks in Blur/GaussianBlur/BilateralFilter, GaussianBlur ksize=0 crash, EqualizeHist Undo bug, and manual updates`
+`Group G3 Bug Fixes`: `Step 5 - Fix Mat memory leaks in AdaptiveThreshold/DistanceTransform, preview corruption/crash in Watershed/GrabCut, and FloodFill/InteractiveGrabCut issues`
 
 ## What Changed
 
-- `src/OCV_Blur.java`: Changed `ksize_x` and `ksize_y` from `double` to `int` and updated `showDialog` to use 0 decimal places. Removed instance caching of `Mat` and related methods (`allocateMatIfNeeded`, `releaseResources`). Replaced them with local allocation and guaranteed cleanup using `try...finally` in all `runFor*` methods.
-- `src/OCV_GaussianBlur.java`: Removed instance caching of `Mat` and related methods. Updated `runFor*` methods to allocate `Mat` locally with `try...finally` cleanup. Added logic to `dialogItemChanged` to properly validate `sigma_x`, `sigma_y`, `ksize_x`, and `ksize_y` including allowing `ksize=0` when `sigma>0`.
-- `src/OCV_BilateralFilter.java`: Removed instance caching of `Mat` and related methods. Updated `runFor*` methods to allocate `Mat` locally with `try...finally` cleanup. Simplified diameter check to `if(diameter == 0)` in `dialogItemChanged`.
-- `src/OCV_EqualizeHist.java`: Removed `NO_CHANGES` from `FLAGS` (now just `DOES_8G`). Removed caching of `impSrc` and call to `impSrc.draw()` in `run()`, effectively restoring native ImageJ `Undo` functionality.
-- `manual_jp/OCV_GaussianBlur.md`: Updated to indicate that `ksize` can be set to `0` when `sigma` is greater than 0.
-- `manual_jp/OCV_EqualizeHist.md`: Updated to explain that the image values are modified directly but can be restored via `Edit > Undo`.
+- `src/OCV_AdaptiveThreshold.java`: Removed instance caching of `Mat` fields and `releaseResources()`. Allocated `Mat` objects locally inside `run()` and cleaned them up in a `finally` block.
+- `src/OCV_DistanceTransform.java`: Removed instance caching of `Mat` fields and updated to local allocation in `run()` with a `finally` block for release. Replaced integer literals with `Imgproc.DIST_L1`, `Imgproc.DIST_L2`, and `Imgproc.DIST_C`.
+- `src/OCV_Watershed.java`: Removed `KEEP_PREVIEW` flag and `gd.addPreviewCheckbox()`. Ensured `impMap.updateAndDraw()` is called after retrieving mask data.
+- `src/OCV_GrabCut.java`: Removed `KEEP_PREVIEW` flag and `gd.addPreviewCheckbox()`. Clamped out-of-bound full-image rect selection in `setup()`. Checked `iter > 0` constraint. Called `impMsk.updateAndDraw()` in `run()`.
+- `src/OCV_FloodFill.java`: Changed `className` initialisation to properly reflect class name and avoid null exceptions.
+- `src/OCV_InteractiveGrabCut.java`: Fixed initialization of `titleCmd` class name, used `gd.getNextNumber()` properly without integer cast for opacity, and ensured `impOv` is properly flushed/nulled in `releaseResources()`.
 
 ## Acceptance Criteria Result
 
-- `OCV_Blur`, `OCV_GaussianBlur`, and `OCV_BilateralFilter` allocate `Mat` locally and release in `finally` blocks: `Pass`
-- `OCV_Blur` uses `int` for `ksize_x`/`ksize_y` and `OCV_BilateralFilter` checks `if(diameter == 0)`: `Pass`
-- `OCV_GaussianBlur` validates `sigma` and `ksize` properly; `manual_jp/OCV_GaussianBlur.md` updated: `Pass`
-- `OCV_EqualizeHist` uses `FLAGS = DOES_8G` and allows native Undo; `manual_jp/OCV_EqualizeHist.md` updated: `Pass`
-- `dual-model-operation-kit/CODER_STATUS.md` is updated for `I-0004`, and no files outside scope modified: `Pass`
+- `OCV_AdaptiveThreshold` and `OCV_DistanceTransform` allocate `Mat` objects locally in `run()` and release them in `finally` blocks, with all instance-cached `Mat` fields removed, and `OCV_DistanceTransform` uses `Imgproc.DIST_L1`, `Imgproc.DIST_L2`, `Imgproc.DIST_C`: `Pass`
+- `OCV_Watershed` and `OCV_GrabCut` remove `KEEP_PREVIEW` and `gd.addPreviewCheckbox(pfr)` while keeping `gd.addDialogListener(this)`, and call `impMap.updateAndDraw()` / `impMsk.updateAndDraw()` in `run()`: `Pass`
+- `OCV_GrabCut` validates `iter > 0` in `dialogItemChanged` and clamps full-image ROI bounds in `setup()`: `Pass`
+- `OCV_FloodFill` initializes `className = "OCV_FloodFill"`, and `OCV_InteractiveGrabCut` initializes `titleCmd = "OCV_InteractiveGrabCut"`, reads `opacity = gd.getNextNumber()`, and flushes `impOv` in `releaseResources()`: `Pass`
+- `dual-model-operation-kit/CODER_STATUS.md` is updated for `I-0005`, and no files outside the allowed scope are modified: `Pass`
 
 ## Verification
 
@@ -66,4 +66,4 @@ Result:
 
 Status: `Ready for Manager Review`
 
-- Reason: All requirements of `I-0004` implemented and verified via Git diff/status as specified by the active instruction boundaries.
+- Reason: All requirements of `I-0005` implemented and verified via Git diff/status as specified by the active instruction boundaries.
