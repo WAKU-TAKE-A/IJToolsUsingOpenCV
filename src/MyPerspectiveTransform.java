@@ -129,54 +129,75 @@ public class MyPerspectiveTransform {
             throw new IllegalStateException("ROI is not set. Call setRoi() first.");
         }
 
-        // Get points from ROI
-        java.awt.Point[] pts_src = getContainedPoints(PerspectiveSrc);
-        java.awt.Point[] pts_dst = getContainedPoints(PerspectiveDst);
+        MatOfPoint2f matPt_src = null;
+        MatOfPoint2f matPt_dst = null;
+        Mat matrix = null;
+        Mat inverse = null;
 
-        // Convert to OpenCV Point and use first 4 points
-        ArrayList<Point> lstPt_src = new ArrayList<Point>();
-        ArrayList<Point> lstPt_dst = new ArrayList<Point>();
+        try {
+            // Get points from ROI
+            java.awt.Point[] pts_src = getContainedPoints(PerspectiveSrc);
+            java.awt.Point[] pts_dst = getContainedPoints(PerspectiveDst);
 
-        for (int i = 0; i < 4; i++) {
-            lstPt_src.add(new Point(pts_src[i].getX(), pts_src[i].getY()));
-            lstPt_dst.add(new Point(pts_dst[i].getX(), pts_dst[i].getY()));
+            // Convert to OpenCV Point and use first 4 points
+            ArrayList<Point> lstPt_src = new ArrayList<Point>();
+            ArrayList<Point> lstPt_dst = new ArrayList<Point>();
+
+            for (int i = 0; i < 4; i++) {
+                lstPt_src.add(new Point(pts_src[i].getX(), pts_src[i].getY()));
+                lstPt_dst.add(new Point(pts_dst[i].getX(), pts_dst[i].getY()));
+            }
+
+            // Create MatOfPoint2f
+            matPt_src = new MatOfPoint2f();
+            matPt_dst = new MatOfPoint2f();
+            matPt_src.fromList(lstPt_src);
+            matPt_dst.fromList(lstPt_dst);
+
+            // Compute perspective transformation matrix
+            matrix = Geometry.getPerspectiveTransform(matPt_src, matPt_dst);
+
+            if (matrix == null || matrix.empty() || matrix.rows() != 3 || matrix.cols() != 3) {
+                throw new RuntimeException("Failed to compute perspective transformation matrix");
+            }
+
+            // Compute inverse matrix using Core.invert
+            inverse = new Mat();
+            double det = Core.invert(matrix, inverse);
+
+            if (inverse == null || inverse.empty() || det == 0) {
+                throw new RuntimeException("Failed to compute inverse matrix (matrix may be singular)");
+            }
+
+            // Release old matrices if exist
+            if (PerspectiveMatrix != null) {
+                PerspectiveMatrix.release();
+            }
+            if (PerspectiveInverse != null) {
+                PerspectiveInverse.release();
+            }
+
+            // Store results
+            PerspectiveMatrix = matrix.clone();
+            PerspectiveInverse = inverse.clone();
+
+            // Set flag
+            hasMatrix = true;
+        } finally {
+            // Release temporary resources
+            if (matPt_src != null) {
+                matPt_src.release();
+            }
+            if (matPt_dst != null) {
+                matPt_dst.release();
+            }
+            if (matrix != null) {
+                matrix.release();
+            }
+            if (inverse != null) {
+                inverse.release();
+            }
         }
-
-        // Create MatOfPoint2f
-        MatOfPoint2f matPt_src = new MatOfPoint2f();
-        MatOfPoint2f matPt_dst = new MatOfPoint2f();
-        matPt_src.fromList(lstPt_src);
-        matPt_dst.fromList(lstPt_dst);
-
-        // Compute perspective transformation matrix
-        Mat matrix = Geometry.getPerspectiveTransform(matPt_src, matPt_dst);
-
-        if (matrix == null || matrix.empty() || matrix.rows() != 3 || matrix.cols() != 3) {
-            throw new RuntimeException("Failed to compute perspective transformation matrix");
-        }
-
-        // Compute inverse matrix using Core.invert
-        Mat inverse = new Mat();
-        double det = Core.invert(matrix, inverse);
-
-        if (inverse == null || inverse.empty() || det == 0) {
-            throw new RuntimeException("Failed to compute inverse matrix (matrix may be singular)");
-        }
-
-        // Release old matrices if exist
-        if (!PerspectiveMatrix.empty()) {
-            PerspectiveMatrix.release();
-        }
-        if (!PerspectiveInverse.empty()) {
-            PerspectiveInverse.release();
-        }
-
-        // Store results
-        PerspectiveMatrix = matrix.clone();
-        PerspectiveInverse = inverse.clone();
-
-        // Set flag
-        hasMatrix = true;
     }
     
     /**
@@ -271,7 +292,7 @@ public class MyPerspectiveTransform {
             throw new IOException("Matrix file does not exist: " + matrixPath.toString());
         }
         
-        if (!PerspectiveMatrix.empty()) {
+        if (PerspectiveMatrix != null) {
             PerspectiveMatrix.release();
         }
         PerspectiveMatrix = readMat(matrixPath.toString());
@@ -282,7 +303,7 @@ public class MyPerspectiveTransform {
             throw new IOException("Inverse matrix file does not exist: " + inversePath.toString());
         }
         
-        if (!PerspectiveInverse.empty()) {
+        if (PerspectiveInverse != null) {
             PerspectiveInverse.release();
         }
         PerspectiveInverse = readMat(inversePath.toString());
@@ -353,27 +374,21 @@ public class MyPerspectiveTransform {
         dst.hasMatrix = this.hasMatrix;
 
         // Copy Mat (deep copy with clone)
-        if (!PerspectiveMatrix.empty()) {
-            if (!dst.PerspectiveMatrix.empty()) {
-                dst.PerspectiveMatrix.release();
-            }
+        if (dst.PerspectiveMatrix != null) {
+            dst.PerspectiveMatrix.release();
+        }
+        if (PerspectiveMatrix != null && !PerspectiveMatrix.empty()) {
             dst.PerspectiveMatrix = PerspectiveMatrix.clone();
         } else {
-            if (!dst.PerspectiveMatrix.empty()) {
-                dst.PerspectiveMatrix.release();
-            }
             dst.PerspectiveMatrix = new Mat();
         }
 
-        if (!PerspectiveInverse.empty()) {
-            if (!dst.PerspectiveInverse.empty()) {
-                dst.PerspectiveInverse.release();
-            }
+        if (dst.PerspectiveInverse != null) {
+            dst.PerspectiveInverse.release();
+        }
+        if (PerspectiveInverse != null && !PerspectiveInverse.empty()) {
             dst.PerspectiveInverse = PerspectiveInverse.clone();
         } else {
-            if (!dst.PerspectiveInverse.empty()) {
-                dst.PerspectiveInverse.release();
-            }
             dst.PerspectiveInverse = new Mat();
         }
 
@@ -460,7 +475,12 @@ public class MyPerspectiveTransform {
             if (type == CvType.CV_32F) {
                 float[] buffer = new float[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) {
                         dos.writeFloat(buffer[c]);
                     }
@@ -468,7 +488,12 @@ public class MyPerspectiveTransform {
             } else if (type == CvType.CV_64F) {
                 double[] buffer = new double[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) {
                         dos.writeDouble(buffer[c]);
                     }
@@ -476,7 +501,12 @@ public class MyPerspectiveTransform {
             } else if (type == CvType.CV_8U) {
                 byte[] buffer = new byte[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     dos.write(buffer);
                 }
             } else {
@@ -504,34 +534,53 @@ public class MyPerspectiveTransform {
             }
             
             Mat mat = new Mat(rows, cols, type);
-            
-            if (type == CvType.CV_32F) {
-                float[] buffer = new float[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        buffer[c] = dis.readFloat();
+            try {
+                if (type == CvType.CV_32F) {
+                    float[] buffer = new float[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) {
+                            buffer[c] = dis.readFloat();
+                        }
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
                     }
-                    mat.row(r).put(0, 0, buffer);
-                }
-            } else if (type == CvType.CV_64F) {
-                double[] buffer = new double[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        buffer[c] = dis.readDouble();
+                } else if (type == CvType.CV_64F) {
+                    double[] buffer = new double[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) {
+                            buffer[c] = dis.readDouble();
+                        }
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
                     }
-                    mat.row(r).put(0, 0, buffer);
+                } else if (type == CvType.CV_8U) {
+                    byte[] buffer = new byte[cols];
+                    for (int r = 0; r < rows; r++) {
+                        dis.readFully(buffer);
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unsupported matrix type: " + type);
                 }
-            } else if (type == CvType.CV_8U) {
-                byte[] buffer = new byte[cols];
-                for (int r = 0; r < rows; r++) {
-                    dis.readFully(buffer);
-                    mat.row(r).put(0, 0, buffer);
-                }
-            } else {
-                throw new IllegalArgumentException("Unsupported matrix type: " + type);
+                
+                return mat;
+            } catch (RuntimeException | IOException e) {
+                mat.release();
+                throw e;
             }
-            
-            return mat;
         }
     }
 }

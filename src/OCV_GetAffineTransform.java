@@ -61,7 +61,13 @@ public class OCV_GetAffineTransform implements ExtendedPlugInFilter, DialogListe
         gd.addDialogListener(this);
 
         gd.showDialog();
-        return FLAGS;
+
+        if(gd.wasCanceled()) {
+            return DONE;
+        }
+        else {
+            return FLAGS;
+        }
     }
 
     @Override

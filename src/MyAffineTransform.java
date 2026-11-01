@@ -169,10 +169,10 @@ public class MyAffineTransform {
             }
 
             // Release old matrices if exist
-            if (!AffineMatrix.empty()) {
+            if (AffineMatrix != null) {
                 AffineMatrix.release();
             }
-            if (!AffineInverse.empty()) {
+            if (AffineInverse != null) {
                 AffineInverse.release();
             }
 
@@ -291,7 +291,7 @@ public class MyAffineTransform {
             throw new IOException("Matrix file does not exist: " + matrixPath.toString());
         }
         
-        if (!AffineMatrix.empty()) {
+        if (AffineMatrix != null) {
             AffineMatrix.release();
         }
         AffineMatrix = readMat(matrixPath.toString());
@@ -302,7 +302,7 @@ public class MyAffineTransform {
             throw new IOException("Inverse matrix file does not exist: " + inversePath.toString());
         }
         
-        if (!AffineInverse.empty()) {
+        if (AffineInverse != null) {
             AffineInverse.release();
         }
         AffineInverse = readMat(inversePath.toString());
@@ -373,27 +373,21 @@ public class MyAffineTransform {
         dst.hasMatrix = this.hasMatrix;
 
         // Copy Mat (deep copy with clone)
-        if (!AffineMatrix.empty()) {
-            if (!dst.AffineMatrix.empty()) {
-                dst.AffineMatrix.release();
-            }
+        if (dst.AffineMatrix != null) {
+            dst.AffineMatrix.release();
+        }
+        if (AffineMatrix != null && !AffineMatrix.empty()) {
             dst.AffineMatrix = AffineMatrix.clone();
         } else {
-            if (!dst.AffineMatrix.empty()) {
-                dst.AffineMatrix.release();
-            }
             dst.AffineMatrix = new Mat();
         }
 
-        if (!AffineInverse.empty()) {
-            if (!dst.AffineInverse.empty()) {
-                dst.AffineInverse.release();
-            }
+        if (dst.AffineInverse != null) {
+            dst.AffineInverse.release();
+        }
+        if (AffineInverse != null && !AffineInverse.empty()) {
             dst.AffineInverse = AffineInverse.clone();
         } else {
-            if (!dst.AffineInverse.empty()) {
-                dst.AffineInverse.release();
-            }
             dst.AffineInverse = new Mat();
         }
 
@@ -490,7 +484,12 @@ public class MyAffineTransform {
             if (type == CvType.CV_32F) {
                 float[] buffer = new float[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) {
                         dos.writeFloat(buffer[c]);
                     }
@@ -498,7 +497,12 @@ public class MyAffineTransform {
             } else if (type == CvType.CV_64F) {
                 double[] buffer = new double[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) {
                         dos.writeDouble(buffer[c]);
                     }
@@ -506,7 +510,12 @@ public class MyAffineTransform {
             } else if (type == CvType.CV_8U) {
                 byte[] buffer = new byte[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     dos.write(buffer);
                 }
             } else {
@@ -534,34 +543,53 @@ public class MyAffineTransform {
             }
             
             Mat mat = new Mat(rows, cols, type);
-            
-            if (type == CvType.CV_32F) {
-                float[] buffer = new float[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        buffer[c] = dis.readFloat();
+            try {
+                if (type == CvType.CV_32F) {
+                    float[] buffer = new float[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) {
+                            buffer[c] = dis.readFloat();
+                        }
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
                     }
-                    mat.row(r).put(0, 0, buffer);
-                }
-            } else if (type == CvType.CV_64F) {
-                double[] buffer = new double[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        buffer[c] = dis.readDouble();
+                } else if (type == CvType.CV_64F) {
+                    double[] buffer = new double[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) {
+                            buffer[c] = dis.readDouble();
+                        }
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
                     }
-                    mat.row(r).put(0, 0, buffer);
+                } else if (type == CvType.CV_8U) {
+                    byte[] buffer = new byte[cols];
+                    for (int r = 0; r < rows; r++) {
+                        dis.readFully(buffer);
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unsupported matrix type: " + type);
                 }
-            } else if (type == CvType.CV_8U) {
-                byte[] buffer = new byte[cols];
-                for (int r = 0; r < rows; r++) {
-                    dis.readFully(buffer);
-                    mat.row(r).put(0, 0, buffer);
-                }
-            } else {
-                throw new IllegalArgumentException("Unsupported matrix type: " + type);
+                
+                return mat;
+            } catch (RuntimeException | IOException e) {
+                mat.release();
+                throw e;
             }
-            
-            return mat;
         }
     }
 }

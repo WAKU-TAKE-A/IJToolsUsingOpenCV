@@ -7,6 +7,7 @@
 - **command**: 動作モードを選択します。
     - `compute`: ROIから行列を計算し、メモリに一時保存します。
     - `compute_and_write`: 計算結果をファイルに保存します。
+    - `compute_dst`: 既存の変換元ROIを維持したまま、新しい変換先ROI（1つ）から行列を再計算します。
     - `read`: 保存されたファイルから行列を読み込みます。
 - **target_name**: 保存・読込時のファイル名です。
 - **enable_show_matrix**: 計算された行列の内容をログ（Results Table）に表示します。

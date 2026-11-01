@@ -38,7 +38,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_Resize implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32;
+    private static final int FLAGS = DOES_8G | DOES_RGB | DOES_16 | DOES_32 | NO_CHANGES;
 
     /*
     interpolation algorithm
@@ -128,11 +128,11 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener {
         }
 
         if(scaleW > 0 && scaleH > 0) {
-            dsizeW = impSrc.getWidth() * scaleW;
-            dsizeH = impSrc.getHeight() * scaleH;
+            dsizeW = Math.round(impSrc.getWidth() * scaleW);
+            dsizeH = Math.round(impSrc.getHeight() * scaleH);
         }
 
-        if(dsizeW == 0 || dsizeH == 0) {
+        if((int)Math.round(dsizeW) <= 0 || (int)Math.round(dsizeH) <= 0) {
             IJ.showStatus("Output width and height must not be 0");
             return false;
         }
@@ -170,9 +170,11 @@ public class OCV_Resize implements ExtendedPlugInFilter, DialogListener {
         int imh = ip.getHeight();
         int bitDepth = ip.getBitDepth();
         
-        Size dsize = new Size(dsizeW, dsizeH);
-        int dsizeWidth = (int)dsizeW;
-        int dsizeHeight = (int)dsizeH;
+        int dsizeWidth = (int)Math.round(dsizeW);
+        int dsizeHeight = (int)Math.round(dsizeH);
+        Size dsize = new Size(dsizeWidth, dsizeHeight);
+
+
         int flags = INT_INTERPOLATION[indInterpolation];
 
         try {

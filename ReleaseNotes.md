@@ -1,3 +1,14 @@
+# Release v0.9.62.7
+
+Latest update: November 2nd 2026
+
+## Changes
+
+* Fixed dialog cancellation in `OCV_GetAffineTransform` and `OCV_GetPerspectiveTransform` so clicking Cancel returns `DONE` without executing `run()`.
+* Fixed native `Mat` memory leaks in `MyPerspectiveTransform` (`compute()` temporary `Mat` cleanup), `MyAffineTransform` & `MyPerspectiveTransform` (`mat.row(r)` cleanup in `writeMat()`/`readMat()`, exception cleanup in `readMat()`, and unconditional `release()` before reassignment), and `OCV_GetRotationMatrix2D` (`tmpAffine` `Mat` cleanup).
+* Added `NO_CHANGES` to `FLAGS` in `OCV_Resize` and `OCV_WarpPolar`, and rounded scale-derived dimensions in `OCV_Resize` to ensure integer consistency between `dstMat` and `Imgproc.resize`.
+* Updated Japanese manuals for `OCV_GetAffineTransform` and `OCV_GetPerspectiveTransform` to document the `compute_dst` command option.
+
 # Release v0.9.62.6
 
 Latest update: November 1st 2026

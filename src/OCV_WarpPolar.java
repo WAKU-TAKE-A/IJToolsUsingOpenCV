@@ -41,7 +41,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_WarpPolar implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = PlugInFilter.DOES_8G | PlugInFilter.DOES_RGB | PlugInFilter.DOES_16 | PlugInFilter.DOES_32;
+    private static final int FLAGS = PlugInFilter.DOES_8G | PlugInFilter.DOES_RGB | PlugInFilter.DOES_16 | PlugInFilter.DOES_32 | PlugInFilter.NO_CHANGES;
 
     /*
     Specify the polar mapping mode.

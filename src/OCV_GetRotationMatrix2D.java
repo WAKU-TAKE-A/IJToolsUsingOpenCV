@@ -92,6 +92,7 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
     public void run(ImageProcessor ip) {
         Mat mat = null;
         Mat inv = null;
+        MyAffineTransform tmpAffine = null;
 
         try {
             // 回転行列(2x3)を計算
@@ -107,7 +108,9 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             Geometry.invertAffineTransform(mat, inv);
 
             // 一時的な MyAffineTransform にデータを格納
-            MyAffineTransform tmpAffine = new MyAffineTransform();
+            tmpAffine = new MyAffineTransform();
+            if(tmpAffine.AffineMatrix != null) tmpAffine.AffineMatrix.release();
+            if(tmpAffine.AffineInverse != null) tmpAffine.AffineInverse.release();
             tmpAffine.AffineMatrix = mat.clone();
             tmpAffine.AffineInverse = inv.clone();
             tmpAffine.hasMatrix = true; // フラグを立てる
@@ -127,6 +130,10 @@ public class OCV_GetRotationMatrix2D implements ExtendedPlugInFilter, DialogList
             OCV__LoadLibrary.logError(className, "Processing failed (" + e.getMessage() + ")");
         }
         finally {
+            if(tmpAffine != null) {
+                if(tmpAffine.AffineMatrix != null) tmpAffine.AffineMatrix.release();
+                if(tmpAffine.AffineInverse != null) tmpAffine.AffineInverse.release();
+            }
             if(mat != null) mat.release();
             if(inv != null) inv.release();
         }

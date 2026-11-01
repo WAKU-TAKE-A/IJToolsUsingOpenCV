@@ -61,7 +61,13 @@ public class OCV_GetPerspectiveTransform implements ExtendedPlugInFilter, Dialog
         gd.addDialogListener(this);
 
         gd.showDialog();
-        return FLAGS;
+
+        if(gd.wasCanceled()) {
+            return DONE;
+        }
+        else {
+            return FLAGS;
+        }
     }
 
     @Override
