@@ -334,7 +334,12 @@ public class MyFeatureDetector {
                 float[] buffer = new float[cols];
                 for (int r = 0; r < rows; r++) {
                     // 1行を float[] に取得
-                    descriptors.row(r).get(0, 0, buffer);
+                    Mat rowMat = descriptors.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) {
                         dos.writeFloat(buffer[c]);
                     }
@@ -342,7 +347,12 @@ public class MyFeatureDetector {
             } else if (type == CvType.CV_64F) {
                 double[] buffer = new double[cols];
                 for (int r = 0; r < rows; r++) {
-                    descriptors.row(r).get(0, 0, buffer);
+                    Mat rowMat = descriptors.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) {
                         dos.writeDouble(buffer[c]);
                     }
@@ -350,7 +360,12 @@ public class MyFeatureDetector {
             } else if (type == CvType.CV_8U) {
                 byte[] buffer = new byte[cols];
                 for (int r = 0; r < rows; r++) {
-                    descriptors.row(r).get(0, 0, buffer);
+                    Mat rowMat = descriptors.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     dos.write(buffer);
                 }
             } else {
@@ -379,33 +394,53 @@ public class MyFeatureDetector {
 
             Mat descriptors = new Mat(rows, cols, type);
 
-            if (type == CvType.CV_32F) {
-                float[] buffer = new float[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        buffer[c] = dis.readFloat();
+            try {
+                if (type == CvType.CV_32F) {
+                    float[] buffer = new float[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) {
+                            buffer[c] = dis.readFloat();
+                        }
+                        Mat rowMat = descriptors.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
                     }
-                    descriptors.row(r).put(0, 0, buffer);
-                }
-            } else if (type == CvType.CV_64F) {
-                double[] buffer = new double[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) {
-                        buffer[c] = dis.readDouble();
+                } else if (type == CvType.CV_64F) {
+                    double[] buffer = new double[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) {
+                            buffer[c] = dis.readDouble();
+                        }
+                        Mat rowMat = descriptors.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
                     }
-                    descriptors.row(r).put(0, 0, buffer);
+                } else if (type == CvType.CV_8U) {
+                    byte[] buffer = new byte[cols];
+                    for (int r = 0; r < rows; r++) {
+                        dis.readFully(buffer);
+                        Mat rowMat = descriptors.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
+                    }
+                } else {
+                    throw new IllegalArgumentException("Unsupported descriptor type: " + type);
                 }
-            } else if (type == CvType.CV_8U) {
-                byte[] buffer = new byte[cols];
-                for (int r = 0; r < rows; r++) {
-                    dis.readFully(buffer);
-                    descriptors.row(r).put(0, 0, buffer);
-                }
-            } else {
-                throw new IllegalArgumentException("Unsupported descriptor type: " + type);
-            }
 
-            return descriptors;
+                return descriptors;
+            } catch (Exception e) {
+                descriptors.release();
+                throw e;
+            }
         }
     }
     

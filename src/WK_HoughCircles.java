@@ -41,7 +41,7 @@ import java.util.ArrayList;
  */
 public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G;
+    private static final int FLAGS = DOES_8G | NO_CHANGES;
     private static final int ERR_OK = 0;
     private static final int ERR_ARG = -2;
     private static final int ERR_MEM_ALLOC = 3;
@@ -158,7 +158,7 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
 
             imp.setRoi(rect.x, rect.y, rect.width, rect.height);
 
-            return DOES_8G;
+            return DOES_8G | NO_CHANGES;
         }
     }
 
@@ -372,8 +372,8 @@ public class WK_HoughCircles implements ExtendedPlugInFilter, DialogListener {
         for(int i = 0; i < num_res; i++) {
             double[] res_ar = res.get(i);
 
-            double xave = res_ar[IXSUM] / res_ar[IN];
-            double yave = res_ar[IYSUM] / res_ar[IN];
+            double xave = res_ar[IXSUM] / res_ar[IN] + rect.x;
+            double yave = res_ar[IYSUM] / res_ar[IN] + rect.y;
             double r = res_ar[IR];
             double dia = 2 * r;
             int vt = (int)res_ar[IVOTE];

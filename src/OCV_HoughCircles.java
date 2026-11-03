@@ -41,7 +41,7 @@ import java.awt.Frame;
  */
 public class OCV_HoughCircles implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G;
+    private static final int FLAGS = DOES_8G | NO_CHANGES;
     private static final String[] STR_METHOD = { "HOUGH_GRADIENT", "HOUGH_GRADIENT_ALT" };
     private static final int[] INT_METHOD = { Imgproc.HOUGH_GRADIENT, Imgproc.HOUGH_GRADIENT_ALT };
 
@@ -79,7 +79,7 @@ public class OCV_HoughCircles implements ExtendedPlugInFilter, DialogListener {
             return DONE;
         }
         else {
-            return FLAGS;
+            return IJ.setupDialog(imp, FLAGS);
         }
     }
 

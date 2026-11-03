@@ -40,7 +40,7 @@ import java.awt.AWTEvent;
  */
 public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G;
+    private static final int FLAGS = DOES_8G | NO_CHANGES;
 
     // static var.
     private static double resDist = 1;
@@ -76,7 +76,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             return DONE;
         }
         else {
-            return FLAGS;
+            return IJ.setupDialog(imp, FLAGS);
         }
     }
 
@@ -167,7 +167,7 @@ public class OCV_HoughLines implements ExtendedPlugInFilter, DialogListener {
             return DONE;
         }
         else {
-            return DOES_8G;
+            return DOES_8G | NO_CHANGES;
         }
     }
 

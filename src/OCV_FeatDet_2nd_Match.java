@@ -44,7 +44,7 @@ import org.opencv.imgcodecs.Imgcodecs;
  */
 public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_RGB;
+    private static final int FLAGS = DOES_RGB | NO_CHANGES;
     private static final String[] TYPE_STR_DET = new String[] { "ORB", "SIFT"};
     
     // static var.
@@ -208,8 +208,8 @@ public class OCV_FeatDet_2nd_Match implements ij.plugin.filter.ExtendedPlugInFil
             train_desc = new Mat();
             myQuery.calc_KeyPoints_Descriptors(mat_train, train_key, train_desc);
             
-            if(train_key.rows() == 0 || train_desc.rows() == 0) {
-                OCV__LoadLibrary.logError(className, "Result is empty.");
+            if(myQuery.QueryDescriptors == null || myQuery.QueryDescriptors.rows() == 0 || train_key.rows() == 0 || train_desc.rows() == 0) {
+                OCV__LoadLibrary.logError(className, "Result or query descriptor is empty.");
                 return;
             }
             

@@ -45,7 +45,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_MatchTemplate implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G;
+    private static final int FLAGS = DOES_8G | NO_CHANGES;
     private static final String[] TYPE_STR = new String[] { "1 - TM_SQDIFF_NORMED", "TM_CCORR_NORMED", "TM_CCOEFF_NORMED" };
     private static final int[] TYPE_VAL = new int[] { Imgproc.TM_SQDIFF_NORMED, Imgproc.TM_CCORR_NORMED, Imgproc.TM_CCOEFF_NORMED };
 

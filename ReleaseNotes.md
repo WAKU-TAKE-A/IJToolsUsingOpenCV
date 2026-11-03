@@ -1,3 +1,13 @@
+# Release v0.9.62.9
+
+Latest update: November 3rd 2026
+
+## Changes
+
+* Fixed native Mat memory leaks in MyFeatureDetector by explicitly releasing temporary row Mat objects created during descriptor read and write operations.
+* Fixed detected circle coordinates in WK_HoughCircles by adding ROI offsets (ect.x, ect.y) when recording center positions in ResultsTable and ROI Manager.
+* Added defensive null and empty checks for QueryDescriptors in OCV_FeatDet_2nd_Match to prevent matcher crashes on empty query features.
+* Added NO_CHANGES to FLAGS across Group G6 plugins (OCV_MatchTemplate, OCV_FeatDet_2nd_Match, OCV_HoughLines, OCV_HoughLinesP, OCV_HoughCircles, and WK_HoughCircles) to avoid unnecessary Undo snapshots and save prompts.
 # Release v0.9.62.8
 
 Latest update: November 3rd 2026
