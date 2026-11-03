@@ -75,7 +75,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
         }
         else {
             enRefData = gd.getNextBoolean();
-            return IJ.setupDialog(imp, DOES_8G);
+            return IJ.setupDialog(imp, DOES_8G | NO_CHANGES);
         }
     }
 
@@ -175,7 +175,7 @@ public class OCV_BoundingRect implements ExtendedPlugInFilter {
             roiSrc = imp.getRoi();
             countNPass = 0;
             
-            return DOES_8G;
+            return DOES_8G | NO_CHANGES;
         }
     }
 

@@ -77,7 +77,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
         }
         else {
             enRefData = gd.getNextBoolean();
-            return IJ.setupDialog(imp, DOES_8G);
+            return IJ.setupDialog(imp, DOES_8G | NO_CHANGES);
         }
     }
 
@@ -181,7 +181,7 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
             roiSrc = imp.getRoi();
             countNPass = 0;
             
-            return DOES_8G;
+            return DOES_8G | NO_CHANGES;
         }
     }
 
@@ -203,7 +203,15 @@ public class OCV_FitEllipse implements ExtendedPlugInFilter {
             double cy = rect.center.y;
             double w = rect.size.width;
             double h = rect.size.height;
-            double rad = rect.angle * Math.PI / 180;
+            double angleDeg = rect.angle;
+            if (w > h) {
+                double tmp = w;
+                w = h;
+                h = tmp;
+                angleDeg += 90.0;
+            }
+            if (h <= 0) return;
+            double rad = angleDeg * Math.PI / 180;
             double cos = Math.cos(rad);
             double sin = Math.sin(rad);
             double ratio = w / h;
