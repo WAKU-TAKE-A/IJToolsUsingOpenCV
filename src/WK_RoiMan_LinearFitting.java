@@ -44,7 +44,7 @@ import org.opencv.core.Point;
  */
 public class WK_RoiMan_LinearFitting implements ExtendedPlugInFilter {
     // const var.
-    private static final int FLAGS = DOES_ALL;
+    private static final int FLAGS = DOES_ALL | NO_CHANGES;
 
     // static var.
     private static int num_run = 0;

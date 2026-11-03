@@ -218,7 +218,7 @@ public class OCV_CameraCalib_1st_Create implements ExtendedPlugInFilter, DialogL
             }
 
             if (imagePoints.size() > 0) {
-                Calib.calibrateCamera(objectPoints, imagePoints, new Size(imp.getWidth(), imp.getHeight()), mCalib.cameraMatrix, mCalib.distCoeffs, new ArrayList<Mat>(), new ArrayList<Mat>(), 0);
+                mCalib.calibrate(objectPoints, imagePoints, new Size(imp.getWidth(), imp.getHeight()));
                 saveResults();
             } else {
                 OCV__LoadLibrary.logError(className, "No patterns detected in stack.");

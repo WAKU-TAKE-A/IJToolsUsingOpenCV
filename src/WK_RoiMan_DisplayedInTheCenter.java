@@ -41,7 +41,7 @@ import java.awt.Rectangle;
  */
 public class WK_RoiMan_DisplayedInTheCenter implements ExtendedPlugInFilter {
     // const var.
-    private static final int FLAGS = DOES_ALL;
+    private static final int FLAGS = DOES_ALL | NO_CHANGES;
     private static final int ZOOM_SCALE = 100;
 
     // var.

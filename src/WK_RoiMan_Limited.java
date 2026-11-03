@@ -39,7 +39,7 @@ import java.awt.Frame;
  */
 public class WK_RoiMan_Limited implements ExtendedPlugInFilter {
     // const var.
-    private static final int FLAGS = DOES_ALL;
+    private static final int FLAGS = DOES_ALL | NO_CHANGES;
     private static final int DECIMAL_PLACES = 4;
 
     // static var.

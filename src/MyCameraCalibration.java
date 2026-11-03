@@ -218,13 +218,23 @@ public class MyCameraCalibration {
             if (type == CvType.CV_64F) {
                 double[] buffer = new double[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) dos.writeDouble(buffer[c]);
                 }
             } else if (type == CvType.CV_32F) {
                 float[] buffer = new float[cols];
                 for (int r = 0; r < rows; r++) {
-                    mat.row(r).get(0, 0, buffer);
+                    Mat rowMat = mat.row(r);
+                    try {
+                        rowMat.get(0, 0, buffer);
+                    } finally {
+                        rowMat.release();
+                    }
                     for (int c = 0; c < cols; c++) dos.writeFloat(buffer[c]);
                 }
             }
@@ -239,20 +249,35 @@ public class MyCameraCalibration {
             int type = dis.readInt();
             Mat mat = new Mat(rows, cols, type);
 
-            if (type == CvType.CV_64F) {
-                double[] buffer = new double[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) buffer[c] = dis.readDouble();
-                    mat.row(r).put(0, 0, buffer);
+            try {
+                if (type == CvType.CV_64F) {
+                    double[] buffer = new double[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) buffer[c] = dis.readDouble();
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
+                    }
+                } else if (type == CvType.CV_32F) {
+                    float[] buffer = new float[cols];
+                    for (int r = 0; r < rows; r++) {
+                        for (int c = 0; c < cols; c++) buffer[c] = dis.readFloat();
+                        Mat rowMat = mat.row(r);
+                        try {
+                            rowMat.put(0, 0, buffer);
+                        } finally {
+                            rowMat.release();
+                        }
+                    }
                 }
-            } else if (type == CvType.CV_32F) {
-                float[] buffer = new float[cols];
-                for (int r = 0; r < rows; r++) {
-                    for (int c = 0; c < cols; c++) buffer[c] = dis.readFloat();
-                    mat.row(r).put(0, 0, buffer);
-                }
+                return mat;
+            } catch (Exception e) {
+                mat.release();
+                throw e;
             }
-            return mat;
         }
     }
 }

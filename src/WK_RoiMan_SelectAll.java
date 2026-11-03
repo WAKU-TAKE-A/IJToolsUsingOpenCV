@@ -36,7 +36,7 @@ import java.awt.Frame;
  */
 public class WK_RoiMan_SelectAll implements ij.plugin.filter.ExtendedPlugInFilter {
     // const var.
-    private static final int FLAGS = DOES_ALL;
+    private static final int FLAGS = DOES_ALL | NO_CHANGES;
     private static final String STR_NONE = "none";
     private static final String[] TYPE_STR = { STR_NONE, "and", "or", "xor" };
 

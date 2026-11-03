@@ -45,7 +45,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilter, DialogListener {
     // constant var.
-    private static final int FLAGS = DOES_8G | KEEP_PREVIEW;
+    private static final int FLAGS = DOES_8G | KEEP_PREVIEW | NO_CHANGES;
     private static final double DEFAULT_THRESHOLD = 100.0;
     private static final int PROFILE_CENTER_DIVIDER = 2;
     
@@ -87,9 +87,7 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
     private String typeRoi;
     private boolean ini_verticalProfile = false;
     
-    // OpenCV Mat for reuse
-    private Mat src_mat = null;
-    private Mat dst_mat = null;
+
 
     @Override
     public int showDialog(ImagePlus imp, String command, PlugInFilterRunner pfr) {
@@ -189,6 +187,11 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
             roi_vec[1] = (fp.ypoints[2] - fp.ypoints[1]) / roi_len;
         } else {
             IJ.showStatus("Unsupported ROI type");
+            return false;
+        }
+
+        if (roi_len <= 0) {
+            IJ.showStatus("ROI length or width must be > 0");
             return false;
         }
         
@@ -403,21 +406,20 @@ public class OCUtil_MeasureWidth implements ij.plugin.filter.ExtendedPlugInFilte
         int imh = ip.getHeight();
         byte[] srcdst_bytes = (byte[])ip.getPixels();
 
-        // Reuse Mat
-        if (src_mat == null || src_mat.rows() != imh || src_mat.cols() != imw) {
-            if (src_mat != null) src_mat.release();
-            if (dst_mat != null) dst_mat.release();
-            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
-            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
-        }
+        Mat src_mat = null;
+        Mat dst_mat = null;
 
         try {
-            // run
+            src_mat = new Mat(imh, imw, CvType.CV_8UC1);
+            dst_mat = new Mat(imh, imw, CvType.CV_8UC1);
             src_mat.put(0, 0, srcdst_bytes);
             Imgproc.Canny(src_mat, dst_mat, threshold1, threshold2, apertureSize, L2gradient);
             dst_mat.get(0, 0, srcdst_bytes);
         } catch (Exception e) {
             OCV__LoadLibrary.logError("OCUtil_MeasureWidth", "Canny processing failed (" + e.getMessage() + ")");
+        } finally {
+            if (src_mat != null) src_mat.release();
+            if (dst_mat != null) dst_mat.release();
         }
     }
 

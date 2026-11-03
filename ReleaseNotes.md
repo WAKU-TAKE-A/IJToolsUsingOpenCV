@@ -1,3 +1,13 @@
+# Release v0.9.62.10
+
+Latest update: November 3rd 2026
+
+## Changes
+
+* Fixed camera calibration workflow in OCV_CameraCalib_1st_Create by using MyCameraCalibration.calibrate wrapper, preventing native Mat memory leaks from discarded vecs/	vecs and ensuring calibration result state is correctly saved.
+* Fixed native Mat memory leaks in MyCameraCalibration by properly releasing temporary row Mat objects created during matrix read and write operations.
+* Fixed native Mat memory leaks in OCUtil_MeasureWidth by removing instance-cached src_mat/dst_mat in favor of local 	ry-finally allocation, and added validation to prevent zero-distance division on zero-length ROIs.
+* Added NO_CHANGES to FLAGS across Group G7 plugins (OCUtil_MeasureWidth, WK_RoiMan_SelectAll, WK_RoiMan_Limited, WK_RoiMan_LinearFitting, and WK_RoiMan_DisplayedInTheCenter) to prevent unnecessary Undo snapshots.
 # Release v0.9.62.9
 
 Latest update: November 3rd 2026
