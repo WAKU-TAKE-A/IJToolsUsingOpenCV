@@ -80,7 +80,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
         else {
             enCW = gd.getNextBoolean();
             enRefData = gd.getNextBoolean();
-            return DOES_8G;
+            return IJ.setupDialog(imp, DOES_8G | NO_CHANGES);
         }
     }
 
@@ -187,7 +187,7 @@ public class OCV_ConvexHull implements ExtendedPlugInFilter {
             roiSrc = imp.getRoi();
             countNPass = 0;
             
-            return DOES_8G;
+            return DOES_8G | NO_CHANGES;
         }
     }
 

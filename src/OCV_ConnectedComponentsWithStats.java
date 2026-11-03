@@ -40,7 +40,7 @@ import org.opencv.imgproc.Imgproc;
  */
 public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
     // const var.
-    private static final int FLAGS = DOES_8G;
+    private static final int FLAGS = DOES_8G | NO_CHANGES;
     private static final int CONN_4 = 4;
     private static final int CONN_8 = 8;
     private static final int[] TYPE_INT = { CONN_4, CONN_8 };
@@ -74,7 +74,7 @@ public class OCV_ConnectedComponentsWithStats implements ExtendedPlugInFilter {
             enOutImg = (boolean)gd.getNextBoolean();
             enWand = (boolean)gd.getNextBoolean();
 
-            return FLAGS;
+            return IJ.setupDialog(imp, FLAGS);
         }
     }
 

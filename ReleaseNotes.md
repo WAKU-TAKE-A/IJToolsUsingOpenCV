@@ -1,3 +1,14 @@
+# Release v0.9.62.8
+
+Latest update: November 3rd 2026
+
+## Changes
+
+* Fixed distorted ellipse ROI in `OCV_FitEllipse` when fitEllipse returns width > height (axes swapped and angle +90 for ROI only; ResultsTable unchanged).
+* `OCV_ConvexHull` and `OCV_ConnectedComponentsWithStats` now use `IJ.setupDialog` for consistent stack handling.
+* Added `NO_CHANGES` to all Group G5 plugins (`OCV_BoundingRect`, `OCV_MinAreaRect`, `OCV_MinEnclosingCircle`, `OCV_FitEllipse`, `OCV_ConvexHull`, `OCV_ConnectedComponentsWithStats`, `WK_HuMoments`).
+* `WK_HuMoments` clamps the ROI to the image and returns early on empty ROI or zero total intensity (M00 == 0).
+
 # Release v0.9.62.7
 
 Latest update: November 2nd 2026
