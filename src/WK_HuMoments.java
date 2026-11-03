@@ -39,7 +39,7 @@ import java.awt.Rectangle;
  */
 public class WK_HuMoments implements ExtendedPlugInFilter {
     // const var.
-    private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT;
+    private final int FLAGS = DOES_8G | CONVERT_TO_FLOAT | NO_CHANGES;
 
     // static var.
     private static final double[] RES_INI = new double[9];
@@ -71,6 +71,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter {
             else {
                 rect = new Rectangle(0, 0, imp.getWidth(), imp.getHeight());
             }
+            rect = rect.intersection(new Rectangle(0, 0, imp.getWidth(), imp.getHeight()));
 
             return FLAGS;
         }
@@ -78,6 +79,7 @@ public class WK_HuMoments implements ExtendedPlugInFilter {
 
     @Override
     public void run(ImageProcessor ip) {
+        if (rect.width <= 0 || rect.height <= 0) return;
         float[] floatArray = (float[])ip.getPixels();
         int img_width = ip.getWidth();
         int roi_w = rect.width;
@@ -97,6 +99,10 @@ public class WK_HuMoments implements ExtendedPlugInFilter {
         double[] res = new double[9]; // 0 - 6:HuMoments, 7:match, 8:rotation
 
         calc_moments(fltArr_roi, mom, roi_w, roi_h);
+        if (mom.M00 == 0) {
+            IJ.showStatus("Sum of pixel values is 0");
+            return;
+        }
         calc_humoments(mom, res);
 
         // res[7] is calculated in showData().

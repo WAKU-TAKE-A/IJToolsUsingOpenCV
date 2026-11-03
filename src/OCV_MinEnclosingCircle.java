@@ -74,7 +74,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
         else {
             enRefData = (boolean)gd.getNextBoolean();
             countNPass = 0;
-            return IJ.setupDialog(imp, DOES_8G);
+            return IJ.setupDialog(imp, DOES_8G | NO_CHANGES);
         }
     }
 
@@ -171,7 +171,7 @@ public class OCV_MinEnclosingCircle implements ExtendedPlugInFilter {
         else {
             impSrc = imp;
             roiSrc = imp.getRoi();
-            return DOES_8G;
+            return DOES_8G | NO_CHANGES;
         }
     }
 
