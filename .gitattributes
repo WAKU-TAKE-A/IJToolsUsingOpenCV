@@ -1,0 +1,6 @@
+# デフォルトでテキストファイルを自動判定し、LFで統一
+* text=auto eol=lf
+
+# Windows専用バッチスクリプトのみCRLFを維持
+*.bat text eol=crlf
+*.cmd text eol=crlf
