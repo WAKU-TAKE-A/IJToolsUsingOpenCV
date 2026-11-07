@@ -228,7 +228,10 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     : PeakDetector.PeakMethod.PROMINENCE;
 
             Calibration cal = impSrc.getCalibration();
-            boolean calibrated = cal != null && cal.pixelWidth > 0 && cal.pixelWidth != 1.0;
+            // 校正値はプロファイル方向の軸から選ぶ（縦方向なら Y 軸）。
+            double profScale = profileScale(cal, vertical_profile);
+            String profUnit = profileUnit(cal, vertical_profile);
+            boolean calibrated = isCalibrated(cal, vertical_profile);
 
             for (int i = 0; i < selectedIndexes.length; i++) {
                 int index = selectedIndexes[i];
@@ -247,7 +250,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
 
                     if (profile == null || profile.length < 2) {
                         IJ.log(className + " error: Cannot get valid profile from " + roiName);
-                        writeRow(roiName, null, 0, "Failed: invalid profile", cal, calibrated);
+                        writeRow(roiName, null, 0, "Failed: invalid profile", profScale, profUnit, calibrated);
                         continue;
                     }
 
@@ -270,14 +273,14 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     );
 
                     if (result != null) {
-                        writeRow(roiName, result, profile.length, "OK", cal, calibrated);
+                        writeRow(roiName, result, profile.length, "OK", profScale, profUnit, calibrated);
                     } else {
                         IJ.log(className + " warning: Period detection failed for " + roiName);
-                        writeRow(roiName, null, profile.length, "Failed: no period detected", cal, calibrated);
+                        writeRow(roiName, null, profile.length, "Failed: no period detected", profScale, profUnit, calibrated);
                     }
                 } catch (Exception e) {
                     IJ.log(className + " exception for " + roiName + ": " + e.getMessage());
-                    writeRow(roiName, null, 0, "Failed: " + e.getMessage(), cal, calibrated);
+                    writeRow(roiName, null, 0, "Failed: " + e.getMessage(), profScale, profUnit, calibrated);
                 }
             }
 
@@ -315,22 +318,58 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         return w;
     }
 
+    /** プロファイル方向に対応する軸の校正値（単位長/ピクセル）。 */
+    static double profileScale(Calibration cal, boolean vertical) {
+        if (cal == null) {
+            return 1.0;
+        }
+        double s = vertical ? cal.pixelHeight : cal.pixelWidth;
+        return s > 0 ? s : 1.0;
+    }
+
+    /** プロファイル方向に対応する軸の単位。 */
+    static String profileUnit(Calibration cal, boolean vertical) {
+        if (cal == null) {
+            return "pixel";
+        }
+        String u = vertical ? cal.getYUnit() : cal.getXUnit();
+        return (u == null || u.isEmpty()) ? "pixel" : u;
+    }
+
+    /**
+     * その軸が物理校正されているか。
+     * scale != 1.0 だけで判定すると「1物理単位/ピクセル」の校正を見落とすため、
+     * 単位が pixel 以外かどうかも条件に含める。
+     */
+    static boolean isCalibrated(Calibration cal, boolean vertical) {
+        if (cal == null) {
+            return false;
+        }
+        double s = vertical ? cal.pixelHeight : cal.pixelWidth;
+        if (!(s > 0)) {
+            return false;
+        }
+        return s != 1.0 || !"pixel".equals(profileUnit(cal, vertical));
+    }
+
     /** 結果表に1行書く。失敗時も Status 列付きで行を残す。 */
     private void writeRow(String roiName, PeriodResult result, int profileLength,
-                          String status, Calibration cal, boolean calibrated) {
+                          String status, double profScale, String profUnit, boolean calibrated) {
         rsTbl.incrementCounter();
         rsTbl.addValue("ROI_Name", roiName);
         if (result != null) {
             rsTbl.addValue("Period", result.period);
             rsTbl.addValue("Confidence", result.confidence);
             if (calibrated) {
-                rsTbl.addValue("Period_Scaled", result.period * cal.pixelWidth);
+                rsTbl.addValue("Period_Scaled", result.period * profScale);
+                rsTbl.addValue("Unit", profUnit);
             }
         } else {
             rsTbl.addValue("Period", Double.NaN);
             rsTbl.addValue("Confidence", Double.NaN);
             if (calibrated) {
                 rsTbl.addValue("Period_Scaled", Double.NaN);
+                rsTbl.addValue("Unit", profUnit);
             }
         }
         rsTbl.addValue("Profile_Len", profileLength);

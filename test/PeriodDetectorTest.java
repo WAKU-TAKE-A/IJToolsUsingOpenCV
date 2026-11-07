@@ -217,6 +217,38 @@ public class PeriodDetectorTest {
             }
         }
 
+        // 11) 校正値: プロファイル方向の軸が選ばれ、単位が返り、
+        //     「1物理単位/ピクセル」の校正も校正済みと判定されること
+        {
+            ij.measure.Calibration cal = new ij.measure.Calibration();
+            cal.pixelWidth = 0.5;
+            cal.pixelHeight = 2.0;
+            cal.setUnit("um");
+            checkClose("scale horizontal = pixelWidth", 0.5,
+                    WK_RoiMan_PeriodDetector.profileScale(cal, false), 1e-12);
+            checkClose("scale vertical = pixelHeight", 2.0,
+                    WK_RoiMan_PeriodDetector.profileScale(cal, true), 1e-12);
+            // Calibration.setUnit("um") は ImageJ が "µm" に正規化する
+            check("unit returned", "µm".equals(
+                    WK_RoiMan_PeriodDetector.profileUnit(cal, false)));
+            check("calibrated detected", WK_RoiMan_PeriodDetector.isCalibrated(cal, false));
+
+            ij.measure.Calibration oneToOne = new ij.measure.Calibration();
+            oneToOne.pixelWidth = 1.0;
+            oneToOne.pixelHeight = 1.0;
+            oneToOne.setUnit("mm");
+            check("1 physical unit/pixel still calibrated",
+                    WK_RoiMan_PeriodDetector.isCalibrated(oneToOne, false));
+            check("1 physical unit/pixel vertical still calibrated",
+                    WK_RoiMan_PeriodDetector.isCalibrated(oneToOne, true));
+
+            ij.measure.Calibration plain = new ij.measure.Calibration();
+            check("default calibration is not calibrated",
+                    !WK_RoiMan_PeriodDetector.isCalibrated(plain, false));
+            check("null calibration is not calibrated",
+                    !WK_RoiMan_PeriodDetector.isCalibrated(null, false));
+        }
+
         System.out.println("----");
         System.out.println(checks + " checks, " + failures + " failures");
         System.exit(failures == 0 ? 0 : 1);
