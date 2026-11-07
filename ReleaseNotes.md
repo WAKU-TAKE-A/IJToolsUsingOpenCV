@@ -1,10 +1,20 @@
+# Release v0.9.62.11
+
+Latest update: November 8th 2026
+
+## Changes
+
+* Fixed and hardened period detection in WK_RoiMan_PeriodDetector and its support classes (PeriodDetector, Autocorrelation, PeakDetector, PeriodRefiner). Autocorrelation normalization is now unified (biased), so Confidence stays within [0, 1]; long profiles use FFT-based autocorrelation; each ROI is processed independently with a Status column in the ResultsTable; dialog parameters are validated; and Period_Scaled now uses the calibration of the profile direction with the unit shown in the results. The ResultsTable columns are now always the same on every row.
+* Added sub-harmonic refinement options (max_divisor, half_ratio) and optional ACF smoothing to period detection.
+* Added regression tests for the period detection classes in test/PeriodDetectorTest.java (38 checks).
 # Release v0.9.62.10
 
 Latest update: November 3rd 2026
 
 ## Changes
 
-* Fixed camera calibration workflow in OCV_CameraCalib_1st_Create by using MyCameraCalibration.calibrate wrapper, preventing native Mat memory leaks from discarded vecs/	vecs and ensuring calibration result state is correctly saved.
+* Fixed camera calibration workflow in OCV_CameraCalib_1st_Create by using MyCameraCalibration.calibrate wrapper, preventing native Mat memory leaks from discarded 
+vecs/	vecs and ensuring calibration result state is correctly saved.
 * Fixed native Mat memory leaks in MyCameraCalibration by properly releasing temporary row Mat objects created during matrix read and write operations.
 * Fixed native Mat memory leaks in OCUtil_MeasureWidth by removing instance-cached src_mat/dst_mat in favor of local 	ry-finally allocation, and added validation to prevent zero-distance division on zero-length ROIs.
 * Added NO_CHANGES to FLAGS across Group G7 plugins (OCUtil_MeasureWidth, WK_RoiMan_SelectAll, WK_RoiMan_Limited, WK_RoiMan_LinearFitting, and WK_RoiMan_DisplayedInTheCenter) to prevent unnecessary Undo snapshots.
@@ -15,7 +25,9 @@ Latest update: November 3rd 2026
 ## Changes
 
 * Fixed native Mat memory leaks in MyFeatureDetector by explicitly releasing temporary row Mat objects created during descriptor read and write operations.
-* Fixed detected circle coordinates in WK_HoughCircles by adding ROI offsets (ect.x, ect.y) when recording center positions in ResultsTable and ROI Manager.
+* Fixed detected circle coordinates in WK_HoughCircles by adding ROI offsets (
+ect.x, 
+ect.y) when recording center positions in ResultsTable and ROI Manager.
 * Added defensive null and empty checks for QueryDescriptors in OCV_FeatDet_2nd_Match to prevent matcher crashes on empty query features.
 * Added NO_CHANGES to FLAGS across Group G6 plugins (OCV_MatchTemplate, OCV_FeatDet_2nd_Match, OCV_HoughLines, OCV_HoughLinesP, OCV_HoughCircles, and WK_HoughCircles) to avoid unnecessary Undo snapshots and save prompts.
 # Release v0.9.62.8
