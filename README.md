@@ -1,3 +1,11 @@
+# IJToolsUsingOpenCV
+
+Version: **0.9.62.11** (2026-11-08) — [Release notes](ReleaseNotes.md)
+
+[The english discriptions - >](#English)  
+[日本語の説明 - >](#日本語)
+
+-----
 
 ## 日本語
 
@@ -32,13 +40,6 @@ NetBeansを起動します。
 作成したプラグインのバイナリー(jarファイル)を[こちら](https://github.com/WAKU-TAKE-A/IJToolsUsingOpenCV/releases)に置いておきます。<br>是非使ってみてください。
 
 -----
-
-# IJToolsUsingOpenCV
-
-Version: **0.9.62.11** (2026-11-08) — [Release notes](ReleaseNotes.md)
-
-[The english discriptions - >](#English)  
-[日本語の説明 - >](#日本語)
 
 ## English
 
