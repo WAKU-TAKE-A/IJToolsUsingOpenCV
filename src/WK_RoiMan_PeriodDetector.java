@@ -232,6 +232,10 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
             double profScale = profileScale(cal, vertical_profile);
             String profUnit = profileUnit(cal, vertical_profile);
             boolean calibrated = isCalibrated(cal, vertical_profile);
+            // 結果表の列構成を常に一定に保つため、未校正でも
+            // Period_Scaled（= Period）と Unit（= "pixel"）を常に出力する。
+            double outScale = calibrated ? profScale : 1.0;
+            String outUnit = calibrated ? profUnit : "pixel";
 
             for (int i = 0; i < selectedIndexes.length; i++) {
                 int index = selectedIndexes[i];
@@ -250,7 +254,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
 
                     if (profile == null || profile.length < 2) {
                         IJ.log(className + " error: Cannot get valid profile from " + roiName);
-                        writeRow(roiName, null, 0, "Failed: invalid profile", profScale, profUnit, calibrated);
+                        writeRow(rsTbl, roiName, null, 0, "Failed: invalid profile", outScale, outUnit);
                         continue;
                     }
 
@@ -273,14 +277,14 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     );
 
                     if (result != null) {
-                        writeRow(roiName, result, profile.length, "OK", profScale, profUnit, calibrated);
+                        writeRow(rsTbl, roiName, result, profile.length, "OK", outScale, outUnit);
                     } else {
                         IJ.log(className + " warning: Period detection failed for " + roiName);
-                        writeRow(roiName, null, profile.length, "Failed: no period detected", profScale, profUnit, calibrated);
+                        writeRow(rsTbl, roiName, null, profile.length, "Failed: no period detected", outScale, outUnit);
                     }
                 } catch (Exception e) {
                     IJ.log(className + " exception for " + roiName + ": " + e.getMessage());
-                    writeRow(roiName, null, 0, "Failed: " + e.getMessage(), profScale, profUnit, calibrated);
+                    writeRow(rsTbl, roiName, null, 0, "Failed: " + e.getMessage(), outScale, outUnit);
                 }
             }
 
@@ -352,28 +356,22 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         return s != 1.0 || !"pixel".equals(profileUnit(cal, vertical));
     }
 
-    /** 結果表に1行書く。失敗時も Status 列付きで行を残す。 */
-    private void writeRow(String roiName, PeriodResult result, int profileLength,
-                          String status, double profScale, String profUnit, boolean calibrated) {
-        rsTbl.incrementCounter();
-        rsTbl.addValue("ROI_Name", roiName);
-        if (result != null) {
-            rsTbl.addValue("Period", result.period);
-            rsTbl.addValue("Confidence", result.confidence);
-            if (calibrated) {
-                rsTbl.addValue("Period_Scaled", result.period * profScale);
-                rsTbl.addValue("Unit", profUnit);
-            }
-        } else {
-            rsTbl.addValue("Period", Double.NaN);
-            rsTbl.addValue("Confidence", Double.NaN);
-            if (calibrated) {
-                rsTbl.addValue("Period_Scaled", Double.NaN);
-                rsTbl.addValue("Unit", profUnit);
-            }
-        }
-        rsTbl.addValue("Profile_Len", profileLength);
-        rsTbl.addValue("Status", status);
+    /**
+     * 結果表に1行書く。列構成は成功・失敗・校正の有無によらず常に同じ
+     * （ROI_Name, Period, Confidence, Period_Scaled, Unit, Profile_Len, Status）。
+     * CSV やスクリプトから安定して読めるよう、列を条件付きで出し分けない。
+     * 未校正の場合は scale=1.0 / unit="pixel" が渡され、Period_Scaled は Period と一致する。
+     */
+    static void writeRow(ResultsTable tbl, String roiName, PeriodResult result, int profileLength,
+                         String status, double scale, String unit) {
+        tbl.incrementCounter();
+        tbl.addValue("ROI_Name", roiName);
+        tbl.addValue("Period", result != null ? result.period : Double.NaN);
+        tbl.addValue("Confidence", result != null ? result.confidence : Double.NaN);
+        tbl.addValue("Period_Scaled", result != null ? result.period * scale : Double.NaN);
+        tbl.addValue("Unit", unit);
+        tbl.addValue("Profile_Len", profileLength);
+        tbl.addValue("Status", status);
     }
 
     private ResultsTable getResultsTable(boolean enReset) {

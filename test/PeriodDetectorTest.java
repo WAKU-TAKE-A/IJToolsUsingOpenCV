@@ -249,6 +249,42 @@ public class PeriodDetectorTest {
                     !WK_RoiMan_PeriodDetector.isCalibrated(null, false));
         }
 
+        // 12) 結果表の列構成が常に一定であること
+        //     （成功/失敗、校正あり/なしで列が変わらない）
+        {
+            ij.measure.ResultsTable tbl = new ij.measure.ResultsTable();
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "A",
+                    new PeriodResult(10.0, 0.9), 100, "OK", 0.5, "µm");
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "B",
+                    null, 80, "Failed: test", 0.5, "µm");
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "C",
+                    new PeriodResult(4.0, 0.5), 50, "OK", 1.0, "pixel");
+
+            java.util.List<String> headings =
+                    java.util.Arrays.asList(tbl.getHeadings());
+            String[] expected = { "ROI_Name", "Period", "Confidence",
+                    "Period_Scaled", "Unit", "Profile_Len", "Status" };
+            boolean allPresent = true;
+            for (String h : expected) {
+                if (!headings.contains(h)) allPresent = false;
+            }
+            check("all result columns always present", allPresent);
+            check("row count", tbl.getCounter() == 3);
+            checkClose("scaled value (calibrated)", 5.0,
+                    tbl.getValue("Period_Scaled", 0), 1e-9);
+            check("scaled is NaN on failure",
+                    Double.isNaN(tbl.getValue("Period_Scaled", 1)));
+            check("unit present on failure row",
+                    "µm".equals(tbl.getStringValue("Unit", 1)));
+            checkClose("scaled equals period when uncalibrated", 4.0,
+                    tbl.getValue("Period_Scaled", 2), 1e-9);
+            check("unit is pixel when uncalibrated",
+                    "pixel".equals(tbl.getStringValue("Unit", 2)));
+            check("status present on all rows",
+                    "OK".equals(tbl.getStringValue("Status", 0))
+                            && tbl.getStringValue("Status", 1).startsWith("Failed"));
+        }
+
         System.out.println("----");
         System.out.println(checks + " checks, " + failures + " failures");
         System.exit(failures == 0 ? 0 : 1);
