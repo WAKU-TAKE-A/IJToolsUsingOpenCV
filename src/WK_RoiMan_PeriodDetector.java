@@ -5,6 +5,7 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.ProfilePlot;
 import ij.gui.Roi;
+import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
@@ -19,27 +20,36 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
     private final String[] DETREND_STR = new String[] { "MOVING_AVERAGE", "LINEAR_REGRESSION" };
     private final String[] PEAK_STR = new String[] { "HEIGHT", "PROMINENCE" };
 
-    // Static variables to keep last used settings
+    // Static variables to keep last used settings (also persisted via Prefs)
     private static int ind_detrend = 1;
     private static int ma_window_size = 31;
     private static int min_period = 2;
     private static int max_period = 0;
     private static int ind_peak = 1;
     private static double relative_threshold = 0.5;
+    private static int max_divisor = PeriodDetector.DEFAULT_MAX_DIVISOR;
+    private static double half_ratio = PeriodRefiner.DEFAULT_HALF_RATIO;
     private static boolean vertical_profile = false;
+    private static boolean acf_smoothing = true;
     private static boolean enable_refresh_data = false;
 
+    private static final String PREFS_PREFIX = "WK_RoiMan_PeriodDetector.";
+    private static boolean prefsLoaded = false;
+
     // Instance variables
-    private String className;
+    private String className = "WK_RoiMan_PeriodDetector";
     private ImagePlus impSrc = null;
     private RoiManager roiMan = null;
     private int[] selectedIndexes = null;
     private ResultsTable rsTbl = null;
     private boolean ini_verticalProfile = false;
+    private Roi originalRoi = null;
 
     @Override
     public int showDialog(ImagePlus imp, String cmd, PlugInFilterRunner pifr) {
         className = "WK_RoiMan_PeriodDetector";
+        loadPrefs();
+
         GenericDialog gd = new GenericDialog(className + " ...");
 
         gd.addChoice("detrend_method", DETREND_STR, DETREND_STR[ind_detrend]);
@@ -48,7 +58,10 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         gd.addNumericField("max_period", max_period, 0);
         gd.addChoice("peak_method", PEAK_STR, PEAK_STR[ind_peak]);
         gd.addNumericField("relative_threshold", relative_threshold, 2);
+        gd.addNumericField("max_divisor", max_divisor, 0);
+        gd.addNumericField("half_ratio", half_ratio, 2);
         gd.addCheckbox("vertical_profile", vertical_profile);
+        gd.addCheckbox("acf_smoothing", acf_smoothing);
         gd.addCheckbox("enable_refresh_data", enable_refresh_data);
 
         gd.showDialog();
@@ -62,8 +75,26 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
             max_period = (int)gd.getNextNumber();
             ind_peak = (int)gd.getNextChoiceIndex();
             relative_threshold = (double)gd.getNextNumber();
+            max_divisor = (int)gd.getNextNumber();
+            half_ratio = (double)gd.getNextNumber();
             vertical_profile = (boolean)gd.getNextBoolean();
+            acf_smoothing = (boolean)gd.getNextBoolean();
             enable_refresh_data = (boolean)gd.getNextBoolean();
+
+            String error = validateSettings();
+            if (error != null) {
+                IJ.error(className, error);
+                return DONE;
+            }
+
+            if (ind_detrend == 0 && max_period > 0 && ma_window_size <= max_period) {
+                IJ.log(className + " warning: ma_window_size (" + ma_window_size
+                        + ") <= max_period (" + max_period
+                        + "). The moving average may follow and cancel the periodic signal."
+                        + " A window larger than the period is recommended.");
+            }
+
+            savePrefs();
 
             if (enable_refresh_data) {
                 if (rsTbl != null) {
@@ -73,6 +104,75 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
 
             return FLAGS;
         }
+    }
+
+    /**
+     * 設定値の検証。不正ならエラーメッセージを返す。
+     * ma_window_size の偶数は奇数へ丸める（Detrend の推奨仕様に合わせる）。
+     */
+    private String validateSettings() {
+        if (ind_detrend == 0) {
+            if (ma_window_size < 3) {
+                return "ma_window_size must be >= 3 for MOVING_AVERAGE.";
+            }
+            if (ma_window_size % 2 == 0) {
+                ma_window_size += 1;
+            }
+        }
+        if (!Double.isFinite(relative_threshold) || relative_threshold < 0 || relative_threshold > 1) {
+            return "relative_threshold must be between 0 and 1.";
+        }
+        if (min_period < 1) {
+            return "min_period must be >= 1.";
+        }
+        if (max_period < 0 || (max_period > 0 && max_period <= min_period)) {
+            return "max_period must be 0 (auto) or greater than min_period.";
+        }
+        if (max_divisor < 2) {
+            max_divisor = 2;
+        }
+        if (max_divisor > 10) {
+            max_divisor = 10;
+        }
+        if (!Double.isFinite(half_ratio) || half_ratio < 0 || half_ratio > 1) {
+            return "half_ratio must be between 0 and 1.";
+        }
+        return null;
+    }
+
+    private void loadPrefs() {
+        if (prefsLoaded) {
+            return;
+        }
+        prefsLoaded = true;
+        ind_detrend = (int)Prefs.get(PREFS_PREFIX + "ind_detrend", ind_detrend);
+        ma_window_size = (int)Prefs.get(PREFS_PREFIX + "ma_window_size", ma_window_size);
+        min_period = (int)Prefs.get(PREFS_PREFIX + "min_period", min_period);
+        max_period = (int)Prefs.get(PREFS_PREFIX + "max_period", max_period);
+        ind_peak = (int)Prefs.get(PREFS_PREFIX + "ind_peak", ind_peak);
+        relative_threshold = Prefs.get(PREFS_PREFIX + "relative_threshold", relative_threshold);
+        max_divisor = (int)Prefs.get(PREFS_PREFIX + "max_divisor", max_divisor);
+        half_ratio = Prefs.get(PREFS_PREFIX + "half_ratio", half_ratio);
+        vertical_profile = Prefs.get(PREFS_PREFIX + "vertical_profile", vertical_profile);
+        acf_smoothing = Prefs.get(PREFS_PREFIX + "acf_smoothing", acf_smoothing);
+        enable_refresh_data = Prefs.get(PREFS_PREFIX + "enable_refresh_data", enable_refresh_data);
+        // Guard against out-of-range indices from a hand-edited prefs file.
+        if (ind_detrend < 0 || ind_detrend >= DETREND_STR.length) ind_detrend = 1;
+        if (ind_peak < 0 || ind_peak >= PEAK_STR.length) ind_peak = 1;
+    }
+
+    private void savePrefs() {
+        Prefs.set(PREFS_PREFIX + "ind_detrend", ind_detrend);
+        Prefs.set(PREFS_PREFIX + "ma_window_size", ma_window_size);
+        Prefs.set(PREFS_PREFIX + "min_period", min_period);
+        Prefs.set(PREFS_PREFIX + "max_period", max_period);
+        Prefs.set(PREFS_PREFIX + "ind_peak", ind_peak);
+        Prefs.set(PREFS_PREFIX + "relative_threshold", relative_threshold);
+        Prefs.set(PREFS_PREFIX + "max_divisor", max_divisor);
+        Prefs.set(PREFS_PREFIX + "half_ratio", half_ratio);
+        Prefs.set(PREFS_PREFIX + "vertical_profile", vertical_profile);
+        Prefs.set(PREFS_PREFIX + "acf_smoothing", acf_smoothing);
+        Prefs.set(PREFS_PREFIX + "enable_refresh_data", enable_refresh_data);
     }
 
     @Override
@@ -107,6 +207,9 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
 
             ini_verticalProfile = Prefs.verticalProfile;
 
+            Roi roi = imp.getRoi();
+            originalRoi = (roi != null) ? (Roi)roi.clone() : null;
+
             return FLAGS;
         }
     }
@@ -124,42 +227,64 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     ? PeakDetector.PeakMethod.HEIGHT 
                     : PeakDetector.PeakMethod.PROMINENCE;
 
+            Calibration cal = impSrc.getCalibration();
+            // 校正値はプロファイル方向の軸から選ぶ（縦方向なら Y 軸）。
+            double profScale = profileScale(cal, vertical_profile);
+            String profUnit = profileUnit(cal, vertical_profile);
+            boolean calibrated = isCalibrated(cal, vertical_profile);
+            // 結果表の列構成を常に一定に保つため、未校正でも
+            // Period_Scaled（= Period）と Unit（= "pixel"）を常に出力する。
+            double outScale = calibrated ? profScale : 1.0;
+            String outUnit = calibrated ? profUnit : "pixel";
+
             for (int i = 0; i < selectedIndexes.length; i++) {
                 int index = selectedIndexes[i];
-                Roi roi = roiMan.getRoi(index);
                 String roiName = roiMan.getName(index);
                 if (roiName == null || roiName.isEmpty()) {
                     roiName = "ROI_" + index;
                 }
 
-                impSrc.setRoi(roi);
+                // Per-ROI error handling: one failing ROI must not abort the rest.
+                try {
+                    Roi roi = roiMan.getRoi(index);
+                    impSrc.setRoi(roi);
 
-                ProfilePlot profPlot = new ProfilePlot(impSrc, Prefs.verticalProfile);
-                double[] profile = profPlot.getProfile();
+                    ProfilePlot profPlot = new ProfilePlot(impSrc, Prefs.verticalProfile);
+                    double[] profile = profPlot.getProfile();
 
-                if (profile == null || profile.length < 2) {
-                    IJ.log(className + " error: Cannot get valid profile from " + roiName);
-                    continue;
-                }
+                    if (profile == null || profile.length < 2) {
+                        IJ.log(className + " error: Cannot get valid profile from " + roiName);
+                        writeRow(rsTbl, roiName, null, 0, "Failed: invalid profile", outScale, outUnit);
+                        continue;
+                    }
 
-                PeriodResult result = PeriodDetector.detectPeriod(
-                        profile,
-                        detrendMethod,
-                        ma_window_size,
-                        min_period,
-                        max_period,
-                        peakMethod,
-                        relative_threshold
-                );
+                    int effectiveWindow = ma_window_size;
+                    if (detrendMethod == PeriodDetector.DetrendMethod.MOVING_AVERAGE) {
+                        effectiveWindow = clampWindowToProfile(ma_window_size, profile.length);
+                    }
 
-                if (result != null) {
-                    rsTbl.incrementCounter();
-                    rsTbl.addValue("ROI_Name", roiName);
-                    rsTbl.addValue("Period", result.period);
-                    rsTbl.addValue("Confidence", result.confidence);
-                    rsTbl.addValue("Profile_Len", profile.length);
-                } else {
-                    IJ.log(className + " warning: Period detection failed for " + roiName);
+                    PeriodResult result = PeriodDetector.detectPeriod(
+                            profile,
+                            detrendMethod,
+                            effectiveWindow,
+                            min_period,
+                            max_period,
+                            peakMethod,
+                            relative_threshold,
+                            max_divisor,
+                            half_ratio,
+                            acf_smoothing
+                    );
+
+                    if (result != null) {
+                        writeRow(rsTbl, roiName, result, profile.length, "OK", outScale, outUnit);
+                    } else {
+                        IJ.log(className + " warning: Period detection failed for " + roiName);
+                        writeRow(rsTbl, roiName, null, profile.length, "Failed: no period detected", outScale, outUnit);
+                    }
+                } catch (Exception e) {
+                    IJ.log(className + " exception for " + roiName + ": " + e.getMessage());
+                    writeRow(rsTbl, roiName, null, 0, "Failed: " + e.getMessage(), outScale, outUnit);
                 }
             }
 
@@ -167,14 +292,86 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                 rsTbl.show("Results");
             }
 
-            // Clean up ROI from image
-            impSrc.killRoi();
-
         } catch (Exception e) {
             IJ.log(className + " exception: " + e.getMessage());
         } finally {
             Prefs.verticalProfile = ini_verticalProfile;
+            // Restore the ROI the image had before this plugin ran.
+            if (impSrc != null) {
+                if (originalRoi != null) {
+                    impSrc.setRoi((Roi)originalRoi.clone());
+                } else {
+                    impSrc.killRoi();
+                }
+            }
         }
+    }
+
+    /** プロファイル長に合わせて移動平均の窓を丸める（奇数・3以上を維持できる範囲で）。 */
+    private int clampWindowToProfile(int window, int profileLength) {
+        int w = window;
+        if (w > profileLength) {
+            w = profileLength;
+            if (w % 2 == 0) {
+                w -= 1;
+            }
+        }
+        if (w < 1) {
+            w = 1;
+        }
+        return w;
+    }
+
+    /** プロファイル方向に対応する軸の校正値（単位長/ピクセル）。 */
+    static double profileScale(Calibration cal, boolean vertical) {
+        if (cal == null) {
+            return 1.0;
+        }
+        double s = vertical ? cal.pixelHeight : cal.pixelWidth;
+        return s > 0 ? s : 1.0;
+    }
+
+    /** プロファイル方向に対応する軸の単位。 */
+    static String profileUnit(Calibration cal, boolean vertical) {
+        if (cal == null) {
+            return "pixel";
+        }
+        String u = vertical ? cal.getYUnit() : cal.getXUnit();
+        return (u == null || u.isEmpty()) ? "pixel" : u;
+    }
+
+    /**
+     * その軸が物理校正されているか。
+     * scale != 1.0 だけで判定すると「1物理単位/ピクセル」の校正を見落とすため、
+     * 単位が pixel 以外かどうかも条件に含める。
+     */
+    static boolean isCalibrated(Calibration cal, boolean vertical) {
+        if (cal == null) {
+            return false;
+        }
+        double s = vertical ? cal.pixelHeight : cal.pixelWidth;
+        if (!(s > 0)) {
+            return false;
+        }
+        return s != 1.0 || !"pixel".equals(profileUnit(cal, vertical));
+    }
+
+    /**
+     * 結果表に1行書く。列構成は成功・失敗・校正の有無によらず常に同じ
+     * （ROI_Name, Period, Confidence, Period_Scaled, Unit, Profile_Len, Status）。
+     * CSV やスクリプトから安定して読めるよう、列を条件付きで出し分けない。
+     * 未校正の場合は scale=1.0 / unit="pixel" が渡され、Period_Scaled は Period と一致する。
+     */
+    static void writeRow(ResultsTable tbl, String roiName, PeriodResult result, int profileLength,
+                         String status, double scale, String unit) {
+        tbl.incrementCounter();
+        tbl.addValue("ROI_Name", roiName);
+        tbl.addValue("Period", result != null ? result.period : Double.NaN);
+        tbl.addValue("Confidence", result != null ? result.confidence : Double.NaN);
+        tbl.addValue("Period_Scaled", result != null ? result.period * scale : Double.NaN);
+        tbl.addValue("Unit", unit);
+        tbl.addValue("Profile_Len", profileLength);
+        tbl.addValue("Status", status);
     }
 
     private ResultsTable getResultsTable(boolean enReset) {

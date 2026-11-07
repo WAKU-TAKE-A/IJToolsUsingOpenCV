@@ -25,6 +25,7 @@ public final class PeriodRefiner {
     /**
      * 倍周期を補正する（従来シグネチャ、後方互換用）。
      * maxDivisor = 2（半周期のみ）で動作する。
+     * ※ PeriodDetector は 4 引数版を明示的に呼び、約数上限を設定で変えられる。
      *
      * @param acf 自己相関
      * @param period 候補周期

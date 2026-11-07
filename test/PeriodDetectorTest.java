@@ -1,0 +1,292 @@
+import java.util.Random;
+
+/**
+ * 周期検出チェーンの回帰テスト（JUnit不要、mainで実行）。
+ *
+ * 実行方法:
+ *   javac -cp ij.jar -d out src/*.java test/PeriodDetectorTest.java
+ *   java  -cp out:ij.jar PeriodDetectorTest
+ * 終了コード 0 = 全件パス。
+ */
+public class PeriodDetectorTest {
+
+    private static int failures = 0;
+    private static int checks = 0;
+
+    private static void check(String name, boolean cond) {
+        checks++;
+        if (cond) {
+            System.out.println("PASS: " + name);
+        } else {
+            failures++;
+            System.out.println("FAIL: " + name);
+        }
+    }
+
+    private static void checkClose(String name, double expected, double actual, double tol) {
+        boolean ok = Math.abs(expected - actual) <= tol;
+        if (!ok) {
+            System.out.println("  expected=" + expected + " actual=" + actual + " tol=" + tol);
+        }
+        check(name, ok);
+    }
+
+    private static double[] sine(int n, double period, double trendSlope, long noiseSeed, double noiseAmp) {
+        double[] x = new double[n];
+        Random rnd = new Random(noiseSeed);
+        for (int i = 0; i < n; i++) {
+            x[i] = Math.sin(2.0 * Math.PI * i / period)
+                    + trendSlope * i
+                    + noiseAmp * rnd.nextGaussian();
+        }
+        return x;
+    }
+
+    public static void main(String[] args) {
+
+        // 1) 既知周期の正弦波（トレンド＋ノイズ付き、線形回帰デトレンド）
+        {
+            double[] x = sine(400, 20.0, 0.01, 42L, 0.1);
+            PeriodResult r = PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5);
+            check("sine20 detected", r != null);
+            if (r != null) {
+                checkClose("sine20 period", 20.0, r.period, 0.6);
+                check("sine20 confidence high", r.confidence > 0.7);
+                check("sine20 confidence <= 1", r.confidence <= 1.0);
+            }
+        }
+
+        // 2) 移動平均デトレンド
+        {
+            double[] x = sine(400, 30.0, 0.0, 7L, 0.1);
+            PeriodResult r = PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.MOVING_AVERAGE, 51,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5);
+            check("sine30 (MA) detected", r != null);
+            if (r != null) {
+                checkClose("sine30 (MA) period", 30.0, r.period, 0.8);
+            }
+        }
+
+        // 3) 倍周期トラップ: 周期10の繰り返しが支配的 -> 20や30ではなく10を返す
+        {
+            int n = 300;
+            double[] x = new double[n];
+            Random rnd = new Random(3L);
+            for (int i = 0; i < n; i++) {
+                x[i] = Math.sin(2.0 * Math.PI * i / 10.0)
+                        + 0.15 * Math.sin(2.0 * Math.PI * i / 30.0)
+                        + 0.05 * rnd.nextGaussian();
+            }
+            PeriodResult r = PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5);
+            check("subharmonic detected", r != null);
+            if (r != null) {
+                checkClose("subharmonic period is 10", 10.0, r.period, 0.6);
+            }
+        }
+
+        // 4) PeriodRefiner: /3 補正が効くこと（4引数版）、従来版では効かないこと
+        {
+            double[] acf = new double[64];
+            acf[29] = 0.90; acf[30] = 1.00; acf[31] = 0.90;
+            acf[9] = 0.87;  acf[10] = 0.97; acf[11] = 0.87;
+            int withDiv3 = PeriodRefiner.refine(acf, 30, 0.95, 3);
+            int withDiv2 = PeriodRefiner.refine(acf, 30, 0.95);
+            check("refine /3 adopts 10", withDiv3 == 10);
+            check("refine legacy keeps 30", withDiv2 == 30);
+        }
+
+        // 5) フラット信号・極短入力は null
+        {
+            double[] flat = new double[100];
+            java.util.Arrays.fill(flat, 5.0);
+            check("flat -> null", PeriodDetector.detectPeriod(
+                    flat, 2, 0, PeakDetector.PeakMethod.HEIGHT, 0.5) == null);
+            check("length1 -> null", PeriodDetector.detectPeriod(
+                    new double[] { 1.0 }, 2, 0, PeakDetector.PeakMethod.HEIGHT, 0.5) == null);
+            check("null input -> null", PeriodDetector.detectPeriod(
+                    null, 2, 0, PeakDetector.PeakMethod.HEIGHT, 0.5) == null);
+        }
+
+        // 6) 不正パラメータで例外ではなく null が返ること
+        {
+            double[] x = sine(100, 10.0, 0.0, 1L, 0.0);
+            boolean threw = false;
+            PeriodResult r1 = null, r2 = null, r3 = null;
+            try {
+                r1 = PeriodDetector.detectPeriod(
+                        x, PeriodDetector.DetrendMethod.MOVING_AVERAGE, 0,
+                        2, 0, PeakDetector.PeakMethod.HEIGHT, 0.5);
+                r2 = PeriodDetector.detectPeriod(
+                        x, PeriodDetector.DetrendMethod.MOVING_AVERAGE, 1000,
+                        2, 0, PeakDetector.PeakMethod.HEIGHT, 0.5);
+                r3 = PeriodDetector.detectPeriod(
+                        x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                        2, 0, PeakDetector.PeakMethod.HEIGHT, 1.5);
+            } catch (RuntimeException e) {
+                threw = true;
+            }
+            check("invalid params do not throw", !threw);
+            check("window 0 -> null", r1 == null);
+            check("window > n -> null", r2 == null);
+            check("threshold > 1 -> null", r3 == null);
+        }
+
+        // 7) ACF が常に [-1, 1] に収まり acf[0] == 1（小信号 = 直接計算パス）
+        {
+            Random rnd = new Random(99L);
+            boolean ok = true;
+            for (int t = 0; t < 300 && ok; t++) {
+                int n = 10 + rnd.nextInt(200);
+                double[] x = new double[n];
+                for (int i = 0; i < n; i++) {
+                    x[i] = rnd.nextGaussian() * (rnd.nextDouble() < 0.2 ? 5.0 : 1.0);
+                }
+                x = Detrend.removeMean(x);
+                double[] acf = Autocorrelation.compute(x, 1, n - 1);
+                if (acf.length > 0 && acf[0] != 1.0) ok = false;
+                for (double v : acf) {
+                    if (v < -1.0 - 1e-9 || v > 1.0 + 1e-9) ok = false;
+                }
+            }
+            check("ACF within [-1,1] (direct path)", ok);
+        }
+
+        // 8) FFT パス: 直接計算（偏り推定の定義式）と一致し、範囲内にあること
+        {
+            Random rnd = new Random(123L);
+            int n = 1000;
+            double[] x = new double[n];
+            for (int i = 0; i < n; i++) {
+                x[i] = rnd.nextGaussian();
+            }
+            x = Detrend.removeMean(x);
+            double[] acf = Autocorrelation.compute(x, 1, 200);
+
+            double raw0 = 0.0;
+            for (double v : x) raw0 += v * v;
+            boolean ok = acf.length == 201;
+            for (int lag = 1; lag <= 200 && ok; lag++) {
+                double sum = 0.0;
+                for (int i = 0; i + lag < n; i++) {
+                    sum += x[i] * x[i + lag];
+                }
+                double expected = sum / raw0;
+                if (Math.abs(expected - acf[lag]) > 1e-6) ok = false;
+                if (acf[lag] < -1.0 || acf[lag] > 1.0) ok = false;
+            }
+            check("ACF FFT path matches direct formula", ok);
+        }
+
+        // 9) ランダム信号でも Confidence は [0, 1]
+        {
+            Random rnd = new Random(2024L);
+            boolean ok = true;
+            int detected = 0;
+            for (int t = 0; t < 200; t++) {
+                int n = 50 + rnd.nextInt(400);
+                double[] x = new double[n];
+                for (int i = 0; i < n; i++) {
+                    x[i] = rnd.nextGaussian() * (rnd.nextDouble() < 0.2 ? 5.0 : 1.0);
+                }
+                PeriodResult r = PeriodDetector.detectPeriod(
+                        x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                        2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5);
+                if (r != null) {
+                    detected++;
+                    if (r.confidence < 0.0 || r.confidence > 1.0) ok = false;
+                }
+            }
+            check("confidence within [0,1] on random signals (detected=" + detected + ")", ok);
+        }
+
+        // 10) ACF平滑化オプション付きでも既知周期を検出できる
+        {
+            double[] x = sine(400, 25.0, 0.0, 55L, 0.3);
+            PeriodResult r = PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5,
+                    3, 0.95, true);
+            check("sine25 with smoothing detected", r != null);
+            if (r != null) {
+                checkClose("sine25 with smoothing period", 25.0, r.period, 0.8);
+            }
+        }
+
+        // 11) 校正値: プロファイル方向の軸が選ばれ、単位が返り、
+        //     「1物理単位/ピクセル」の校正も校正済みと判定されること
+        {
+            ij.measure.Calibration cal = new ij.measure.Calibration();
+            cal.pixelWidth = 0.5;
+            cal.pixelHeight = 2.0;
+            cal.setUnit("um");
+            checkClose("scale horizontal = pixelWidth", 0.5,
+                    WK_RoiMan_PeriodDetector.profileScale(cal, false), 1e-12);
+            checkClose("scale vertical = pixelHeight", 2.0,
+                    WK_RoiMan_PeriodDetector.profileScale(cal, true), 1e-12);
+            // Calibration.setUnit("um") は ImageJ が "µm" に正規化する
+            check("unit returned", "µm".equals(
+                    WK_RoiMan_PeriodDetector.profileUnit(cal, false)));
+            check("calibrated detected", WK_RoiMan_PeriodDetector.isCalibrated(cal, false));
+
+            ij.measure.Calibration oneToOne = new ij.measure.Calibration();
+            oneToOne.pixelWidth = 1.0;
+            oneToOne.pixelHeight = 1.0;
+            oneToOne.setUnit("mm");
+            check("1 physical unit/pixel still calibrated",
+                    WK_RoiMan_PeriodDetector.isCalibrated(oneToOne, false));
+            check("1 physical unit/pixel vertical still calibrated",
+                    WK_RoiMan_PeriodDetector.isCalibrated(oneToOne, true));
+
+            ij.measure.Calibration plain = new ij.measure.Calibration();
+            check("default calibration is not calibrated",
+                    !WK_RoiMan_PeriodDetector.isCalibrated(plain, false));
+            check("null calibration is not calibrated",
+                    !WK_RoiMan_PeriodDetector.isCalibrated(null, false));
+        }
+
+        // 12) 結果表の列構成が常に一定であること
+        //     （成功/失敗、校正あり/なしで列が変わらない）
+        {
+            ij.measure.ResultsTable tbl = new ij.measure.ResultsTable();
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "A",
+                    new PeriodResult(10.0, 0.9), 100, "OK", 0.5, "µm");
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "B",
+                    null, 80, "Failed: test", 0.5, "µm");
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "C",
+                    new PeriodResult(4.0, 0.5), 50, "OK", 1.0, "pixel");
+
+            java.util.List<String> headings =
+                    java.util.Arrays.asList(tbl.getHeadings());
+            String[] expected = { "ROI_Name", "Period", "Confidence",
+                    "Period_Scaled", "Unit", "Profile_Len", "Status" };
+            boolean allPresent = true;
+            for (String h : expected) {
+                if (!headings.contains(h)) allPresent = false;
+            }
+            check("all result columns always present", allPresent);
+            check("row count", tbl.getCounter() == 3);
+            checkClose("scaled value (calibrated)", 5.0,
+                    tbl.getValue("Period_Scaled", 0), 1e-9);
+            check("scaled is NaN on failure",
+                    Double.isNaN(tbl.getValue("Period_Scaled", 1)));
+            check("unit present on failure row",
+                    "µm".equals(tbl.getStringValue("Unit", 1)));
+            checkClose("scaled equals period when uncalibrated", 4.0,
+                    tbl.getValue("Period_Scaled", 2), 1e-9);
+            check("unit is pixel when uncalibrated",
+                    "pixel".equals(tbl.getStringValue("Unit", 2)));
+            check("status present on all rows",
+                    "OK".equals(tbl.getStringValue("Status", 0))
+                            && tbl.getStringValue("Status", 1).startsWith("Failed"));
+        }
+
+        System.out.println("----");
+        System.out.println(checks + " checks, " + failures + " failures");
+        System.exit(failures == 0 ? 0 : 1);
+    }
+}
