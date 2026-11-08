@@ -1,3 +1,10 @@
+# Release v0.9.62.13
+
+Latest update: November 9th 2026
+
+## Changes
+
+* WK_RoiMan_PeriodDetector now reports the ROI center coordinates (Center_X, Center_Y, in pixels) in the ResultsTable for every ROI. The center is the average of the ROI's outline points, which is the rectangle center for (rotated) rectangles and the midpoint for line ROIs.
 # Release v0.9.62.12
 
 Latest update: November 8th 2026

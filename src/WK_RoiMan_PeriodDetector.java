@@ -10,6 +10,7 @@ import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
 import ij.plugin.frame.RoiManager;
+import ij.process.FloatPolygon;
 import ij.process.ImageProcessor;
 import java.awt.Frame;
 
@@ -245,8 +246,13 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                 }
 
                 // Per-ROI error handling: one failing ROI must not abort the rest.
+                double centerX = Double.NaN;
+                double centerY = Double.NaN;
                 try {
                     Roi roi = roiMan.getRoi(index);
+                    double[] center = centerOf(roi);
+                    centerX = center[0];
+                    centerY = center[1];
                     impSrc.setRoi(roi);
 
                     ProfilePlot profPlot = new ProfilePlot(impSrc, Prefs.verticalProfile);
@@ -254,7 +260,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
 
                     if (profile == null || profile.length < 2) {
                         IJ.log(className + " error: Cannot get valid profile from " + roiName);
-                        writeRow(rsTbl, roiName, null, 0, "Failed: invalid profile", outScale, outUnit);
+                        writeRow(rsTbl, roiName, centerX, centerY, null, 0, "Failed: invalid profile", outScale, outUnit);
                         continue;
                     }
 
@@ -277,14 +283,14 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     );
 
                     if (result != null) {
-                        writeRow(rsTbl, roiName, result, profile.length, "OK", outScale, outUnit);
+                        writeRow(rsTbl, roiName, centerX, centerY, result, profile.length, "OK", outScale, outUnit);
                     } else {
                         IJ.log(className + " warning: Period detection failed for " + roiName);
-                        writeRow(rsTbl, roiName, null, profile.length, "Failed: no period detected", outScale, outUnit);
+                        writeRow(rsTbl, roiName, centerX, centerY, null, profile.length, "Failed: no period detected", outScale, outUnit);
                     }
                 } catch (Exception e) {
                     IJ.log(className + " exception for " + roiName + ": " + e.getMessage());
-                    writeRow(rsTbl, roiName, null, 0, "Failed: " + e.getMessage(), outScale, outUnit);
+                    writeRow(rsTbl, roiName, centerX, centerY, null, 0, "Failed: " + e.getMessage(), outScale, outUnit);
                 }
             }
 
@@ -357,15 +363,42 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
     }
 
     /**
+     * ROI の中心座標（画像座標、ピクセル）。ROI の輪郭点の平均位置を用いるため、
+     * 矩形・回転矩形では中心、線 ROI では線分の中点と一致する。
+     * （外接矩形の中心は、線 ROI では線幅の分だけ中点からずれるため用いない。）
+     * ROI が取得できない場合は {NaN, NaN} を返す。
+     */
+    static double[] centerOf(Roi roi) {
+        if (roi == null) {
+            return new double[] { Double.NaN, Double.NaN };
+        }
+        FloatPolygon fp = roi.getFloatPolygon();
+        if (fp == null || fp.npoints == 0) {
+            return new double[] { Double.NaN, Double.NaN };
+        }
+        double sx = 0;
+        double sy = 0;
+        for (int i = 0; i < fp.npoints; i++) {
+            sx += fp.xpoints[i];
+            sy += fp.ypoints[i];
+        }
+        return new double[] { sx / fp.npoints, sy / fp.npoints };
+    }
+
+    /**
      * 結果表に1行書く。列構成は成功・失敗・校正の有無によらず常に同じ
-     * （ROI_Name, Period, Confidence, Period_Scaled, Unit, Profile_Len, Status）。
+     * （ROI_Name, Center_X, Center_Y, Period, Confidence, Period_Scaled, Unit, Profile_Len, Status）。
      * CSV やスクリプトから安定して読めるよう、列を条件付きで出し分けない。
+     * Center_X / Center_Y は ROI の中心座標（画像座標、ピクセル）で、取得できない場合は NaN。
      * 未校正の場合は scale=1.0 / unit="pixel" が渡され、Period_Scaled は Period と一致する。
      */
-    static void writeRow(ResultsTable tbl, String roiName, PeriodResult result, int profileLength,
+    static void writeRow(ResultsTable tbl, String roiName, double centerX, double centerY,
+                         PeriodResult result, int profileLength,
                          String status, double scale, String unit) {
         tbl.incrementCounter();
         tbl.addValue("ROI_Name", roiName);
+        tbl.addValue("Center_X", centerX);
+        tbl.addValue("Center_Y", centerY);
         tbl.addValue("Period", result != null ? result.period : Double.NaN);
         tbl.addValue("Confidence", result != null ? result.confidence : Double.NaN);
         tbl.addValue("Period_Scaled", result != null ? result.period * scale : Double.NaN);
