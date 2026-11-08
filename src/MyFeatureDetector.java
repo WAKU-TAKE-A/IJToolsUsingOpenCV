@@ -55,6 +55,24 @@ public class MyFeatureDetector {
     private static final String STR_SIFT = "SIFT";
     private static final String STR_BASE_FOLDER = "features";
 
+    /**
+     * Validate the query name to prevent path traversal and invalid characters.
+     * @param query_name
+     */
+    public static void validateQueryName(String query_name) {
+        if (query_name == null || query_name.isEmpty()) {
+            throw new IllegalArgumentException("QueryName is empty.");
+        }
+        if (query_name.contains("/") || query_name.contains("\\") || query_name.contains("..")) {
+            throw new IllegalArgumentException("Invalid query name: " + query_name);
+        }
+        Path basePath = Paths.get(STR_BASE_FOLDER).toAbsolutePath().normalize();
+        Path queryPath = Paths.get(STR_BASE_FOLDER, query_name).toAbsolutePath().normalize();
+        if (!queryPath.getParent().equals(basePath)) {
+            throw new IllegalArgumentException("Invalid query path: " + queryPath);
+        }
+    }
+
     // var.
     private Feature2D detector = null;
     public String DetectorType = "";
@@ -81,9 +99,10 @@ public class MyFeatureDetector {
      */
     public void initialize(String type, String name) throws IOException {
         // check
-        if (OCV__LoadLibrary.isNullOrEmpty(type) || OCV__LoadLibrary.isNullOrEmpty(name)) {
-            throw new IllegalArgumentException("Type or QueryName is empty.");
+        if (OCV__LoadLibrary.isNullOrEmpty(type)) {
+            throw new IllegalArgumentException("Type is empty.");
         }
+        validateQueryName(name);
         
         if (QueryKeyPoints == null) {
             QueryKeyPoints = new MatOfKeyPoint();
@@ -133,27 +152,76 @@ public class MyFeatureDetector {
         }
         
         Mat image_key = null;
+        Path tempDir = Paths.get(STR_BASE_FOLDER, QueryName + "_tmp_" + System.currentTimeMillis());
+        Path finalDir = Paths.get(STR_BASE_FOLDER, QueryName);
+        Path backupDir = Paths.get(STR_BASE_FOLDER, QueryName + "_bak_" + System.currentTimeMillis());
         
         try {
+            Files.createDirectories(tempDir);
+            
             reset_QueryKeyPoints_QueryDescriptors();
             calc_KeyPoints_Descriptors(image, QueryKeyPoints, QueryDescriptors);
             
             image_key = new Mat();
             Features.drawKeypoints(image, QueryKeyPoints, image_key);
             
-            detector.write(FileParam.toString());
-            boolean bret1 = Imgcodecs.imwrite(FileQueryImage.toString(), image);
-            boolean bret2 = Imgcodecs.imwrite(FileQueryImage_Key.toString(), image_key);
-            writeMatOfKeyPoint(QueryKeyPoints, FileQueryKeyPoints.toString());
-            writeDescriptors(QueryDescriptors, FileQueryDescriptors.toString());
+            Path tempFileParam = tempDir.resolve(FileParam.getFileName());
+            Path tempFileQueryImage = tempDir.resolve(FileQueryImage.getFileName());
+            Path tempFileQueryImage_Key = tempDir.resolve(FileQueryImage_Key.getFileName());
+            Path tempFileQueryKeyPoints = tempDir.resolve(FileQueryKeyPoints.getFileName());
+            Path tempFileQueryDescriptors = tempDir.resolve(FileQueryDescriptors.getFileName());
+            
+            detector.write(tempFileParam.toString());
+            boolean bret1 = Imgcodecs.imwrite(tempFileQueryImage.toString(), image);
+            boolean bret2 = Imgcodecs.imwrite(tempFileQueryImage_Key.toString(), image_key);
+            writeMatOfKeyPoint(QueryKeyPoints, tempFileQueryKeyPoints.toString());
+            writeDescriptors(QueryDescriptors, tempFileQueryDescriptors.toString());
             
             if (!bret1 || !bret2) {
                 throw new IOException("Can not write the image.");
+            }
+            
+            if (Files.exists(finalDir)) {
+                Files.move(finalDir, backupDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            }
+            try {
+                Files.move(tempDir, finalDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException e) {
+                if (Files.exists(backupDir)) {
+                    Files.move(backupDir, finalDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+                }
+                throw e;
+            }
+            if (Files.exists(backupDir)) {
+                deleteDirectory(backupDir.toFile());
+            }
+        } catch (Exception e) {
+            deleteDirectory(tempDir.toFile());
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException(e);
             }
         } finally {
             if (image_key != null) {
                 image_key.release();
             }
+        }
+    }
+    
+    private void deleteDirectory(File dir) {
+        if (dir.exists()) {
+            File[] files = dir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        deleteDirectory(file);
+                    } else {
+                        file.delete();
+                    }
+                }
+            }
+            dir.delete();
         }
     }
     
@@ -169,11 +237,16 @@ public class MyFeatureDetector {
         
         Mat image = null;
         Mat image_key = null;
+        Path tempDir = Paths.get(STR_BASE_FOLDER, QueryName + "_tmp_" + System.currentTimeMillis());
+        Path finalDir = Paths.get(STR_BASE_FOLDER, QueryName);
+        Path backupDir = Paths.get(STR_BASE_FOLDER, QueryName + "_bak_" + System.currentTimeMillis());
         
         try {
             // read Param -> read QueryImage -> detect QueryKeyPoints -> write (FileQueryImage_Key, QueryKeyPoints)
             detector.read(FileParam.toString());       
             image = Imgcodecs.imread(FileQueryImage.toString());
+            
+            Files.createDirectories(tempDir);
             
             reset_QueryKeyPoints_QueryDescriptors();
             calc_KeyPoints_Descriptors(image, QueryKeyPoints, QueryDescriptors);
@@ -181,12 +254,42 @@ public class MyFeatureDetector {
             image_key = new Mat();
             Features.drawKeypoints(image, QueryKeyPoints, image_key);
             
-            boolean bret2 = Imgcodecs.imwrite(FileQueryImage_Key.toString(), image_key);
-            writeMatOfKeyPoint(QueryKeyPoints, FileQueryKeyPoints.toString());
-            writeDescriptors(QueryDescriptors, FileQueryDescriptors.toString());
+            Path tempFileParam = tempDir.resolve(FileParam.getFileName());
+            Path tempFileQueryImage = tempDir.resolve(FileQueryImage.getFileName());
+            Path tempFileQueryImage_Key = tempDir.resolve(FileQueryImage_Key.getFileName());
+            Path tempFileQueryKeyPoints = tempDir.resolve(FileQueryKeyPoints.getFileName());
+            Path tempFileQueryDescriptors = tempDir.resolve(FileQueryDescriptors.getFileName());
             
-            if (!bret2) {
+            detector.write(tempFileParam.toString());
+            boolean bret1 = Imgcodecs.imwrite(tempFileQueryImage.toString(), image);
+            boolean bret2 = Imgcodecs.imwrite(tempFileQueryImage_Key.toString(), image_key);
+            writeMatOfKeyPoint(QueryKeyPoints, tempFileQueryKeyPoints.toString());
+            writeDescriptors(QueryDescriptors, tempFileQueryDescriptors.toString());
+            
+            if (!bret1 || !bret2) {
                 throw new IOException("Can not write the image.");
+            }
+            
+            if (Files.exists(finalDir)) {
+                Files.move(finalDir, backupDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            }
+            try {
+                Files.move(tempDir, finalDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+            } catch (IOException e) {
+                if (Files.exists(backupDir)) {
+                    Files.move(backupDir, finalDir, java.nio.file.StandardCopyOption.ATOMIC_MOVE);
+                }
+                throw e;
+            }
+            if (Files.exists(backupDir)) {
+                deleteDirectory(backupDir.toFile());
+            }
+        } catch (Exception e) {
+            deleteDirectory(tempDir.toFile());
+            if (e instanceof IOException) {
+                throw (IOException) e;
+            } else {
+                throw new IOException(e);
             }
         } finally {
             if (image != null) {
@@ -212,7 +315,11 @@ public class MyFeatureDetector {
             throw new IOException("Can not find " + FileParam.toString() + " .");
         }
         
-        detector.read(FileParam.toString());
+        try {
+            detector.read(FileParam.toString());
+        } catch (Exception e) {
+            throw new IOException("Failed to read parameters: " + e.getMessage(), e);
+        }
         
         reset_QueryKeyPoints_QueryDescriptors();
         QueryKeyPoints = readMatOfKeyPoint(FileQueryKeyPoints.toString());     
@@ -286,8 +393,17 @@ public class MyFeatureDetector {
      * @throws IOException 
      */
     private MatOfKeyPoint readMatOfKeyPoint(String filePath) throws IOException {
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(filePath)))) {
+        File file = new File(filePath);
+        long fileSize = file.length();
+        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(new FileInputStream(file)))) {
             int n = dis.readInt();
+            if (n < 0) {
+                throw new IOException("Negative keypoint count: " + n);
+            }
+            long expectedSize = 4L + (long) n * 28L;
+            if (fileSize != expectedSize) {
+                throw new IOException("File size mismatch. Expected " + expectedSize + " but got " + fileSize);
+            }
             List<KeyPoint> list = new ArrayList<>(n);
             for (int i = 0; i < n; i++) {
                 float x = dis.readFloat();
@@ -316,7 +432,7 @@ public class MyFeatureDetector {
      */
     public static void writeDescriptors(Mat descriptors, String filePath) throws IOException {
         if (descriptors == null || descriptors.empty()) {
-            return;
+            throw new IOException("Descriptors mat is null or empty");
         }
 
         int rows = descriptors.rows();
@@ -381,15 +497,33 @@ public class MyFeatureDetector {
      * @throws IOException 
      */
     public static Mat readDescriptors(String filePath) throws IOException {
+        File file = new File(filePath);
+        long fileSize = file.length();
         try (DataInputStream dis = new DataInputStream(
-                new BufferedInputStream(new FileInputStream(filePath)))) {
+                new BufferedInputStream(new FileInputStream(file)))) {
 
             int rows = dis.readInt();
             int cols = dis.readInt();
             int type = dis.readInt();
 
             if (rows <= 0 || cols <= 0) {
-                return new Mat();
+                throw new IOException("Invalid dimensions: rows=" + rows + ", cols=" + cols);
+            }
+
+            int elemSize = 0;
+            if (type == CvType.CV_32F) {
+                elemSize = 4;
+            } else if (type == CvType.CV_64F) {
+                elemSize = 8;
+            } else if (type == CvType.CV_8U) {
+                elemSize = 1;
+            } else {
+                throw new IOException("Unsupported descriptor type: " + type);
+            }
+
+            long expectedSize = 12L + (long) rows * (long) cols * (long) elemSize;
+            if (fileSize != expectedSize) {
+                throw new IOException("File size mismatch. Expected " + expectedSize + " but got " + fileSize);
             }
 
             Mat descriptors = new Mat(rows, cols, type);
@@ -451,8 +585,20 @@ public class MyFeatureDetector {
      * @throws IOException 
      */
     public static boolean exitQueryName(String query_name) throws IOException {
+        validateQueryName(query_name);
         Path queryPath = Paths.get(STR_BASE_FOLDER, query_name);     
-        return Files.isDirectory(queryPath);
+        if (!Files.isDirectory(queryPath)) {
+            return false;
+        }
+        
+        boolean hasORB = Files.exists(queryPath.resolve(STR_ORB + ".yaml"));
+        boolean hasSIFT = Files.exists(queryPath.resolve(STR_SIFT + ".yaml"));
+        
+        return (hasORB || hasSIFT) &&
+               Files.exists(queryPath.resolve("query.bmp")) &&
+               Files.exists(queryPath.resolve("query_key.bmp")) &&
+               Files.exists(queryPath.resolve("query_key.mkp")) &&
+               Files.exists(queryPath.resolve("query_desc.mat"));
     }
     
     /**
@@ -462,6 +608,7 @@ public class MyFeatureDetector {
      * @return 
      */
     public static boolean exitParam(String type, String query_name) {
+        validateQueryName(query_name);
         Path queryPath = Paths.get(STR_BASE_FOLDER, query_name);
         Path paramPath = queryPath.resolve(type + ".yaml");
         return Files.exists(paramPath);
