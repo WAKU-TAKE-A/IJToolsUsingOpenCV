@@ -253,16 +253,16 @@ public class PeriodDetectorTest {
         //     （成功/失敗、校正あり/なしで列が変わらない）
         {
             ij.measure.ResultsTable tbl = new ij.measure.ResultsTable();
-            WK_RoiMan_PeriodDetector.writeRow(tbl, "A",
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "A", 25.0, 40.0,
                     new PeriodResult(10.0, 0.9), 100, "OK", 0.5, "µm");
-            WK_RoiMan_PeriodDetector.writeRow(tbl, "B",
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "B", 5.0, 10.0,
                     null, 80, "Failed: test", 0.5, "µm");
-            WK_RoiMan_PeriodDetector.writeRow(tbl, "C",
+            WK_RoiMan_PeriodDetector.writeRow(tbl, "C", Double.NaN, Double.NaN,
                     new PeriodResult(4.0, 0.5), 50, "OK", 1.0, "pixel");
 
             java.util.List<String> headings =
                     java.util.Arrays.asList(tbl.getHeadings());
-            String[] expected = { "ROI_Name", "Period", "Confidence",
+            String[] expected = { "ROI_Name", "Center_X", "Center_Y", "Period", "Confidence",
                     "Period_Scaled", "Unit", "Profile_Len", "Status" };
             boolean allPresent = true;
             for (String h : expected) {
@@ -283,6 +283,25 @@ public class PeriodDetectorTest {
             check("status present on all rows",
                     "OK".equals(tbl.getStringValue("Status", 0))
                             && tbl.getStringValue("Status", 1).startsWith("Failed"));
+            checkClose("center_x on success row", 25.0,
+                    tbl.getValue("Center_X", 0), 1e-9);
+            checkClose("center_y on failure row", 10.0,
+                    tbl.getValue("Center_Y", 1), 1e-9);
+            check("center is NaN when ROI is unavailable",
+                    Double.isNaN(tbl.getValue("Center_X", 2)));
+        }
+
+        // 13) ROI の中心座標: 外接矩形の中心（線 ROI では線分の中点）
+        {
+            double[] c1 = WK_RoiMan_PeriodDetector.centerOf(new ij.gui.Roi(10, 20, 30, 40));
+            checkClose("rect roi center x", 25.0, c1[0], 1e-9);
+            checkClose("rect roi center y", 40.0, c1[1], 1e-9);
+            double[] c2 = WK_RoiMan_PeriodDetector.centerOf(new ij.gui.Line(0, 0, 10, 20));
+            checkClose("line roi center x (midpoint)", 5.0, c2[0], 1e-9);
+            checkClose("line roi center y (midpoint)", 10.0, c2[1], 1e-9);
+            double[] c3 = WK_RoiMan_PeriodDetector.centerOf(null);
+            check("null roi center is NaN",
+                    Double.isNaN(c3[0]) && Double.isNaN(c3[1]));
         }
 
         System.out.println("----");
