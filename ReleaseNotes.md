@@ -1,3 +1,13 @@
+# Release v0.9.62.12
+
+Latest update: November 8th 2026
+
+## Changes
+
+* Fixed ClassCastException in OCV_FeatDet_1st_SetQuery by converting non-RGB (8-bit, 16-bit, and 32-bit float) query images to RGB before processing.
+* Hardened query persistence in MyFeatureDetector by validating query names against path traversal, using temporary directories and backups for atomic writes, throwing IOException when reading corrupted .mkp / .mat files, and checking existence against a complete set of files.
+* Fixed duplicate matching in MyFeatureMatcher by selecting only the match with the minimum distance for the same train keypoint, preventing matchCount and inlierRatio inflation. Validated the minMatchCount lower bound (minimum 4) and guarded findHomography to not be called with fewer than 4 points.
+
 # Release v0.9.62.11
 
 Latest update: November 8th 2026

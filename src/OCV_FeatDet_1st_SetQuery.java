@@ -182,6 +182,10 @@ public class OCV_FeatDet_1st_SetQuery implements ij.plugin.filter.ExtendedPlugIn
                     ip_query_working.setRoi(roi);
                     ip_query_working = ip_query_working.crop();
                 }
+
+                if (!(ip_query_working instanceof ij.process.ColorProcessor)) {
+                    ip_query_working = ip_query_working.convertToRGB();
+                }
                 
                 int[] arr_query = (int[])ip_query_working.getPixels();
                 int imw_query = ip_query_working.getWidth();
