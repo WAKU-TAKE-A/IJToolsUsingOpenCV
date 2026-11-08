@@ -137,6 +137,9 @@ public class MyFeatureMatcher {
     
     public MyFeatureMatcher(double ratioThreshold, double ransacThreshold, int minMatchCount, 
                            double minInlierRatio, int maxDetections, double overlapThreshold) {
+        if (minMatchCount < 4) {
+            throw new IllegalArgumentException("minMatchCount must be at least 4");
+        }
         this.ratioThreshold = ratioThreshold;
         this.ransacThreshold = ransacThreshold;
         this.minMatchCount = minMatchCount;
@@ -155,6 +158,9 @@ public class MyFeatureMatcher {
     }
     
     public void setMinMatchCount(int minMatchCount) {
+        if (minMatchCount < 4) {
+            throw new IllegalArgumentException("minMatchCount must be at least 4");
+        }
         this.minMatchCount = minMatchCount;
     }
     
@@ -290,6 +296,16 @@ public class MyFeatureMatcher {
             for (MatOfDMatch match : knnMatches) match.release();
         }
 
+        // Filter out duplicate matches based on trainIdx
+        // Keep only the match with the smallest distance for each trainIdx
+        java.util.Map<Integer, GoodMatch> uniqueMatches = new java.util.HashMap<>();
+        for (GoodMatch m : allGoodMatches) {
+            if (!uniqueMatches.containsKey(m.trainIdx) || m.distance < uniqueMatches.get(m.trainIdx).distance) {
+                uniqueMatches.put(m.trainIdx, m);
+            }
+        }
+        allGoodMatches = new ArrayList<>(uniqueMatches.values());
+
         // Store for later use
         lastAllGoodMatches = allGoodMatches;
         
@@ -344,6 +360,10 @@ public class MyFeatureMatcher {
             
             mask = new Mat();
             
+            if (matches.size() < 4) {
+                return null;
+            }
+
             // Correct order: src=query (template), dst=train (detection target)
             // This computes the transformation from query to train
             homography = Geometry.findHomography(
