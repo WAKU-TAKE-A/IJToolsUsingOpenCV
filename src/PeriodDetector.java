@@ -17,6 +17,9 @@ public final class PeriodDetector {
     /** 倍周期補正で確認する約数の上限のデフォルト（period/2, period/3）。 */
     public static final int DEFAULT_MAX_DIVISOR = 3;
 
+    /** 最小 prominence のデフォルト（0 = 絶対下限なし、従来動作）。 */
+    public static final double DEFAULT_MIN_PROMINENCE = 0.0;
+
     private PeriodDetector() {
     }
 
@@ -95,13 +98,8 @@ public final class PeriodDetector {
     }
 
     /**
-     * 周期検出（拡張版フル引数）。
-     *
-     * @param maxDivisor 倍周期補正で確認する約数の上限（2以上）
-     * @param halfRatio  約数候補を採用するピーク値の比率（0〜1）
-     * @param smoothAcf  ピーク探索時に ACF を 3 点移動平均で平滑化するか
-     *                   （補間・確信度は元の ACF で計算する）
-     * @return 検出結果。検出できない・入力が不正な場合は null
+     * 周期検出（拡張版フル引数、最小 prominence なし）。
+     * 最小 prominence はデフォルト値（0 = 無効）で委譲する。
      */
     public static PeriodResult detectPeriod(
             double[] input,
@@ -115,6 +113,44 @@ public final class PeriodDetector {
             double halfRatio,
             boolean smoothAcf) {
 
+        return detectPeriod(
+                input,
+                detrendMethod,
+                windowSize,
+                minPeriod,
+                maxPeriod,
+                peakMethod,
+                relativeThreshold,
+                maxDivisor,
+                halfRatio,
+                smoothAcf,
+                DEFAULT_MIN_PROMINENCE);
+    }
+
+    /**
+     * 周期検出（拡張版フル引数）。
+     *
+     * @param maxDivisor 倍周期補正で確認する約数の上限（2以上）
+     * @param halfRatio  約数候補を採用するピーク値の比率（0〜1）
+     * @param smoothAcf  ピーク探索時に ACF を 3 点移動平均で平滑化するか
+     *                   （補間・確信度は元の ACF で計算する）
+     * @param minProminence 候補ピークに要求する prominence の絶対下限
+     *                      （正規化 ACF 上の値、0 で無効）
+     * @return 検出結果。検出できない・入力が不正な場合は null
+     */
+    public static PeriodResult detectPeriod(
+            double[] input,
+            DetrendMethod detrendMethod,
+            int windowSize,
+            int minPeriod,
+            int maxPeriod,
+            PeakDetector.PeakMethod peakMethod,
+            double relativeThreshold,
+            int maxDivisor,
+            double halfRatio,
+            boolean smoothAcf,
+            double minProminence) {
+
         if (input == null || input.length < 2) {
             return null;
         }
@@ -123,7 +159,9 @@ public final class PeriodDetector {
                 || !Double.isFinite(relativeThreshold)
                 || relativeThreshold < 0 || relativeThreshold > 1
                 || !Double.isFinite(halfRatio)
-                || halfRatio < 0 || halfRatio > 1) {
+                || halfRatio < 0 || halfRatio > 1
+                || !Double.isFinite(minProminence)
+                || minProminence < 0) {
             return null;
         }
 
@@ -219,7 +257,8 @@ public final class PeriodDetector {
                             minPeriod,
                             maxPeriod,
                             peakMethod,
-                            relativeThreshold);
+                            relativeThreshold,
+                            minProminence);
 
             if (period < 0) {
                 return null;

@@ -1,3 +1,10 @@
+# Release v0.9.62.15
+
+Latest update: November 9th 2026
+
+## Changes
+
+* WK_RoiMan_PeriodDetector: added a min_prominence parameter (dialog default 0.20; 0 disables it). Candidate peaks whose prominence in the normalized autocorrelation falls below this absolute floor are rejected, so profiles without a real periodicity are reported as "Failed: no period detected" instead of returning a spurious period that only passed the relative threshold. Measured on 100 white-noise profiles, detections drop from 100 (no floor) to 0-22 at a 0.20 floor depending on profile length, while a weak periodic signal (sine amplitude 1 plus noise 1.5) is still detected in 99 of 100 cases. PeriodDetector and PeakDetector accept the same floor; the library default is 0 (disabled), so existing API behavior is unchanged.
 # Release v0.9.62.14
 
 Latest update: November 9th 2026
