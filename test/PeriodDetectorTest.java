@@ -217,69 +217,35 @@ public class PeriodDetectorTest {
             }
         }
 
-        // 11) 校正値: プロファイル方向の軸が選ばれ、単位が返り、
-        //     「1物理単位/ピクセル」の校正も校正済みと判定されること
-        {
-            ij.measure.Calibration cal = new ij.measure.Calibration();
-            cal.pixelWidth = 0.5;
-            cal.pixelHeight = 2.0;
-            cal.setUnit("um");
-            checkClose("scale horizontal = pixelWidth", 0.5,
-                    WK_RoiMan_PeriodDetector.profileScale(cal, false), 1e-12);
-            checkClose("scale vertical = pixelHeight", 2.0,
-                    WK_RoiMan_PeriodDetector.profileScale(cal, true), 1e-12);
-            // Calibration.setUnit("um") は ImageJ が "µm" に正規化する
-            check("unit returned", "µm".equals(
-                    WK_RoiMan_PeriodDetector.profileUnit(cal, false)));
-            check("calibrated detected", WK_RoiMan_PeriodDetector.isCalibrated(cal, false));
-
-            ij.measure.Calibration oneToOne = new ij.measure.Calibration();
-            oneToOne.pixelWidth = 1.0;
-            oneToOne.pixelHeight = 1.0;
-            oneToOne.setUnit("mm");
-            check("1 physical unit/pixel still calibrated",
-                    WK_RoiMan_PeriodDetector.isCalibrated(oneToOne, false));
-            check("1 physical unit/pixel vertical still calibrated",
-                    WK_RoiMan_PeriodDetector.isCalibrated(oneToOne, true));
-
-            ij.measure.Calibration plain = new ij.measure.Calibration();
-            check("default calibration is not calibrated",
-                    !WK_RoiMan_PeriodDetector.isCalibrated(plain, false));
-            check("null calibration is not calibrated",
-                    !WK_RoiMan_PeriodDetector.isCalibrated(null, false));
-        }
-
-        // 12) 結果表の列構成が常に一定であること
-        //     （成功/失敗、校正あり/なしで列が変わらない）
+        // 11) 結果表の列構成が常に一定であること（成功/失敗で列が変わらない）
+        //     Period_Scaled / Unit / Profile_Len は出力しない
         {
             ij.measure.ResultsTable tbl = new ij.measure.ResultsTable();
             WK_RoiMan_PeriodDetector.writeRow(tbl, "A", 25.0, 40.0,
-                    new PeriodResult(10.0, 0.9), 100, "OK", 0.5, "µm");
+                    new PeriodResult(10.0, 0.9), "OK");
             WK_RoiMan_PeriodDetector.writeRow(tbl, "B", 5.0, 10.0,
-                    null, 80, "Failed: test", 0.5, "µm");
+                    null, "Failed: test");
             WK_RoiMan_PeriodDetector.writeRow(tbl, "C", Double.NaN, Double.NaN,
-                    new PeriodResult(4.0, 0.5), 50, "OK", 1.0, "pixel");
+                    new PeriodResult(4.0, 0.5), "OK");
 
             java.util.List<String> headings =
                     java.util.Arrays.asList(tbl.getHeadings());
             String[] expected = { "ROI_Name", "Center_X", "Center_Y", "Period", "Confidence",
-                    "Period_Scaled", "Unit", "Profile_Len", "Status" };
+                    "Status" };
             boolean allPresent = true;
             for (String h : expected) {
                 if (!headings.contains(h)) allPresent = false;
             }
             check("all result columns always present", allPresent);
+            check("removed columns absent",
+                    !headings.contains("Period_Scaled")
+                            && !headings.contains("Unit")
+                            && !headings.contains("Profile_Len"));
             check("row count", tbl.getCounter() == 3);
-            checkClose("scaled value (calibrated)", 5.0,
-                    tbl.getValue("Period_Scaled", 0), 1e-9);
-            check("scaled is NaN on failure",
-                    Double.isNaN(tbl.getValue("Period_Scaled", 1)));
-            check("unit present on failure row",
-                    "µm".equals(tbl.getStringValue("Unit", 1)));
-            checkClose("scaled equals period when uncalibrated", 4.0,
-                    tbl.getValue("Period_Scaled", 2), 1e-9);
-            check("unit is pixel when uncalibrated",
-                    "pixel".equals(tbl.getStringValue("Unit", 2)));
+            checkClose("period on success row", 10.0,
+                    tbl.getValue("Period", 0), 1e-9);
+            check("period is NaN on failure",
+                    Double.isNaN(tbl.getValue("Period", 1)));
             check("status present on all rows",
                     "OK".equals(tbl.getStringValue("Status", 0))
                             && tbl.getStringValue("Status", 1).startsWith("Failed"));
@@ -291,7 +257,7 @@ public class PeriodDetectorTest {
                     Double.isNaN(tbl.getValue("Center_X", 2)));
         }
 
-        // 13) ROI の中心座標: 外接矩形の中心（線 ROI では線分の中点）
+        // 12) ROI の中心座標: 輪郭点の平均位置（線 ROI では線分の中点）
         {
             double[] c1 = WK_RoiMan_PeriodDetector.centerOf(new ij.gui.Roi(10, 20, 30, 40));
             checkClose("rect roi center x", 25.0, c1[0], 1e-9);

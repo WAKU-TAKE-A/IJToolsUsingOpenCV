@@ -5,7 +5,6 @@ import ij.WindowManager;
 import ij.gui.GenericDialog;
 import ij.gui.ProfilePlot;
 import ij.gui.Roi;
-import ij.measure.Calibration;
 import ij.measure.ResultsTable;
 import ij.plugin.filter.ExtendedPlugInFilter;
 import ij.plugin.filter.PlugInFilterRunner;
@@ -228,16 +227,6 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     ? PeakDetector.PeakMethod.HEIGHT 
                     : PeakDetector.PeakMethod.PROMINENCE;
 
-            Calibration cal = impSrc.getCalibration();
-            // 校正値はプロファイル方向の軸から選ぶ（縦方向なら Y 軸）。
-            double profScale = profileScale(cal, vertical_profile);
-            String profUnit = profileUnit(cal, vertical_profile);
-            boolean calibrated = isCalibrated(cal, vertical_profile);
-            // 結果表の列構成を常に一定に保つため、未校正でも
-            // Period_Scaled（= Period）と Unit（= "pixel"）を常に出力する。
-            double outScale = calibrated ? profScale : 1.0;
-            String outUnit = calibrated ? profUnit : "pixel";
-
             for (int i = 0; i < selectedIndexes.length; i++) {
                 int index = selectedIndexes[i];
                 String roiName = roiMan.getName(index);
@@ -260,7 +249,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
 
                     if (profile == null || profile.length < 2) {
                         IJ.log(className + " error: Cannot get valid profile from " + roiName);
-                        writeRow(rsTbl, roiName, centerX, centerY, null, 0, "Failed: invalid profile", outScale, outUnit);
+                        writeRow(rsTbl, roiName, centerX, centerY, null, "Failed: invalid profile");
                         continue;
                     }
 
@@ -283,14 +272,14 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                     );
 
                     if (result != null) {
-                        writeRow(rsTbl, roiName, centerX, centerY, result, profile.length, "OK", outScale, outUnit);
+                        writeRow(rsTbl, roiName, centerX, centerY, result, "OK");
                     } else {
                         IJ.log(className + " warning: Period detection failed for " + roiName);
-                        writeRow(rsTbl, roiName, centerX, centerY, null, profile.length, "Failed: no period detected", outScale, outUnit);
+                        writeRow(rsTbl, roiName, centerX, centerY, null, "Failed: no period detected");
                     }
                 } catch (Exception e) {
                     IJ.log(className + " exception for " + roiName + ": " + e.getMessage());
-                    writeRow(rsTbl, roiName, centerX, centerY, null, 0, "Failed: " + e.getMessage(), outScale, outUnit);
+                    writeRow(rsTbl, roiName, centerX, centerY, null, "Failed: " + e.getMessage());
                 }
             }
 
@@ -328,40 +317,6 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         return w;
     }
 
-    /** プロファイル方向に対応する軸の校正値（単位長/ピクセル）。 */
-    static double profileScale(Calibration cal, boolean vertical) {
-        if (cal == null) {
-            return 1.0;
-        }
-        double s = vertical ? cal.pixelHeight : cal.pixelWidth;
-        return s > 0 ? s : 1.0;
-    }
-
-    /** プロファイル方向に対応する軸の単位。 */
-    static String profileUnit(Calibration cal, boolean vertical) {
-        if (cal == null) {
-            return "pixel";
-        }
-        String u = vertical ? cal.getYUnit() : cal.getXUnit();
-        return (u == null || u.isEmpty()) ? "pixel" : u;
-    }
-
-    /**
-     * その軸が物理校正されているか。
-     * scale != 1.0 だけで判定すると「1物理単位/ピクセル」の校正を見落とすため、
-     * 単位が pixel 以外かどうかも条件に含める。
-     */
-    static boolean isCalibrated(Calibration cal, boolean vertical) {
-        if (cal == null) {
-            return false;
-        }
-        double s = vertical ? cal.pixelHeight : cal.pixelWidth;
-        if (!(s > 0)) {
-            return false;
-        }
-        return s != 1.0 || !"pixel".equals(profileUnit(cal, vertical));
-    }
-
     /**
      * ROI の中心座標（画像座標、ピクセル）。ROI の輪郭点の平均位置を用いるため、
      * 矩形・回転矩形では中心、線 ROI では線分の中点と一致する。
@@ -386,24 +341,20 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
     }
 
     /**
-     * 結果表に1行書く。列構成は成功・失敗・校正の有無によらず常に同じ
-     * （ROI_Name, Center_X, Center_Y, Period, Confidence, Period_Scaled, Unit, Profile_Len, Status）。
+     * 結果表に1行書く。列構成は成功・失敗によらず常に同じ
+     * （ROI_Name, Center_X, Center_Y, Period, Confidence, Status）。
      * CSV やスクリプトから安定して読めるよう、列を条件付きで出し分けない。
      * Center_X / Center_Y は ROI の中心座標（画像座標、ピクセル）で、取得できない場合は NaN。
-     * 未校正の場合は scale=1.0 / unit="pixel" が渡され、Period_Scaled は Period と一致する。
+     * Period はピクセル単位。実寸への換算は校正値を使って読み手側で行う。
      */
     static void writeRow(ResultsTable tbl, String roiName, double centerX, double centerY,
-                         PeriodResult result, int profileLength,
-                         String status, double scale, String unit) {
+                         PeriodResult result, String status) {
         tbl.incrementCounter();
         tbl.addValue("ROI_Name", roiName);
         tbl.addValue("Center_X", centerX);
         tbl.addValue("Center_Y", centerY);
         tbl.addValue("Period", result != null ? result.period : Double.NaN);
         tbl.addValue("Confidence", result != null ? result.confidence : Double.NaN);
-        tbl.addValue("Period_Scaled", result != null ? result.period * scale : Double.NaN);
-        tbl.addValue("Unit", unit);
-        tbl.addValue("Profile_Len", profileLength);
         tbl.addValue("Status", status);
     }
 

@@ -1,6 +1,6 @@
 # IJToolsUsingOpenCV
 
-Version: **0.9.62.13** (2026-11-09) — [Release notes](ReleaseNotes.md)
+Version: **0.9.62.14** (2026-11-09) — [Release notes](ReleaseNotes.md)
 
 [The english discriptions - >](#English)  
 [日本語の説明 - >](#日本語)

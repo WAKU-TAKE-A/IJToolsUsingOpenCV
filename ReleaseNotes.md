@@ -1,3 +1,10 @@
+# Release v0.9.62.14
+
+Latest update: November 9th 2026
+
+## Changes
+
+* WK_RoiMan_PeriodDetector: removed the Period_Scaled, Unit, and Profile_Len columns from the ResultsTable. The results now contain ROI_Name, Center_X, Center_Y, Period (in pixels), Confidence, and Status only. To convert Period to physical units, multiply it by the image calibration on the reader side.
 # Release v0.9.62.13
 
 Latest update: November 9th 2026
