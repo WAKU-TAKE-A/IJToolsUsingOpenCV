@@ -23,7 +23,7 @@ public final class PeakDetector {
     }
 
     /**
-     * ピークを検出する。
+     * ピークを検出する（最小 prominence なし）。
      *
      * @param acf 自己相関
      * @param minLag 最小周期
@@ -38,6 +38,33 @@ public final class PeakDetector {
             int maxLag,
             PeakMethod method,
             double relativeThreshold) {
+
+        return findPeak(acf, minLag, maxLag, method, relativeThreshold, 0.0);
+    }
+
+    /**
+     * ピークを検出する。
+     *
+     * @param acf 自己相関
+     * @param minLag 最小周期
+     * @param maxLag 最大周期
+     * @param method 評価方法
+     * @param relativeThreshold 最大ピーク比率(0～1)
+     * @param minProminence 候補ピークに要求する prominence の絶対下限。
+     *                      相対閾値だけでは「最大ピークの近辺」という理由で
+     *                      ノイズの小波も通ってしまうため、谷との差が
+     *                      この値未満のピークは周期性なしとして棄却する。
+     *                      0 以下で無効（従来動作）。ACF がラグ0で
+     *                      正規化されている前提の値（例: 0.10）。
+     * @return 周期
+     */
+    public static int findPeak(
+            double[] acf,
+            int minLag,
+            int maxLag,
+            PeakMethod method,
+            double relativeThreshold,
+            double minProminence) {
 
         if (acf == null || acf.length == 0) {
             return -1;
@@ -108,6 +135,16 @@ public final class PeakDetector {
 
                 default:
                     score = acf[lag];
+            }
+
+            // 最小 prominence（絶対下限）: 満たさない候補は棄却する。
+            // PROMINENCE 法では score がそのまま prominence なので流用する。
+            if (minProminence > 0) {
+                double prom = (method == PeakMethod.PROMINENCE)
+                        ? score : prominence(acf, lag);
+                if (prom < minProminence) {
+                    continue;
+                }
             }
 
             if (score > bestScore) {
