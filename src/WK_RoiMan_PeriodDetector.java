@@ -27,6 +27,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
     private static int max_period = 0;
     private static int ind_peak = 1;
     private static double relative_threshold = 0.5;
+    private static double min_prominence = 0.20;
     private static int max_divisor = PeriodDetector.DEFAULT_MAX_DIVISOR;
     private static double half_ratio = PeriodRefiner.DEFAULT_HALF_RATIO;
     private static boolean vertical_profile = false;
@@ -58,6 +59,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         gd.addNumericField("max_period", max_period, 0);
         gd.addChoice("peak_method", PEAK_STR, PEAK_STR[ind_peak]);
         gd.addNumericField("relative_threshold", relative_threshold, 2);
+        gd.addNumericField("min_prominence", min_prominence, 2);
         gd.addNumericField("max_divisor", max_divisor, 0);
         gd.addNumericField("half_ratio", half_ratio, 2);
         gd.addCheckbox("vertical_profile", vertical_profile);
@@ -75,6 +77,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
             max_period = (int)gd.getNextNumber();
             ind_peak = (int)gd.getNextChoiceIndex();
             relative_threshold = (double)gd.getNextNumber();
+            min_prominence = (double)gd.getNextNumber();
             max_divisor = (int)gd.getNextNumber();
             half_ratio = (double)gd.getNextNumber();
             vertical_profile = (boolean)gd.getNextBoolean();
@@ -122,6 +125,9 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         if (!Double.isFinite(relative_threshold) || relative_threshold < 0 || relative_threshold > 1) {
             return "relative_threshold must be between 0 and 1.";
         }
+        if (!Double.isFinite(min_prominence) || min_prominence < 0 || min_prominence > 2) {
+            return "min_prominence must be between 0 and 2 (0 = disabled).";
+        }
         if (min_period < 1) {
             return "min_period must be >= 1.";
         }
@@ -151,6 +157,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         max_period = (int)Prefs.get(PREFS_PREFIX + "max_period", max_period);
         ind_peak = (int)Prefs.get(PREFS_PREFIX + "ind_peak", ind_peak);
         relative_threshold = Prefs.get(PREFS_PREFIX + "relative_threshold", relative_threshold);
+        min_prominence = Prefs.get(PREFS_PREFIX + "min_prominence", min_prominence);
         max_divisor = (int)Prefs.get(PREFS_PREFIX + "max_divisor", max_divisor);
         half_ratio = Prefs.get(PREFS_PREFIX + "half_ratio", half_ratio);
         vertical_profile = Prefs.get(PREFS_PREFIX + "vertical_profile", vertical_profile);
@@ -168,6 +175,7 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
         Prefs.set(PREFS_PREFIX + "max_period", max_period);
         Prefs.set(PREFS_PREFIX + "ind_peak", ind_peak);
         Prefs.set(PREFS_PREFIX + "relative_threshold", relative_threshold);
+        Prefs.set(PREFS_PREFIX + "min_prominence", min_prominence);
         Prefs.set(PREFS_PREFIX + "max_divisor", max_divisor);
         Prefs.set(PREFS_PREFIX + "half_ratio", half_ratio);
         Prefs.set(PREFS_PREFIX + "vertical_profile", vertical_profile);
@@ -268,7 +276,8 @@ public class WK_RoiMan_PeriodDetector implements ExtendedPlugInFilter {
                             relative_threshold,
                             max_divisor,
                             half_ratio,
-                            acf_smoothing
+                            acf_smoothing,
+                            min_prominence
                     );
 
                     if (result != null) {

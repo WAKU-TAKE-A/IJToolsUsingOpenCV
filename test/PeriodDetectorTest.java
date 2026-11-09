@@ -270,6 +270,50 @@ public class PeriodDetectorTest {
                     Double.isNaN(c3[0]) && Double.isNaN(c3[1]));
         }
 
+        // 13) 最小 prominence: 絶対下限で候補ピークを棄却できること
+        {
+            // lag 2: 高さ 0.9 / prominence 0.2、lag 5: 高さ 0.6 / prominence 0.5
+            double[] acf = { 1.0, 0.7, 0.9, 0.7, 0.1, 0.6, 0.1, 0.0 };
+            check("no floor picks tallest peak",
+                    PeakDetector.findPeak(acf, 1, 6,
+                            PeakDetector.PeakMethod.HEIGHT, 0.5, 0.0) == 2);
+            check("floor rejects low-prominence tallest peak",
+                    PeakDetector.findPeak(acf, 1, 6,
+                            PeakDetector.PeakMethod.HEIGHT, 0.5, 0.3) == 5);
+            check("floor above all prominences -> no peak",
+                    PeakDetector.findPeak(acf, 1, 6,
+                            PeakDetector.PeakMethod.HEIGHT, 0.5, 0.6) == -1);
+            check("legacy findPeak has no floor",
+                    PeakDetector.findPeak(acf, 1, 6,
+                            PeakDetector.PeakMethod.HEIGHT, 0.5) == 2);
+        }
+
+        // 14) 最小 prominence（detectPeriod 経由）: 正常な周期信号は通り、
+        //     不正な下限や到達不能な下限では null になること
+        {
+            double[] x = sine(400, 25.0, 0.0, 55L, 0.3);
+            PeriodResult r = PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5,
+                    3, 0.95, false, 0.10);
+            check("sine25 passes min prominence 0.10", r != null);
+            if (r != null) {
+                checkClose("sine25 with min prominence period", 25.0, r.period, 0.8);
+            }
+            check("negative min prominence -> null", PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5,
+                    3, 0.95, false, -0.1) == null);
+            check("NaN min prominence -> null", PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5,
+                    3, 0.95, false, Double.NaN) == null);
+            check("unreachable min prominence -> null", PeriodDetector.detectPeriod(
+                    x, PeriodDetector.DetrendMethod.LINEAR_REGRESSION, 0,
+                    2, 0, PeakDetector.PeakMethod.PROMINENCE, 0.5,
+                    3, 0.95, false, 5.0) == null);
+        }
+
         System.out.println("----");
         System.out.println(checks + " checks, " + failures + " failures");
         System.exit(failures == 0 ? 0 : 1);
